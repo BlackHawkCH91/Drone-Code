@@ -21,62 +21,120 @@ namespace IngameScript
 {
     partial class Program : MyGridProgram
     {
-        // This file contains your actual script.
-        //
-        // You can either keep all your code here, or you can create separate
-        // code files to make your program easier to navigate while coding.
-        //
-        // In order to add a new utility class, right-click on your project, 
-        // select 'New' then 'Add Item...'. Now find the 'Space Engineers'
-        // category under 'Visual C# Items' on the left hand side, and select
-        // 'Utility Class' in the main area. Name it in the box below, and
-        // press OK. This utility class will be merged in with your code when
-        // deploying your final script.
-        //
-        // You can also simply create a new utility class manually, you don't
-        // have to use the template if you don't want to. Just do so the first
-        // time to see what a utility class looks like.
-        // 
-        // Go to:
-        // https://github.com/malware-dev/MDK-SE/wiki/Quick-Introduction-to-Space-Engineers-Ingame-Scripts
-        //
-        // to learn more about ingame scripts.
+        // VARS
 
-        public Program()
+        bool setup = false;
+        //int timer = 0;
+
+        //Listeners and display for sending and recieving data
+        IMyBroadcastListener Listener;
+        IMyTerminalBlock mainProgBlock;
+        List<IMyTextPanel> LCD = new List<IMyTextPanel>();
+
+        //Information used to create a packet that will be sent back to the main base.
+        long droneId;
+        string droneType = "test";
+        Vector3 dronePos;
+        float droneHealth = 100;
+        float power = 100;
+        float hydrogen = 100;
+        string droneAction = "idle";
+
+        int terminalBlockCount;
+
+        string packet;
+
+        int blockCount;
+
+
+        //Functions ----------------------------------------------------------------------
+
+        //Converts a string back into a Vector3
+        public static Vector3 StringToVector3(string sVector)
         {
-            // The constructor, called only once every session and
-            // always before any other method is called. Use it to
-            // initialize your script. 
-            //     
-            // The constructor is optional and can be removed if not
-            // needed.
-            // 
-            // It's recommended to set Runtime.UpdateFrequency 
-            // here, which will allow your script to run itself without a 
-            // timer block.
+            //Remove curly brackets
+            if (sVector.StartsWith("{") && sVector.EndsWith("}"))
+            {
+                sVector = sVector.Substring(1, sVector.Length - 2);
+            }
+
+            //Split the string where there is whitespace (commas are not used for some reason)
+            string[] sArray = sVector.Split(' ');
+
+            //Parse the values into floats and create a Vector3
+            Vector3 position = new Vector3(
+                float.Parse(sArray[0].Substring(2, sArray[0].Length - 2)),
+                float.Parse(sArray[1].Substring(2, sArray[1].Length - 2)),
+                float.Parse(sArray[2].Substring(2, sArray[2].Length - 2))
+            );
+
+            return position;
         }
 
-        public void Save()
+        //Function to send data
+        public void SendMessage(string Contents)
         {
-            // Called when the program needs to save its state. Use
-            // this method to save your state to the Storage field
-            // or some other means. 
-            // 
-            // This method is optional and can be removed if not
-            // needed.
+            IGC.SendBroadcastMessage<string>("WaypointCom", Contents, TransmissionDistance.TransmissionDistanceMax);
+        }
+
+        //function to receive data.
+        public void RecieveMessage()
+        {
+            //Receive message and write it to the LCD.
+            MyIGCMessage Message = Listener.AcceptMessage();
+            LCD[0].WriteText(Message.Data.ToString());
+        }
+
+        //---------------------------------------------------------------------------------------------------------------
+
+
+
+        public void Init()
+        {
+            //Initialise and prepare variables to send and receive data.
+            Listener = IGC.RegisterBroadcastListener("WaypointCom");
+            Listener.DisableMessageCallback();
+            GridTerminalSystem.GetBlocksOfType<IMyTextPanel>(LCD);
+            mainProgBlock = GridTerminalSystem.GetBlockWithName("MainProgBlock");
+
+
+            droneId = mainProgBlock.EntityId;
+
+            packet = droneId.ToString() + "|" + droneType + "|" + dronePos.ToString() + "|" + droneHealth.ToString() + "|" + power.ToString() + "|" + hydrogen.ToString() + "|" + droneAction;
+
+            setup = true;
+            Echo("Active");
+        }
+
+
+        //Set update time
+        public Program()
+        {
+            Runtime.UpdateFrequency = UpdateFrequency.Update1;
         }
 
         public void Main(string argument, UpdateType updateSource)
         {
-            // The main entry point of the script, invoked every time
-            // one of the programmable block's Run actions are invoked,
-            // or the script updates itself. The updateSource argument
-            // describes where the update came from. Be aware that the
-            // updateSource is a  bitfield  and might contain more than 
-            // one update type.
-            // 
-            // The method itself is required, but the arguments above
-            // can be removed if not needed.
+            dronePos = Me.CubeGrid.GetPosition();
+
+            //Initialise once
+            if (!setup)
+            {
+                Init();
+            }
+
+            SendMessage(packet);
+
+            //Check and receive data
+            if (Listener.HasPendingMessage)
+            {
+                RecieveMessage();
+            }
+        }
+
+        public void Save()
+        {
+
         }
     }
 }
