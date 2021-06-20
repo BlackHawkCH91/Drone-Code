@@ -361,3 +361,6 @@ MigrationBackup/
 
 # Fody - auto-generated XML schema
 FodyWeavers.xsd
+
+# MDK paths - allows for code to be edited by other users
+MDK.paths.props
