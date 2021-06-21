@@ -61,7 +61,6 @@ namespace IngameScript
 
         public void Main(string argument, UpdateType updateSource)
         {
-
             Coroutine.StepCoroutines(updateSource);
 
 
@@ -123,8 +122,6 @@ namespace IngameScript
             ApplyThrust(ThrustVector);
 
         }
-
-
 
 
         public void CalcMaxEffectiveThrusts()

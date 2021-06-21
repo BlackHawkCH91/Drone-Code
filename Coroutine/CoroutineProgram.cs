@@ -116,7 +116,7 @@ namespace IngameScript
 
         }
 
-        public static IEnumerator<int> AddCoroutine(this Func<IEnumerator<int>> CoroutineFunc)
+        public static IEnumerator<int> AddCoroutine(Func<IEnumerator<int>> CoroutineFunc)
         {
 
             IEnumerator<int> Coroutine = CoroutineFunc();
@@ -131,6 +131,14 @@ namespace IngameScript
 
             activeCoroutines.Remove(coroutine);
             pausedCoroutines.Add( new PausedCoroutine(coroutine, coroutine.Current) );
+
+        }
+
+        public static void PauseCoroutine(this IEnumerator<int> coroutine, int yieldTime)
+        {
+
+            activeCoroutines.Remove(coroutine);
+            pausedCoroutines.Add(new PausedCoroutine(coroutine, yieldTime));
 
         }
 
