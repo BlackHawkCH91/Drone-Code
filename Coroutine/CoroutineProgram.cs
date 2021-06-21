@@ -57,7 +57,6 @@ namespace IngameScript
 
         }
 
-        static Action<System.String> Echo;
         static IMyGridProgramRuntimeInfo Runtime;
 
         private static List<IEnumerator<int>> activeCoroutines = new List<IEnumerator<int>>();
@@ -66,20 +65,17 @@ namespace IngameScript
         private static List<IEnumerator<int>> coroutinesToRemove = new List<IEnumerator<int>>();
         private static List<PausedCoroutine> pausedCoroutinesToRemove = new List<PausedCoroutine>();
 
-        public static void EstablishCoroutines(this IMyGridProgramRuntimeInfo GridRuntime, Action<System.String> EchoMethod)
+        public static void EstablishCoroutines(this IMyGridProgramRuntimeInfo GridRuntime)
         {
             Runtime = GridRuntime;
-            Echo = EchoMethod;
         }
 
         public static void StepCoroutines(UpdateType updateSource)
         {
-            Echo("Step function run - Update source: " + updateSource.ToString());
 
             // Coroutine will trigger when user presses run or when it triggers itself
             if (updateSource == UpdateType.Once || updateSource == UpdateType.Terminal)
             {
-                Echo("Stepping Coroutines");
 
                 CheckPausedCoroutines();
 
@@ -91,12 +87,9 @@ namespace IngameScript
                     if (hasMoreSteps)
                     {
 
-                        Echo("Yield value: " + coroutine.Current.ToString());
-
                         // if yield time is 0 then coroutine must be run next tick so do not create a "paused coroutine" for it
                         if (coroutine.Current > 0)
                         {
-                            Echo("Pausing coroutine");
                             // Update frequency is changed to update once if it is not already set
                             Runtime.UpdateFrequency |= UpdateFrequency.Once;
                             coroutine.PauseCoroutine();
@@ -134,8 +127,6 @@ namespace IngameScript
             IEnumerator<int> Coroutine = CoroutineFunc();
 
             activeCoroutines.Add(Coroutine);
-
-            Echo("Coroutine Added, " + activeCoroutines.Count().ToString() + " active coroutines");
             return Coroutine;
 
         }
@@ -158,7 +149,6 @@ namespace IngameScript
 
         private static void CheckPausedCoroutines()
         {
-            Echo("Checking paused coroutines - " + pausedCoroutines.Count().ToString() + " found");
             foreach(PausedCoroutine pausedCoroutine in pausedCoroutines)
             {
 
@@ -176,7 +166,6 @@ namespace IngameScript
 
             }
 
-            Echo("Resuming " + pausedCoroutinesToRemove.Count().ToString() + " coroutines");
             // Remove all coroutines that have been resumed
             foreach (PausedCoroutine pausedCoroutine in pausedCoroutinesToRemove)
             {
