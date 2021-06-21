@@ -120,7 +120,7 @@ namespace IngameScript
 
         public static IEnumerator<int> AddCoroutine(Func<IEnumerator<int>> CoroutineFunc)
         {
-
+            Echo("Coroutine Added, " + activeCoroutines.Count() + " active coroutines");
             IEnumerator<int> Coroutine = CoroutineFunc();
 
             activeCoroutines.Add(Coroutine);
