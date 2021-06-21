@@ -49,7 +49,7 @@ namespace IngameScript
         public Program()
         {
             Controller = (IMyShipController)GridTerminalSystem.GetBlockWithName("PrimaryController");
-            Runtime.EstablishCoroutines();
+            Runtime.EstablishCoroutines(Echo);
         }
 
         public void Save()

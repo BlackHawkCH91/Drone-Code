@@ -52,6 +52,7 @@ namespace IngameScript
 
         }
 
+        static Action<System.String> Echo;
         static IMyGridProgramRuntimeInfo Runtime;
 
         private static List<IEnumerator<int>> activeCoroutines = new List<IEnumerator<int>>();
@@ -60,9 +61,10 @@ namespace IngameScript
         private static List<IEnumerator<int>> coroutinesToRemove = new List<IEnumerator<int>>();
         private static List<PausedCoroutine> pausedCoroutinesToRemove = new List<PausedCoroutine>();
 
-        public static void EstablishCoroutines(this IMyGridProgramRuntimeInfo GridRuntime)
+        public static void EstablishCoroutines(this IMyGridProgramRuntimeInfo GridRuntime, Action<System.String> EchoMethod)
         {
             Runtime = GridRuntime;
+            Echo = EchoMethod;
         }
 
         public static void StepCoroutines(UpdateType updateSource)
