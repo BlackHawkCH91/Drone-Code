@@ -22,28 +22,26 @@ namespace IngameScript
 {
     partial class Program
     {
-        public class ThrustDirection
+        public class ThrustGroup
         {
-            public Base6Directions.Direction thrustDirection;
             public List<IMyThrust> thrusters;
             public double maxThrust;
 
-            public ThrustDirection()
+            public ThrustGroup()
             {
                 thrusters = new List<IMyThrust>();
                 maxThrust = 0;
             }
-            public ThrustDirection(IMyThrust Thruster, Base6Directions.Direction ThrustDirection)
+            public ThrustGroup(IMyThrust Thruster)
             {
                 thrusters = new List<IMyThrust>();
                 thrusters.Add(Thruster);
-                thrustDirection = ThrustDirection;
                 CalcMaxEffectiveThrust();
             }
-            public ThrustDirection(List<IMyThrust> ThrusterList, Base6Directions.Direction ThrustDirection)
+
+            public ThrustGroup(List<IMyThrust> ThrusterList)
             {
                 thrusters = ThrusterList;
-                thrustDirection = ThrustDirection;
                 CalcMaxEffectiveThrust();
             }
 

@@ -26,7 +26,7 @@ namespace IngameScript
         double velocityProportionalGain = 0.125;
 
         Vector3D destinationVector = new Vector3(-37806.02, -36183.24, -36770.72);
-        Dictionary<Base6Directions.Direction, ThrustDirection> thrustDirections = new Dictionary<Base6Directions.Direction, ThrustDirection>();
+        Dictionary<Base6Directions.Direction, ThrustGroup> thrustDirections = new Dictionary<Base6Directions.Direction, ThrustGroup>();
         IMyShipController controller;
 
         public Program()
@@ -84,32 +84,28 @@ namespace IngameScript
 
         public void GetThrusters()
         {
-            // Create lists at each index for thrust directions array
-            for (int i = 0; i < 6; i++)
+            // Create thruster groups
+            foreach (Base6Directions.Direction direction in Enum.GetValues(typeof(Base6Directions.Direction)))
             {
-                thrustersInDirections[i] = new List<IMyThrust>();
+                thrustDirections.Add(direction, new ThrustGroup());
             }
 
-            // Adding thrusters to lists depending on their direction
-            foreach (IMyThrust Thruster in allThrusters)
+            // Get all thrusters
+            List<IMyThrust> allThrusters = new List<IMyThrust>();
+            GridTerminalSystem.GetBlocksOfType<IMyThrust>(allThrusters);
+
+            // Adding thrusters to groups depending on their direction
+            foreach (IMyThrust thruster in allThrusters)
             {
+                // Corrects the directions to use the controller as a reference
+                Base6Directions.Direction correctedForwardDirection = controller.Orientation.TransformDirection(thruster.Orientation.Forward);
 
-                foreach (Base6Directions.Direction Direction in Enum.GetValues(typeof(Base6Directions.Direction)))
-                {
-
-                    if (Base6Directions.GetOppositeDirection(Thruster.Orientation.Forward) == controller.Orientation.TransformDirection(Direction))
-                    {
-
-                        thrustersInDirections[(int)Direction].Add(Thruster);
-                        break;
-
-                    }
-
-                }
-
+                // Add the thruster to the direction that it's thrust is pointing in - opposite of it's forward direction
+                thrustDirections[Base6Directions.GetOppositeDirection(correctedForwardDirection)].AddThruster(thruster);
             }
 
         }
+
         public void CalcMaxEffectiveThrusts()
         {
             for (int DirectionIndex = 0; DirectionIndex < 6; DirectionIndex++)
