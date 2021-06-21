@@ -30,27 +30,31 @@ namespace IngameScript
             Runtime = GridRuntime;
         }
 
-        // Coroutine executer - must be run in main
-        public static void StepCoroutines()
+        public static void StepCoroutines(UpdateType updateSource)
         {
-
-            foreach (IEnumerator<bool> Coroutine in ActiveCoroutines)
+            // Coroutine will trigger when user presses run or when it triggers itself
+            if (updateSource == UpdateType.Once || updateSource == UpdateType.Terminal)
             {
 
-                bool HasMoreSteps = Coroutine.MoveNext();
-
-                if (HasMoreSteps)
+                foreach (IEnumerator<bool> Coroutine in ActiveCoroutines)
                 {
 
-                    // Update frequency is changed to update once if it is not already set
-                    Runtime.UpdateFrequency |= UpdateFrequency.Once;
+                    bool HasMoreSteps = Coroutine.MoveNext();
 
-                }
-                else
-                {
+                    if (HasMoreSteps)
+                    {
 
-                    ActiveCoroutines.Remove(Coroutine);
-                    Coroutine.Dispose();
+                        // Update frequency is changed to update once if it is not already set
+                        Runtime.UpdateFrequency |= UpdateFrequency.Once;
+
+                    }
+                    else
+                    {
+
+                        ActiveCoroutines.Remove(Coroutine);
+                        Coroutine.Dispose();
+
+                    }
 
                 }
 

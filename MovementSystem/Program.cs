@@ -48,12 +48,8 @@ namespace IngameScript
 
         public Program()
         {
-
             Controller = (IMyShipController)GridTerminalSystem.GetBlockWithName("PrimaryController");
-
-
-
-            Runtime.UpdateFrequency = UpdateFrequency.Update1;
+            Runtime.EstablishCoroutines();
         }
 
         public void Save()
@@ -65,7 +61,8 @@ namespace IngameScript
 
         public void Main(string argument, UpdateType updateSource)
         {
-            Runtime.EstablishCoroutines();
+
+            Coroutine.StepCoroutines(updateSource);
 
 
             GetThrusters();
