@@ -63,12 +63,9 @@ namespace IngameScript
 
                 // Get thrusters
                 GetThrusters();
-                CalcMaxEffectiveThrusts();
 
                 // Counter any gravity influencing the ship
-                Vector3D gravity = controller.GetNaturalGravity();
-
-                // Move in desired direction
+                CounterGravity();
 
                 // Calculate desired velocity
                 Vector3D desiredVelocity = localDestVector * velocityProportionalGain;
@@ -103,22 +100,28 @@ namespace IngameScript
                 // Add the thruster to the direction that it's thrust is pointing in - opposite of it's forward direction
                 thrustDirections[Base6Directions.GetOppositeDirection(correctedForwardDirection)].AddThruster(thruster);
             }
-
         }
 
-        public void CalcMaxEffectiveThrusts()
+        public void CounterGravity()
         {
-            for (int DirectionIndex = 0; DirectionIndex < 6; DirectionIndex++)
+            // Get total gravity force vector (f = m*a)
+            Vector3D gravity = controller.GetNaturalGravity() * controller.CalculateShipMass().TotalMass;
+
+            // Calculate how much force gravity is applying in each direction and apply thrust in that direction
+            foreach (Base6Directions.Direction direction in Enum.GetValues(typeof(Base6Directions.Direction)))
             {
+                Vector3D directionVector = Base6Directions.GetVector(direction);
+                Vector3D gravityForceVector = Vector3D.ProjectOnVector(ref gravity, ref directionVector);
+                double gravityForce = gravityForceVector.Length();
 
-                maxThrustInDirections[DirectionIndex] = 0;
-
-                foreach (IMyThrust Thruster in thrustersInDirections[DirectionIndex])
+                // If gravity force is negative then it is working on the opposite axis - set to 0
+                if(gravityForce < 0)
                 {
-
-                    maxThrustInDirections[DirectionIndex] += Thruster.MaxEffectiveThrust;
-
+                    gravityForce = 0;
                 }
+
+                // Get thrust group for direction and apply thrust force
+                thrustDirections[direction].ApplyThrustForce(gravityForce);
 
             }
         }

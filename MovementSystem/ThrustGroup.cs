@@ -48,6 +48,7 @@ namespace IngameScript
             public void AddThruster(IMyThrust Thruster)
             {
                 thrusters.Add(Thruster);
+                CalcMaxEffectiveThrust();
             }
             private void CalcMaxEffectiveThrust()
             {
