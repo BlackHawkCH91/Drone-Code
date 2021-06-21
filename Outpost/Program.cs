@@ -30,7 +30,7 @@ namespace IngameScript
         //Variables for cargo containers
 
         //              ---- NOTICE ---- 
-        // Format: Name, {Item AMOUNT, Item MINIMUM AMIUNT}
+        // Format: Name, {Item AMOUNT, Item MINIMUM AMOUNT}
 
 
         //Ore counts:
