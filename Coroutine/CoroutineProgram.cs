@@ -74,6 +74,7 @@ namespace IngameScript
 
         public static void StepCoroutines(UpdateType updateSource)
         {
+            Echo("Step function run - Update source: " + updateSource.ToString());
 
             // Coroutine will trigger when user presses run or when it triggers itself
             if (updateSource == UpdateType.Once || updateSource == UpdateType.Terminal)
