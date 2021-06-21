@@ -20,6 +20,8 @@ Global
 		Coroutine\Coroutine.projitems*{4fea1d8d-11cc-4d65-993b-821aad1e7ed6}*SharedItemsImports = 4
 		Vector3DExtensions\Vector3DExtensions.projitems*{4fea1d8d-11cc-4d65-993b-821aad1e7ed6}*SharedItemsImports = 4
 		Coroutine\Coroutine.projitems*{807e7f93-033e-4d6d-a4bb-20385f3f3b1f}*SharedItemsImports = 13
+		Coroutine\Coroutine.projitems*{d7769a5c-4e12-41ff-bf4d-9edf0ff53d53}*SharedItemsImports = 4
+		Vector3DExtensions\Vector3DExtensions.projitems*{d7769a5c-4e12-41ff-bf4d-9edf0ff53d53}*SharedItemsImports = 4
 		Vector3DExtensions\Vector3DExtensions.projitems*{df63a6bf-0ce7-4a83-9475-2c405c25bd0f}*SharedItemsImports = 13
 	EndGlobalSection
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
