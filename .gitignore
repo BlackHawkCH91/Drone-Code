@@ -364,3 +364,6 @@ FodyWeavers.xsd
 
 # MDK paths - allows for code to be edited by other users
 MDK.paths.props
+
+# Backup files - prevents bulk and overfilling on repository
+*_Backup_*
