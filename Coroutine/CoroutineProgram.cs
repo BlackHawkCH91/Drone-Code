@@ -23,7 +23,7 @@ namespace IngameScript
     {
 
         static IMyGridProgramRuntimeInfo Runtime;
-        public static List<IEnumerator<bool>> ActiveCoroutines = new List<IEnumerator<bool>>();
+        public static List<IEnumerator<int>> ActiveCoroutines = new List<IEnumerator<int>>();
 
         public static void EstablishCoroutines(this IMyGridProgramRuntimeInfo GridRuntime)
         {
@@ -36,7 +36,7 @@ namespace IngameScript
             if (updateSource == UpdateType.Once || updateSource == UpdateType.Terminal)
             {
 
-                foreach (IEnumerator<bool> Coroutine in ActiveCoroutines)
+                foreach (IEnumerator<int> Coroutine in ActiveCoroutines)
                 {
 
                     bool HasMoreSteps = Coroutine.MoveNext();
@@ -62,16 +62,16 @@ namespace IngameScript
 
         }
 
-        public static IEnumerator<bool> AddCoroutine(this Func<IEnumerator<bool>> CoroutineFunc)
+        public static IEnumerator<int> AddCoroutine(this Func<IEnumerator<int>> CoroutineFunc)
         {
-            IEnumerator<bool> Coroutine = CoroutineFunc();
+            IEnumerator<int> Coroutine = CoroutineFunc();
 
             ActiveCoroutines.Add(Coroutine);
             return Coroutine;
 
         }
 
-        public static void PauseCoroutine(this IEnumerator<bool> Coroutine)
+        public static void PauseCoroutine(this IEnumerator<int> Coroutine)
         {
 
             ActiveCoroutines.Remove(Coroutine);
