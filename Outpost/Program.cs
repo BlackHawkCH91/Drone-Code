@@ -22,7 +22,6 @@ namespace IngameScript
 {
     partial class Program : MyGridProgram
     {
-        //test push
         //Define variables
 
         bool setup = false;
@@ -107,8 +106,8 @@ namespace IngameScript
         Dictionary<string, int[]> ammo = new Dictionary<string, int[]>()
         {
             { "Missile200mm", new int[] {0, 0} },
-            { "NATO 25x184mm", new int[] {0, 0} },
-            { "NATO 5p56x45mm", new int[] {0, 0} }
+            { "NATO_25x184mm", new int[] {0, 0} },
+            { "NATO_5p56x45mm", new int[] {0, 0} }
         };
 
         List<IMyTerminalBlock> cargo = new List<IMyTerminalBlock>();
@@ -155,29 +154,107 @@ namespace IngameScript
                 }
                 yield return 0;
 
+                //Define strings to display on LCDS
                 string oreDisplayString = "";
                 string ingotDisplayString = "";
                 string compDisplayString = "";
                 string ammoDisplayString = "";
 
+                //FORMATTING
+
+                //Gets the amount and min amount string length and finds the one with the largest string length. Use it to insert a | in the string for column lines.
+
+                //String length search
+                int amountLargest = 0;
+                int minLargest = 0;
                 foreach (KeyValuePair<string, int[]> itemDisplay in ores)
                 {
-                    oreDisplayString += itemDisplay.Key + " " + itemDisplay.Value[0].ToString() + " " + itemDisplay.Value[1].ToString() + "\n";
+                    if (itemDisplay.Value[0].ToString().Length > amountLargest)
+                    {
+                        amountLargest = itemDisplay.Value[0].ToString().Length;
+                    }
+
+                    if (itemDisplay.Value[1].ToString().Length > minLargest)
+                    {
+                        minLargest = itemDisplay.Value[1].ToString().Length;
+                    }
+                }
+                //Display string
+                foreach (KeyValuePair<string, int[]> itemDisplay in ores)
+                {
+                    oreDisplayString += itemDisplay.Key + string.Concat(Enumerable.Repeat(" ", 11 - itemDisplay.Key.Length)) + " | " + itemDisplay.Value[0].ToString() + string.Concat(Enumerable.Repeat(" ", amountLargest - itemDisplay.Value[0].ToString().Length)) + " | " + itemDisplay.Value[1].ToString() + "\n";
                     ores[itemDisplay.Key][0] = 0;
                 }
+
+
+
+                //String length search
+                amountLargest = 0;
+                minLargest = 0;
                 foreach (KeyValuePair<string, int[]> itemDisplay in ingots)
                 {
-                    ingotDisplayString += itemDisplay.Key + " " + itemDisplay.Value[0].ToString() + " " + itemDisplay.Value[1].ToString() + "\n";
+                    if (itemDisplay.Value[0].ToString().Length > amountLargest)
+                    {
+                        amountLargest = itemDisplay.Value[0].ToString().Length;
+                    }
+
+                    if (itemDisplay.Value[1].ToString().Length > minLargest)
+                    {
+                        minLargest = itemDisplay.Value[1].ToString().Length;
+                    }
+                }
+                //Display string
+                foreach (KeyValuePair<string, int[]> itemDisplay in ingots)
+                {
+                    ingotDisplayString += itemDisplay.Key + string.Concat(Enumerable.Repeat(" ", 9 - itemDisplay.Key.Length)) + " | " + itemDisplay.Value[0].ToString() + string.Concat(Enumerable.Repeat(" ", amountLargest - itemDisplay.Value[0].ToString().Length)) + " | " + itemDisplay.Value[1].ToString() + "\n";
                     ingots[itemDisplay.Key][0] = 0;
                 }
+
+
+
+                //String length search
+                amountLargest = 0;
+                minLargest = 0;
                 foreach (KeyValuePair<string, int[]> itemDisplay in components)
                 {
-                    compDisplayString += itemDisplay.Key + " " + itemDisplay.Value[0].ToString() + " " + itemDisplay.Value[1].ToString() + "\n";
+                    if (itemDisplay.Value[0].ToString().Length > amountLargest)
+                    {
+                        amountLargest = itemDisplay.Value[0].ToString().Length;
+                    }
+
+                    if (itemDisplay.Value[1].ToString().Length > minLargest)
+                    {
+                        minLargest = itemDisplay.Value[1].ToString().Length;
+                    }
+                }
+                //Display string
+                foreach (KeyValuePair<string, int[]> itemDisplay in components)
+                {
+                    compDisplayString += itemDisplay.Key + string.Concat(Enumerable.Repeat(" ", 18 - itemDisplay.Key.Length)) + " | " + itemDisplay.Value[0].ToString() + string.Concat(Enumerable.Repeat(" ", amountLargest - itemDisplay.Value[0].ToString().Length)) + " | " + itemDisplay.Value[1].ToString() + "\n";
                     components[itemDisplay.Key][0] = 0;
                 }
+
+
+
+                //String length search
+                amountLargest = 0;
+                minLargest = 0;
                 foreach (KeyValuePair<string, int[]> itemDisplay in ammo)
                 {
-                    ammoDisplayString += itemDisplay.Key + " " + itemDisplay.Value[0].ToString() + " " + itemDisplay.Value[1].ToString() + "\n";
+                    if (itemDisplay.Value[0].ToString().Length > amountLargest)
+                    {
+                        amountLargest = itemDisplay.Value[0].ToString().Length;
+                    }
+
+                    if (itemDisplay.Value[1].ToString().Length > minLargest)
+                    {
+                        minLargest = itemDisplay.Value[1].ToString().Length;
+                    }
+                }
+                //Display string
+                foreach (KeyValuePair<string, int[]> itemDisplay in ammo)
+                {
+                    ammoDisplayString += itemDisplay.Key + string.Concat(Enumerable.Repeat(" ", 14 - itemDisplay.Key.Length)) + " | " + itemDisplay.Value[0].ToString() + string.Concat(Enumerable.Repeat(" ", amountLargest - itemDisplay.Value[0].ToString().Length)) + " | " + itemDisplay.Value[1].ToString() + "\n";
                     ammo[itemDisplay.Key][0] = 0;
                 }
 
