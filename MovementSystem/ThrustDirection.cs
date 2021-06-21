@@ -24,26 +24,55 @@ namespace IngameScript
     {
         public class ThrustDirection
         {
+            public Base6Directions.Direction thrustDirection;
             public List<IMyThrust> thrusters;
             public double maxThrust;
 
-            public ThrustDirection(List<IMyThrust> thrustList)
+            public ThrustDirection()
             {
-
-                thrusters = thrustList;
+                thrusters = new List<IMyThrust>();
+                maxThrust = 0;
+            }
+            public ThrustDirection(IMyThrust Thruster, Base6Directions.Direction ThrustDirection)
+            {
+                thrusters = new List<IMyThrust>();
+                thrusters.Add(Thruster);
+                thrustDirection = ThrustDirection;
                 CalcMaxEffectiveThrust();
-
+            }
+            public ThrustDirection(List<IMyThrust> ThrusterList, Base6Directions.Direction ThrustDirection)
+            {
+                thrusters = ThrusterList;
+                thrustDirection = ThrustDirection;
+                CalcMaxEffectiveThrust();
             }
 
-            public void CalcMaxEffectiveThrust()
+            public void AddThruster(IMyThrust Thruster)
             {
-
+                thrusters.Add(Thruster);
+            }
+            private void CalcMaxEffectiveThrust()
+            {
                 maxThrust = 0;
                 foreach(IMyThrust thruster in thrusters)
                 {
                     maxThrust += thruster.MaxEffectiveThrust;
                 }
+            }
 
+            public void ApplyThrustPercentage(double ThrustPercentage)
+            {
+                foreach(IMyThrust thruster in thrusters)
+                {
+                    thruster.ThrustOverridePercentage = (float)ThrustPercentage;
+                }
+            }
+            public void ApplyThrustForce(double ThrustForce)
+            {
+                foreach(IMyThrust thruster in thrusters)
+                {
+                    thruster.ThrustOverride = (float)(ThrustForce / thrusters.Count());
+                }
             }
         }
     }

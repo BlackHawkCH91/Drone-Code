@@ -26,25 +26,8 @@ namespace IngameScript
         double velocityProportionalGain = 0.125;
 
         Vector3D destinationVector = new Vector3(-37806.02, -36183.24, -36770.72);
-
-        List<IMyThrust> allThrusters = new List<IMyThrust>();
-
-        float[] maxThrustInDirections = new float[6];
-        List<IMyThrust>[] thrustersInDirections = new List<IMyThrust>[6];
-
-        /*
-        * THRUSTER INDEXES:
-        * 0 - FORWARD
-        * 1 - BACKWARD
-        * 2 - LEFT
-        * 3 - RIGHT
-        * 4 - UP
-        * 5 - DOWN
-        */
-
-
+        Dictionary<Base6Directions.Direction, ThrustDirection> thrustDirections = new Dictionary<Base6Directions.Direction, ThrustDirection>();
         IMyShipController controller;
-
 
         public Program()
         {
