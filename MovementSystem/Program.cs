@@ -22,15 +22,15 @@ namespace IngameScript
     partial class Program : MyGridProgram
     {
         // VARS
-        double MaxSpeed = 100;
-        double VelocityProportionalGain = 0.125;
+        double maxSpeed = 100;
+        double velocityProportionalGain = 0.125;
 
-        Vector3D DestinationVector = new Vector3(-37806.02, -36183.24, -36770.72);
+        Vector3D destinationVector = new Vector3(-37806.02, -36183.24, -36770.72);
 
-        List<IMyThrust> AllThrusters = new List<IMyThrust>();
+        List<IMyThrust> allThrusters = new List<IMyThrust>();
 
-        float[] MaxThrustInDirections = new float[6];
-        List<IMyThrust>[] ThrustersInDirections = new List<IMyThrust>[6];
+        float[] maxThrustInDirections = new float[6];
+        List<IMyThrust>[] thrustersInDirections = new List<IMyThrust>[6];
 
         /*
         * THRUSTER INDEXES:
@@ -43,12 +43,12 @@ namespace IngameScript
         */
 
 
-        IMyShipController Controller;
+        IMyShipController controller;
 
 
         public Program()
         {
-            Controller = (IMyShipController)GridTerminalSystem.GetBlockWithName("PrimaryController");
+            controller = (IMyShipController)GridTerminalSystem.GetBlockWithName("PrimaryController");
             Runtime.EstablishCoroutines(Echo);
         }
         
@@ -97,8 +97,6 @@ namespace IngameScript
 
             double PossibleAcceleration = GetMinThrustForce() / Controller.CalculateShipMass().TotalMass;
 
-            Echo(PossibleAcceleration.ToString());
-
             // use PD control control ship velocity
             // desired velocity is proportional to distance from the destination
 
@@ -108,8 +106,6 @@ namespace IngameScript
             {
                 DesiredVelocityVector = Vector3D.Normalize(DesiredVelocityVector) * MaxSpeed;
             }
-
-
 
             // Thrust vector needs to be P controlled so as the ship approaches the desired velocity thrust decreases
             Vector3D ThrustVector = DesiredVelocityVector - CurrentLinearVelocity;
@@ -123,6 +119,35 @@ namespace IngameScript
 
         }
 
+
+        public IEnumerator<int> MoveCoroutine()
+        {
+
+            while (true)
+            {
+                // Calculate desired destination vector
+                Vector3D localDestVector = destinationVector.ConvertToLocalPosition(controller);
+
+                // Get all thrusters and calculate max thrusts
+                GetThrusters();
+                CalcMaxEffectiveThrusts();
+
+                // Counter any gravity influencing the ship
+                Vector3D gravity = controller.GetNaturalGravity();
+
+                // Move in desired direction
+
+                // Calculate desired velocity
+                Vector3D desiredVelocity = localDestVector * velocityProportionalGain;
+                if(desiredVelocity.Length() > maxSpeed)
+                {
+                    desiredVelocity = Vector3D.Normalize(desiredVelocity) * maxSpeed;
+                }
+
+                yield return 0;
+            }
+            
+        }
 
         public void CalcMaxEffectiveThrusts()
         {
@@ -143,7 +168,7 @@ namespace IngameScript
 
         public void GetThrusters()
         {
-            GridTerminalSystem.GetBlocksOfType<IMyThrust>(AllThrusters);
+            GridTerminalSystem.GetBlocksOfType<IMyThrust>(allThrusters);
 
             // Create lists at each index for thrust directions array
             for (int i = 0; i < 6; i++)
@@ -152,16 +177,16 @@ namespace IngameScript
             }
 
             // Adding thrusters to lists depending on their direction
-            foreach (IMyThrust Thruster in AllThrusters)
+            foreach (IMyThrust thruster in allThrusters)
             {
 
-                foreach (Base6Directions.Direction Direction in Enum.GetValues(typeof(Base6Directions.Direction)))
+                foreach (Base6Directions.Direction direction in Enum.GetValues(typeof(Base6Directions.Direction)))
                 {
 
-                    if (Base6Directions.GetOppositeDirection(Thruster.Orientation.Forward) == Controller.Orientation.TransformDirection(Direction))
+                    if (Base6Directions.GetOppositeDirection(thruster.Orientation.Forward) == Controller.Orientation.TransformDirection(direction))
                     {
 
-                        ThrustersInDirections[(int)Direction].Add(Thruster);
+                        ThrustersInDirections[(int)direction].Add(thruster);
                         break;
 
                     }
