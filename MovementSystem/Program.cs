@@ -51,7 +51,7 @@ namespace IngameScript
             Controller = (IMyShipController)GridTerminalSystem.GetBlockWithName("PrimaryController");
             Runtime.EstablishCoroutines(Echo);
         }
-
+        
         public void Save()
         {
 
