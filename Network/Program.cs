@@ -28,6 +28,7 @@ namespace IngameScript
 
         //Listeners and display for sending and recieving data
         IMyBroadcastListener Listener;
+        IMyRadioAntenna antenna;
         IMyTerminalBlock mainProgBlock;
         List<IMyTextPanel> LCD = new List<IMyTextPanel>();
 
@@ -45,6 +46,8 @@ namespace IngameScript
         string packet;
 
         int blockCount;
+
+        int count = 0;
 
 
         //Functions ----------------------------------------------------------------------
@@ -74,7 +77,7 @@ namespace IngameScript
         //Function to send data
         public void SendMessage(string Contents)
         {
-            IGC.SendBroadcastMessage<string>("WaypointCom", Contents, TransmissionDistance.TransmissionDistanceMax);
+            IGC.SendBroadcastMessage<string>("Test", Contents, TransmissionDistance.TransmissionDistanceMax);
         }
 
         //function to receive data.
@@ -92,10 +95,11 @@ namespace IngameScript
         public void Init()
         {
             //Initialise and prepare variables to send and receive data.
-            Listener = IGC.RegisterBroadcastListener("WaypointCom");
+            Listener = IGC.RegisterBroadcastListener("Test");
             Listener.DisableMessageCallback();
             GridTerminalSystem.GetBlocksOfType<IMyTextPanel>(LCD);
             mainProgBlock = GridTerminalSystem.GetBlockWithName("MainProgBlock");
+            antenna = GridTerminalSystem.GetBlockWithName("Antenna") as IMyRadioAntenna;
 
 
             droneId = mainProgBlock.EntityId;
@@ -123,7 +127,22 @@ namespace IngameScript
                 Init();
             }
 
-            SendMessage(packet);
+            if (count >= 30)
+            {
+                antenna.Enabled = true;
+                Echo("enabled");
+            } 
+
+            if (count >= 31) 
+            {
+                SendMessage(DateTime.Now.ToString());
+                Echo("Disabled");
+                antenna.Enabled = false;
+                count = 0;
+            }
+
+            count++;
+            //Echo(count.ToString());
 
             //Check and receive data
             if (Listener.HasPendingMessage)
