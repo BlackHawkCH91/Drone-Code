@@ -73,6 +73,8 @@ namespace IngameScript
             // Coroutine will trigger when user presses run or when it triggers itself
             if (updateSource == UpdateType.Once || updateSource == UpdateType.Terminal)
             {
+                Echo("Stepping Coroutines");
+
                 CheckPausedCoroutines();
 
                 foreach (IEnumerator<int> coroutine in activeCoroutines)
@@ -147,13 +149,13 @@ namespace IngameScript
 
         private static void CheckPausedCoroutines()
         {
-
+            Echo("Checking paused coroutines - " + pausedCoroutines.Count() + " found");
             foreach(PausedCoroutine pausedCoroutine in pausedCoroutines)
             {
 
                 if (pausedCoroutine.ResumingNow())
                 {
-
+                    
                     activeCoroutines.Add(pausedCoroutine.coroutine);
                     pausedCoroutinesToRemove.Add(pausedCoroutine);
 
@@ -165,6 +167,7 @@ namespace IngameScript
 
             }
 
+            Echo("Resuming " + pausedCoroutinesToRemove.Count() + " coroutines");
             // Remove all coroutines that have been resumed
             foreach (PausedCoroutine pausedCoroutine in pausedCoroutinesToRemove)
             {
