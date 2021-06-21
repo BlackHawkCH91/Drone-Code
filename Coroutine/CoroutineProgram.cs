@@ -19,7 +19,12 @@ using VRageMath;
 
 namespace IngameScript
 {
-
+    /*
+     * 
+     * NOTES:
+     * - Coroutines execute in the order that they are added into the system
+     * 
+     */
     public static class Coroutine
     {
         private class PausedCoroutine
@@ -85,6 +90,8 @@ namespace IngameScript
                     if (hasMoreSteps)
                     {
 
+                        Echo("Yield value: " + coroutine.Current.ToString());
+
                         // if yield time is 0 then coroutine must be run next tick so do not create a "paused coroutine" for it
                         if (coroutine.Current > 0)
                         {
@@ -127,7 +134,7 @@ namespace IngameScript
 
             activeCoroutines.Add(Coroutine);
 
-            Echo("Coroutine Added, " + activeCoroutines.Count() + " active coroutines");
+            Echo("Coroutine Added, " + activeCoroutines.Count().ToString() + " active coroutines");
             return Coroutine;
 
         }
@@ -150,7 +157,7 @@ namespace IngameScript
 
         private static void CheckPausedCoroutines()
         {
-            Echo("Checking paused coroutines - " + pausedCoroutines.Count() + " found");
+            Echo("Checking paused coroutines - " + pausedCoroutines.Count().ToString() + " found");
             foreach(PausedCoroutine pausedCoroutine in pausedCoroutines)
             {
 
@@ -168,7 +175,7 @@ namespace IngameScript
 
             }
 
-            Echo("Resuming " + pausedCoroutinesToRemove.Count() + " coroutines");
+            Echo("Resuming " + pausedCoroutinesToRemove.Count().ToString() + " coroutines");
             // Remove all coroutines that have been resumed
             foreach (PausedCoroutine pausedCoroutine in pausedCoroutinesToRemove)
             {
