@@ -54,7 +54,7 @@ namespace IngameScript
 
         //Refined material counts:
 
-        Dictionary<string, int[]> refinedOre = new Dictionary<string, int[]>() {
+        Dictionary<string, int[]> ingots = new Dictionary<string, int[]>() {
         { "Stone", new int[] {0, 0} },
         { "Iron", new int[] {0, 0} },
         { "Nickel", new int[] {0, 0} },
@@ -95,13 +95,22 @@ namespace IngameScript
         { "SteelPlate", new int[] {0, 0} },
         { "Superconductor", new int[] {0, 0} },
         { "Thrust", new int[] {0, 0} },
-        { "ZoneChip", new int[] {0, 0} },
+        { "ZoneChip", new int[] {0, 0} }
+        };
+
+
+        Dictionary<string, int[]> ammo = new Dictionary<string, int[]>()
+        {
+            { "AutomaticRifleGun Mag 20rd", new int[] {0, 0} },
+            { "Missile200mm", new int[] {0, 0} },
+            { "NATO 25x184mm", new int[] {0, 0} },
+            { "NATO 5p56x45mm", new int[] {0, 0} },
         };
 
         List<IMyTerminalBlock> cargo = new List<IMyTerminalBlock>();
 
-        //Returns count for all ores
-        public void returnOres()
+        //Returns count for all items
+        public void displayInventory()
         {
             //Get all blocks that can hold items
             GridTerminalSystem.GetBlocksOfType<IMyTerminalBlock>(cargo);
@@ -114,27 +123,34 @@ namespace IngameScript
                     //Loop through amount of different items
                     for (int a = 0; a < cargo[i].GetInventory(0).ItemCount; a++)
                     {
-                        //Check if the item is an ore
+                        //Check if the item is an ore, etc...
                         if (cargo[i].GetInventory(0).GetItemAt(a).Value.ToString().Contains("Ore"))
                         {
                             //Add count of item to its respective key in dictionary
                             ores[cargo[i].GetInventory(0).GetItemAt(a).Value.Type.SubtypeId.ToString()][0] += cargo[i].GetInventory(0).GetItemAt(a).Value.Amount.ToIntSafe();
+                        } else if (cargo[i].GetInventory(0).GetItemAt(a).Value.ToString().Contains("Ingot"))
+                        {
+                            ingots[cargo[i].GetInventory(0).GetItemAt(a).Value.Type.SubtypeId.ToString()][0] += cargo[i].GetInventory(0).GetItemAt(a).Value.Amount.ToIntSafe();
+                        } else if (cargo[i].GetInventory(0).GetItemAt(a).Value.ToString().Contains("Component"))
+                        {
+                            components[cargo[i].GetInventory(0).GetItemAt(a).Value.Type.SubtypeId.ToString()][0] += cargo[i].GetInventory(0).GetItemAt(a).Value.Amount.ToIntSafe();
+                        } else if (cargo[i].GetInventory(0).GetItemAt(a).Value.ToString().Contains("Ammo"))
+                        {
+                            ammo[cargo[i].GetInventory(0).GetItemAt(a).Value.Type.SubtypeId.ToString()][0] += cargo[i].GetInventory(0).GetItemAt(a).Value.Amount.ToIntSafe();
                         }
                     }
                 }
-
                 //Echo(cargo[i].ToString());
             }
         }
 
-        IMyCargoContainer test;
 
-
+        List<IMyTextPanel> displayPanels = new List<IMyTextPanel>();
         //Initialise things in script
         public void init()
         {
             GridTerminalSystem.GetBlocksOfType<IMyTerminalBlock>(cargo);
-            test = GridTerminalSystem.GetBlockWithName("Cargo 1") as IMyCargoContainer;
+            GridTerminalSystem.GetBlocksOfType<IMyTextPanel>(displayPanels);
         }
 
 
@@ -156,10 +172,46 @@ namespace IngameScript
             {
                 init();
                 setup = true;
-                returnOres();
             }
 
-            Echo(ores["Cobalt"][0].ToString());
+            /*returnOres();
+            returnIngots();
+            returnComponents();
+            returnAmmo();*/
+
+            displayInventory();
+
+            string oreDisplayString = "";
+            string ingotDisplayString = "";
+            string compDisplayString = "";
+            string ammoDisplayString = "";
+
+            foreach (KeyValuePair<string, int[]> oreDisplay in ores)
+            {
+                oreDisplayString += oreDisplay.Key + " " + oreDisplay.Value[0].ToString() + " " + oreDisplay.Value[1].ToString() + "\n";
+                ores[oreDisplay.Key][0] = 0;
+            }
+            foreach (KeyValuePair<string, int[]> oreDisplay in ingots)
+            {
+                ingotDisplayString += oreDisplay.Key + " " + oreDisplay.Value[0].ToString() + " " + oreDisplay.Value[1].ToString() + "\n";
+                ingots[oreDisplay.Key][0] = 0;
+            }
+            foreach (KeyValuePair<string, int[]> oreDisplay in components)
+            {
+                compDisplayString += oreDisplay.Key + " " + oreDisplay.Value[0].ToString() + " " + oreDisplay.Value[1].ToString() + "\n";
+                components[oreDisplay.Key][0] = 0;
+            }
+            foreach (KeyValuePair<string, int[]> oreDisplay in ammo)
+            {
+                ammoDisplayString += oreDisplay.Key + " " + oreDisplay.Value[0].ToString() + " " + oreDisplay.Value[1].ToString() + "\n";
+                ammo[oreDisplay.Key][0] = 0;
+            }
+
+            displayPanels[0].WriteText(oreDisplayString);
+            displayPanels[1].WriteText(ingotDisplayString);
+            displayPanels[2].WriteText(compDisplayString);
+            displayPanels[3].WriteText(ammoDisplayString);
+            //Echo(ores["Cobalt"][0].ToString());
         }
     }
 }
