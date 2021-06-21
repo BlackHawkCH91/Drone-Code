@@ -86,7 +86,7 @@ namespace IngameScript
                         {
                             // Update frequency is changed to update once if it is not already set
                             Runtime.UpdateFrequency |= UpdateFrequency.Once;
-                            PauseCoroutine(coroutine);
+                            coroutine.PauseCoroutine();
                         }
 
                         // Update frequency is changed to update once if it is not already set
