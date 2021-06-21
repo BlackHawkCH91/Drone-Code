@@ -88,6 +88,7 @@ namespace IngameScript
                         // if yield time is 0 then coroutine must be run next tick so do not create a "paused coroutine" for it
                         if (coroutine.Current > 0)
                         {
+                            Echo("Pausing coroutine");
                             // Update frequency is changed to update once if it is not already set
                             Runtime.UpdateFrequency |= UpdateFrequency.Once;
                             coroutine.PauseCoroutine();
