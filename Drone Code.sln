@@ -15,6 +15,10 @@ Project("{D954291E-2A0B-460D-934E-DC6B0785DB48}") = "Vector3DExtensions", "Vecto
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Outpost", "Outpost\Outpost.csproj", "{D7769A5C-4E12-41FF-BF4D-9EDF0FF53D53}"
 EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Test Code", "Test Code", "{92BAC0A1-993A-40F9-9BF5-9AAAAEEF5433}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "JSON_Parser", "JSON_Parser\JSON_Parser.csproj", "{DA6BBB91-CA6E-4512-957C-385282559837}"
+EndProject
 Global
 	GlobalSection(SharedMSBuildProjectFiles) = preSolution
 		Coroutine\Coroutine.projitems*{4fea1d8d-11cc-4d65-993b-821aad1e7ed6}*SharedItemsImports = 4
@@ -25,15 +29,41 @@ Global
 		Vector3DExtensions\Vector3DExtensions.projitems*{df63a6bf-0ce7-4a83-9475-2c405c25bd0f}*SharedItemsImports = 13
 	EndGlobalSection
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
 		Debug|x64 = Debug|x64
+		Release|Any CPU = Release|Any CPU
+		Release|x64 = Release|x64
 	EndGlobalSection
 	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{059CAF3A-F0C7-4284-A14C-FC0F11E82B15}.Debug|Any CPU.ActiveCfg = Debug|x64
 		{059CAF3A-F0C7-4284-A14C-FC0F11E82B15}.Debug|x64.ActiveCfg = Debug|x64
 		{059CAF3A-F0C7-4284-A14C-FC0F11E82B15}.Debug|x64.Build.0 = Debug|x64
+		{059CAF3A-F0C7-4284-A14C-FC0F11E82B15}.Release|Any CPU.ActiveCfg = Debug|x64
+		{059CAF3A-F0C7-4284-A14C-FC0F11E82B15}.Release|Any CPU.Build.0 = Debug|x64
+		{059CAF3A-F0C7-4284-A14C-FC0F11E82B15}.Release|x64.ActiveCfg = Debug|x64
+		{059CAF3A-F0C7-4284-A14C-FC0F11E82B15}.Release|x64.Build.0 = Debug|x64
+		{4FEA1D8D-11CC-4D65-993B-821AAD1E7ED6}.Debug|Any CPU.ActiveCfg = Debug|x64
 		{4FEA1D8D-11CC-4D65-993B-821AAD1E7ED6}.Debug|x64.ActiveCfg = Debug|x64
 		{4FEA1D8D-11CC-4D65-993B-821AAD1E7ED6}.Debug|x64.Build.0 = Debug|x64
+		{4FEA1D8D-11CC-4D65-993B-821AAD1E7ED6}.Release|Any CPU.ActiveCfg = Debug|x64
+		{4FEA1D8D-11CC-4D65-993B-821AAD1E7ED6}.Release|Any CPU.Build.0 = Debug|x64
+		{4FEA1D8D-11CC-4D65-993B-821AAD1E7ED6}.Release|x64.ActiveCfg = Debug|x64
+		{4FEA1D8D-11CC-4D65-993B-821AAD1E7ED6}.Release|x64.Build.0 = Debug|x64
+		{D7769A5C-4E12-41FF-BF4D-9EDF0FF53D53}.Debug|Any CPU.ActiveCfg = Debug|x64
 		{D7769A5C-4E12-41FF-BF4D-9EDF0FF53D53}.Debug|x64.ActiveCfg = Debug|x64
 		{D7769A5C-4E12-41FF-BF4D-9EDF0FF53D53}.Debug|x64.Build.0 = Debug|x64
+		{D7769A5C-4E12-41FF-BF4D-9EDF0FF53D53}.Release|Any CPU.ActiveCfg = Debug|x64
+		{D7769A5C-4E12-41FF-BF4D-9EDF0FF53D53}.Release|Any CPU.Build.0 = Debug|x64
+		{D7769A5C-4E12-41FF-BF4D-9EDF0FF53D53}.Release|x64.ActiveCfg = Debug|x64
+		{D7769A5C-4E12-41FF-BF4D-9EDF0FF53D53}.Release|x64.Build.0 = Debug|x64
+		{DA6BBB91-CA6E-4512-957C-385282559837}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{DA6BBB91-CA6E-4512-957C-385282559837}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{DA6BBB91-CA6E-4512-957C-385282559837}.Debug|x64.ActiveCfg = Debug|Any CPU
+		{DA6BBB91-CA6E-4512-957C-385282559837}.Debug|x64.Build.0 = Debug|Any CPU
+		{DA6BBB91-CA6E-4512-957C-385282559837}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{DA6BBB91-CA6E-4512-957C-385282559837}.Release|Any CPU.Build.0 = Release|Any CPU
+		{DA6BBB91-CA6E-4512-957C-385282559837}.Release|x64.ActiveCfg = Release|Any CPU
+		{DA6BBB91-CA6E-4512-957C-385282559837}.Release|x64.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
@@ -41,6 +71,7 @@ Global
 	GlobalSection(NestedProjects) = preSolution
 		{807E7F93-033E-4D6D-A4BB-20385F3F3B1F} = {611643A1-843E-4B4C-9F30-A47A8786B1A4}
 		{DF63A6BF-0CE7-4A83-9475-2C405C25BD0F} = {611643A1-843E-4B4C-9F30-A47A8786B1A4}
+		{DA6BBB91-CA6E-4512-957C-385282559837} = {92BAC0A1-993A-40F9-9BF5-9AAAAEEF5433}
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution
 		SolutionGuid = {C4CF8A6F-F7EF-4814-93B5-C21F41C3EE0B}
