@@ -25,7 +25,6 @@ namespace IngameScript
         //Define variables
 
         bool setup = false;
-
         //Variables for cargo containers
 
         //              ---- NOTICE ---- 
