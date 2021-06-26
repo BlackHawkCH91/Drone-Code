@@ -1,14 +1,32 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Numerics;
 
 
 namespace JSON_Parser
 {
+    public class Vector3
+    {
+        double x;
+        double y;
+        double z;
+
+        public Vector3(double fX, double fY, double fZ)
+        {
+            x = fX;
+            y = fY;
+            z = fZ;
+        }
+
+        public string toString()
+        {
+            return "{X:" + x + " Y:" + y + " Z:" + z + "}";
+        }
+    }
+
     public class drone
     {
         public string droneType;
-        public string position;
+        public Vector3 position;
         public float health;
         public float energy;
         public float hydrogen;
@@ -18,7 +36,7 @@ namespace JSON_Parser
         public object[] test;
         public object[] test2;
 
-        public drone(string fDroneType, string fPosition, float fHealth, float fEnergy, float fHydrogen, string fStatus, string fCurrentJob, string fCurrentAction, object[] fTest, object[] fTest2)
+        public drone(string fDroneType, Vector3 fPosition, float fHealth, float fEnergy, float fHydrogen, string fStatus, string fCurrentJob, string fCurrentAction, object[] fTest, object[] fTest2)
         {
             droneType = fDroneType;
             position = fPosition;
@@ -35,6 +53,27 @@ namespace JSON_Parser
 
     class Program
     {
+        public static Vector3 StringToVector3(string sVector)
+        {
+            //Remove curly brackets
+            if (sVector.StartsWith("{") && sVector.EndsWith("}"))
+            {
+                sVector = sVector.Substring(1, sVector.Length - 2);
+            }
+
+            //Split the string where there is whitespace (commas are not used for some reason)
+            string[] sArray = sVector.Split(' ');
+
+            //Parse the values into floats and create a Vector3
+            Vector3 position = new Vector3(
+                float.Parse(sArray[0].Substring(2, sArray[0].Length - 2)),
+                float.Parse(sArray[1].Substring(2, sArray[1].Length - 2)),
+                float.Parse(sArray[2].Substring(2, sArray[2].Length - 2))
+            );
+
+            return position;
+        }
+
         //Converts drone class to object array
         public static object[] DroneToObj(drone DC)
         {
@@ -52,6 +91,9 @@ namespace JSON_Parser
                 {
                     //If item in object array is an object array, call itself (recursive(
                     finalStr += ObjectToString(objArr[i] as object[]);
+                } else if (objArr[i].GetType() == typeof(Vector3)) {
+                    Vector3 temp = objArr[i] as Vector3;
+                    finalStr += temp.toString();
                 } else
                 {
                     //Add to final string
@@ -79,7 +121,7 @@ namespace JSON_Parser
         }
 
         //Convert dictionary to string (may be replaced to only work on object arrays to make it more
-        //universal. If done, dictionaries will need to be converted to object array).
+        //universal. If done, dictionaries will need to be converted to an object array).
         public static string DictToString(Dictionary<long, object[]> dictionary)
         {
             string outputString = "";
@@ -97,6 +139,10 @@ namespace JSON_Parser
                     if (dict.Value[i].GetType() == typeof(object[]))
                     {
                         outputString += ObjectToString(dict.Value[i] as object[]);
+                    } else if (dict.Value[i].GetType() == typeof(Vector3))
+                    {
+                        Vector3 temp = dict.Value[i] as Vector3;
+                        outputString += temp.toString();
                     }
                     else
                     {
@@ -248,6 +294,10 @@ namespace JSON_Parser
                         temp = temp.Remove(temp.Length - 1, 1);
                         objArr[counter] = temp;
                     }
+                    else if (item[0] == '{')
+                    {
+                        objArr[counter] = StringToVector3(item);
+                    }
                     else if (item.Contains('.'))
                     {
                         double temp = Convert.ToDouble(item);
@@ -289,6 +339,10 @@ namespace JSON_Parser
                     output += "[";
                     output += displayThing(array[i] as object[]);
                     output += "]";
+                } else if (array[i].GetType() == typeof(Vector3))
+                {
+                    Vector3 temp = array[i] as Vector3;
+                    output += temp.toString();
                 }
                 else
                 {
@@ -310,8 +364,8 @@ namespace JSON_Parser
             
 
             //Add drone
-            testDict.Add(1, DroneToObj(new drone("miner", "(X:2 Y:10 Z:32)", 1, 0.8f, 0.6f, "Safe", "Cobalt", "Travelling-Cobalt", new object[] { new object[] { "obj2", 34 }, 1, 4, "ree" }, new object[] { "ih8mylife", 432 })));
-            //testDict.Add(4, DroneToObj(new drone("miner", new Vector3(4, 1, 2), 1, 0.5f, 0.7f, "Safe", "Iron", "Travelling | Outpost1", new object[] { new object[] { 234, "str" }, 7, 3, "Fds" 
+            testDict.Add(1, DroneToObj(new drone("miner", new Vector3(2, 3, 4), 1, 0.8f, 0.6f, "Safe", "Cobalt", "Travelling-Cobalt", new object[] { new object[] { "obj2", 34 }, 1, 4, "ree" }, new object[] { "ih8mylife", 432 })));
+            testDict.Add(3, DroneToObj(new drone("miner", new Vector3(4, 2, 7), 1, 0.4f, 0.7f, "Safe", "Iron", "Travelling-Outpost1", new object[] { new object[] { "oded", 344 }, 16, 3, "tte" }, new object[] { "Thing", 234 })));
 
             //Convert to string
             string strDict = DictToString(testDict);
@@ -327,14 +381,22 @@ namespace JSON_Parser
             testString = testString.Remove(0, 1);
             testString = testString.Remove(testString.Length - 1, 1);
 
-            object[] decoded = StringToObject(strDictArr[0]);
+            List<object[]> decoded = new List<object[]>();
+            foreach (string drone in strDictArr)
+            {
+                decoded.Add(StringToObject(drone));
+            }
 
             Console.WriteLine("\nObject array contents: ");
-            Console.WriteLine(displayThing(decoded));
 
-            foreach (object item in decoded)
+
+            foreach (object[] item in decoded)
             {
-                Console.WriteLine(item.ToString());
+                Console.WriteLine(displayThing(item));
+                /*foreach (object obj in item as object[])
+                {
+                    Console.WriteLine(displayThing(obj));
+                }*/
             }
         }
     }
