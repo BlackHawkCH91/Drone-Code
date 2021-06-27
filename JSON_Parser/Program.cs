@@ -4,6 +4,7 @@ using System.Collections.Generic;
 
 namespace JSON_Parser
 {
+    //Fake Vector3 class to mirror SE's vector3 system
     public class Vector3
     {
         double x;
@@ -19,10 +20,13 @@ namespace JSON_Parser
 
         public string toString()
         {
+
+            //Outputs vector3 in the same format SE does
             return "{X:" + x + " Y:" + y + " Z:" + z + "}";
         }
     }
 
+    //Current class for the drone. More information may need to be added. Currently a template.
     public class drone
     {
         public string droneType;
@@ -53,6 +57,7 @@ namespace JSON_Parser
 
     class Program
     {
+        //Converts a string back into a vector3 
         public static Vector3 StringToVector3(string sVector)
         {
             //Remove curly brackets
@@ -61,7 +66,7 @@ namespace JSON_Parser
                 sVector = sVector.Substring(1, sVector.Length - 2);
             }
 
-            //Split the string where there is whitespace (commas are not used for some reason)
+            //Split the string where there is whitespace
             string[] sArray = sVector.Split(' ');
 
             //Parse the values into floats and create a Vector3
@@ -91,12 +96,15 @@ namespace JSON_Parser
                 {
                     //If item in object array is an object array, call itself (recursive(
                     finalStr += ObjectToString(objArr[i] as object[]);
+
                 } else if (objArr[i].GetType() == typeof(Vector3)) {
+                    
+                    //If it is a vector, convert to string, but don't add double quotes
                     Vector3 temp = objArr[i] as Vector3;
                     finalStr += temp.toString();
                 } else
                 {
-                    //Add to final string
+                    //Add double quotes to indicate that field is a string
                     if (objArr[i].GetType() == typeof(string))
                     {
                         finalStr += '"';
@@ -171,7 +179,7 @@ namespace JSON_Parser
                 //If the object is not the last item, add this to make separating objects easier
                 if (counter < dictionary.Count)
                 {
-                    outputString += "|";
+                    outputString += "\n";
                 }
 
                 counter++;
@@ -182,8 +190,6 @@ namespace JSON_Parser
         //Gets the positions of square brackets in string
         public static Dictionary<string, List<int>> getBracketPos(string str)
         {
-            //string trimmedStr = str.Remove(0, 1);
-            //trimmedStr = trimmedStr.Remove(trimmedStr.Length - 1, 1);
             //Define dictionary to store positions of brackets in strings
             Dictionary<string, List<int>> bracketDict = new Dictionary<string, List<int>>();
             bracketDict.Add("[", new List<int>());
@@ -209,14 +215,11 @@ namespace JSON_Parser
 
         static object[] StringToObject(string strObject)
         {
-            //Console.WriteLine("1: " + strObject);
 
             //Dict to store linked brackets, test to get bracket positions
             Dictionary<int, int> linked = new Dictionary<int, int>();
             string trimmedObj = strObject.Remove(0, 1);
             trimmedObj = trimmedObj.Remove(trimmedObj.Length - 1, 1);
-
-            //Console.WriteLine("Trimmed:" + trimmedObj);
 
             Dictionary<string, List<int>> test = getBracketPos(trimmedObj);
 
@@ -240,7 +243,6 @@ namespace JSON_Parser
 
             //Loop through linked list to find children and parents.
 
-
             bool isChild = false;
             string r = trimmedObj;
             List<object[]> childObj = new List<object[]>();
@@ -248,32 +250,25 @@ namespace JSON_Parser
             //Loop through all brackets
             foreach (KeyValuePair<int, int> child in linked)
             {
-                //Console.WriteLine("Thing: " + child.Key);
                 //Check if bracket is a "child" to the other
                 foreach (KeyValuePair<int, int> parent in linked)
                 {
-                    //Console.WriteLine(child.Key + " > " + parent.Key + " | " + child.Key + " < " + parent.Value);
 
                     if (child.Key > parent.Key && child.Key < parent.Value)
                     {
                         isChild = true;
                     }
-
-                    //Console.WriteLine(child.Key + " > " + parent.Key + " | " + (child.Key > parent.Key));
                 }
 
                 //If not, recursive and remove any other brackets
                 if (!(isChild))
                 {
-                    //Console.WriteLine("Sub: " + r.Substring(child.Key, (child.Value + 1) - child.Key));
                     childObj.Add(StringToObject(r.Substring(child.Key, (child.Value + 1) - child.Key)));
                     r = r.Remove(child.Key, (child.Value + 1) - child.Key);
                 }
 
                 isChild = false;
             }
-
-            //Console.WriteLine("Child: " + childObj[childObj.Count - 1]);
 
             //Once brackets are removed, split string into array
             string[] array = r.Split(',');
@@ -284,7 +279,6 @@ namespace JSON_Parser
             int objectCounter = childObj.Count - 1;
             foreach (string item in array)
             {
-                //Console.WriteLine("For: " + item);
                 if (item.Length != 0)
                 {
                     if (item[0] == '"')
@@ -335,11 +329,13 @@ namespace JSON_Parser
             string output = "";
             for (int i = 0; i < array.Length; i++)
             {
-                if (array[i].GetType() == typeof(object[])) {
+                if (array[i].GetType() == typeof(object[]))
+                {
                     output += "[";
                     output += displayThing(array[i] as object[]);
                     output += "]";
-                } else if (array[i].GetType() == typeof(Vector3))
+                }
+                else if (array[i].GetType() == typeof(Vector3))
                 {
                     Vector3 temp = array[i] as Vector3;
                     output += temp.toString();
@@ -352,27 +348,27 @@ namespace JSON_Parser
                 {
                     output += ", ";
                 }
-            } 
+            }
 
             return output;
         }
 
         static void Main(string[] args)
         {
+            Dictionary<long, object[]> droneDict = new Dictionary<long, object[]>();
             //Dictionary to store drones and dictionary to store linked brackets
-            Dictionary<long, object[]> testDict = new Dictionary<long, object[]>();
-            
 
             //Add drone
-            testDict.Add(1, DroneToObj(new drone("miner", new Vector3(2, 3, 4), 1, 0.8f, 0.6f, "Safe", "Cobalt", "Travelling-Cobalt", new object[] { new object[] { "obj2", 34 }, 1, 4, "ree" }, new object[] { "ih8mylife", 432 })));
-            testDict.Add(3, DroneToObj(new drone("miner", new Vector3(4, 2, 7), 1, 0.4f, 0.7f, "Safe", "Iron", "Travelling-Outpost1", new object[] { new object[] { "oded", 344 }, 16, 3, "tte" }, new object[] { "Thing", 234 })));
+            droneDict.Add(1, DroneToObj(new drone("miner", new Vector3(2, 3, 4), 1, 0.8f, 0.6f, "Safe", "Cobalt", "Travelling-Cobalt", new object[] { new object[] { "obj2", 34 }, 1, 4, "ree" }, new object[] { "ih8mylife", 432 })));
+            droneDict.Add(3, DroneToObj(new drone("miner", new Vector3(4, 2, 7), 1, 0.4f, 0.7f, "Safe", "Iron", "Travelling-Outpost1", new object[] { new object[] { "oded", 344 }, 16, 3, "tte" }, new object[] { "Thing", 234 })));
+            droneDict.Add(4, DroneToObj(new drone("combat", new Vector3(12, 43, 1), 1, 1f, 1f, "Safe", "", "Patrolling-Outpost1", new object[] { new object[] { "thing", 234 }, 154, 13, "test" }, new object[] { "idk", 1337 })));
 
             //Convert to string
-            string strDict = DictToString(testDict);
+            string strDict = DictToString(droneDict);
             Console.WriteLine("String: ");
             Console.WriteLine(strDict);
 
-            string[] strDictArr = strDict.Split("|");
+            string[] strDictArr = strDict.Split("\n");
 
             //Gets the positions of brackets and "links" them, but may not work in terms of
             //extracting the data
@@ -393,11 +389,30 @@ namespace JSON_Parser
             foreach (object[] item in decoded)
             {
                 Console.WriteLine(displayThing(item));
-                /*foreach (object obj in item as object[])
-                {
-                    Console.WriteLine(displayThing(obj));
-                }*/
             }
+
+
+            string storage = DictToString(droneDict);
+
+            //TODO:
+
+            /*
+             * Make a string database. This process is simple. Tough part is updating drone information efficiently.
+             * Possible method of storing drones: If drones are stored in order, a simple forloop can loop through
+             * x amount of \n, removing the currently stored string and then adding a new record to that row.
+             * 
+             * Method 2: The storage string will only be updated every time the game is saved. A simple object to string
+             * will work here.
+             * 
+             * I doubt this code can really be improved. Once the universal encoding functions have been made, merge
+             * to main and start transitioning code to SE. Make use of coroutines as this code is probably inefficient.
+             * 
+             * 
+             * Ways to improve code:
+             * 
+             * Instead of having separate functions to find linked brackets and then running code to extract data from
+             * said brackets, try to make it one process (if thats even possible. GL with this one)
+             */
         }
     }
 }
