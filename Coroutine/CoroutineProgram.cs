@@ -23,6 +23,7 @@ namespace IngameScript
      * 
      * NOTES:
      * - Coroutines execute in the order that they are added into the system
+     * - There are 60 ticks per ingame second
      * 
      */
     public static class Coroutine

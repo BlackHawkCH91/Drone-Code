@@ -25,14 +25,14 @@ namespace IngameScript
         double maxSpeed = 100;
         double velocityProportionalGain = 0.125;
 
-        Vector3D destinationVector = new Vector3(-37806.02, -36183.24, -36770.72);
-        Dictionary<Base6Directions.Direction, ThrustGroup> thrustDirections = new Dictionary<Base6Directions.Direction, ThrustGroup>();
+        Vector3D destinationVector = new Vector3(31273.08, -1882.8, 52451.49);
+        List<ThrustGroup> thrustGroups = new List<ThrustGroup>();
         IMyShipController controller;
 
         public Program()
         {
 
-            controller = (IMyShipController)GridTerminalSystem.GetBlockWithName("PrimaryController");
+            controller = GetMainRemoteControl();
             Runtime.EstablishCoroutines();
             Coroutine.AddCoroutine(MoveCoroutine);
 
@@ -55,6 +55,41 @@ namespace IngameScript
 
         public IEnumerator<int> MoveCoroutine()
         {
+            // Display controller direction vector
+            controller.CustomName = controller.WorldMatrix.Forward.ToString();
+            controller.ShowOnHUD = true;
+
+            while (true)
+            {
+                // Get thrusters and their orientations
+                GetThrusters(out thrustGroups);
+
+                // Counter any gravity influencing the ship
+                CounterGravity();
+
+                // Calculate desired destination vector
+                Vector3D localDestVector = destinationVector.ConvertToLocalPosition(controller);
+
+                // Calculate desired velocity
+                Vector3D desiredVelocity = localDestVector * velocityProportionalGain;
+                if (desiredVelocity.Length() > maxSpeed)
+                {
+                    desiredVelocity = Vector3D.Normalize(desiredVelocity) * maxSpeed;
+                }
+
+                // Apply thrust to reach desired velocity
+
+
+
+                yield return 0;
+
+            }
+            
+
+        }
+
+        public IEnumerator<int> temp()
+        {
 
             while (true)
             {
@@ -62,7 +97,7 @@ namespace IngameScript
                 Vector3D localDestVector = destinationVector.ConvertToLocalPosition(controller);
 
                 // Get thrusters
-                GetThrusters();
+                GetThrusters(out thrustGroups);
 
                 // Counter any gravity influencing the ship
                 CounterGravity();
@@ -79,49 +114,83 @@ namespace IngameScript
             
         }
 
-        public void GetThrusters()
+        public IMyShipController GetMainRemoteControl()
         {
-            // Create thruster groups
-            foreach (Base6Directions.Direction direction in Enum.GetValues(typeof(Base6Directions.Direction)))
+            // Get all remote control objects
+            List<IMyRemoteControl> remoteControls = new List<IMyRemoteControl>();
+            GridTerminalSystem.GetBlocksOfType(remoteControls);
+
+            // If main controller is set then return this
+            foreach(IMyRemoteControl controller in remoteControls)
             {
-                thrustDirections.Add(direction, new ThrustGroup());
+                if (controller.IsMainCockpit)
+                {
+                    return controller;
+                }
             }
+
+            // If there is no main controller return first controller in list
+            return remoteControls[0];
+
+            // If there are no remote controls throw exception
+            throw new Exception("No remote controls found");
+        }
+
+        public void GetThrusters(out List<ThrustGroup> ThrustGroupArray)
+        {
+            // Clear any previous thruster groups
+            ThrustGroupArray = new List<ThrustGroup>();
 
             // Get all thrusters
             List<IMyThrust> allThrusters = new List<IMyThrust>();
-            GridTerminalSystem.GetBlocksOfType<IMyThrust>(allThrusters);
+            GridTerminalSystem.GetBlocksOfType(allThrusters);
 
             // Adding thrusters to groups depending on their direction
             foreach (IMyThrust thruster in allThrusters)
             {
-                // Corrects the directions to use the controller as a reference
-                Base6Directions.Direction correctedForwardDirection = controller.Orientation.TransformDirection(thruster.Orientation.Forward);
+                // Get thrust direction of thruster by using worldmatrix.backwards
+                Vector3D thrustDirection = thruster.WorldMatrix.Backward;
 
-                // Add the thruster to the direction that it's thrust is pointing in - opposite of it's forward direction
-                thrustDirections[Base6Directions.GetOppositeDirection(correctedForwardDirection)].AddThruster(thruster);
+                bool thrustGroupFound = false;
+                // Check if a thrust group for this direction exists, if it does then add this thruster to it and stop checking directions
+                foreach(ThrustGroup thrustGroup in ThrustGroupArray)
+                {
+                    if(thrustGroup.thrustDirection == thrustDirection)
+                    {
+                        thrustGroup.AddThruster(thruster);
+                        thrustGroupFound = true;
+                        break;
+                    }
+                }
+
+                // If there is not a thrust group for this direction, create a new one using this thruster
+                if (!thrustGroupFound)
+                {
+                    ThrustGroupArray.Add(new ThrustGroup(thrustDirection, thruster));
+                }
+
             }
+
         }
 
         public void CounterGravity()
         {
-            // Get total gravity force vector (f = m*a)
-            Vector3D gravity = controller.GetNaturalGravity() * controller.CalculateShipMass().TotalMass;
+            // Get gravity and mass
+            Vector3D gravity = controller.GetNaturalGravity();
+            double shipMass = controller.CalculateShipMass().PhysicalMass;
 
-            // Calculate how much force gravity is applying in each direction and apply thrust in that direction
-            foreach (Base6Directions.Direction direction in Enum.GetValues(typeof(Base6Directions.Direction)))
+            // Apply thrusts
+            foreach (ThrustGroup thrustGroup in thrustGroups)
             {
-                Vector3D directionVector = Base6Directions.GetVector(direction);
-                Vector3D gravityForceVector = Vector3D.ProjectOnVector(ref gravity, ref directionVector);
-                double gravityForce = gravityForceVector.Length();
 
-                // If gravity force is negative then it is working on the opposite axis - set to 0
-                if(gravityForce < 0)
+                double thrustToApply = thrustGroup.CalcThrustEffectiveness(gravity) * shipMass * gravity.Length() / thrustGroup.maxEffectiveThrust;
+                foreach (IMyThrust thruster in thrustGroup.thrusters)
                 {
-                    gravityForce = 0;
+                    thruster.CustomName = thrustToApply.ToString();
+                    thruster.ShowOnHUD = true;
                 }
 
-                // Get thrust group for direction and apply thrust force
-                thrustDirections[direction].ApplyThrustForce(gravityForce);
+                thrustGroup.ApplyThrustPercentage(thrustToApply);
 
             }
         }

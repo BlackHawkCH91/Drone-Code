@@ -25,23 +25,29 @@ namespace IngameScript
         public class ThrustGroup
         {
             public List<IMyThrust> thrusters;
-            public double maxThrust;
+            public Vector3D thrustDirection;
+            public double maxEffectiveThrust;
+            public double currentThrust;
+            public double availableThrust;
 
-            public ThrustGroup()
+            public ThrustGroup(Vector3D ThrustDirection)
             {
                 thrusters = new List<IMyThrust>();
-                maxThrust = 0;
+                thrustDirection = ThrustDirection;
+                maxEffectiveThrust = 0;
             }
-            public ThrustGroup(IMyThrust Thruster)
+            public ThrustGroup(Vector3D ThrustDirection, IMyThrust Thruster)
             {
                 thrusters = new List<IMyThrust>();
+                thrustDirection = ThrustDirection;
                 thrusters.Add(Thruster);
                 CalcMaxEffectiveThrust();
             }
 
-            public ThrustGroup(List<IMyThrust> ThrusterList)
+            public ThrustGroup(Vector3D ThrustDirection, List<IMyThrust> ThrusterList)
             {
                 thrusters = ThrusterList;
+                thrustDirection = ThrustDirection;
                 CalcMaxEffectiveThrust();
             }
 
@@ -50,13 +56,19 @@ namespace IngameScript
                 thrusters.Add(Thruster);
                 CalcMaxEffectiveThrust();
             }
+
             private void CalcMaxEffectiveThrust()
             {
-                maxThrust = 0;
+                maxEffectiveThrust = 0;
                 foreach(IMyThrust thruster in thrusters)
                 {
-                    maxThrust += thruster.MaxEffectiveThrust;
+                    maxEffectiveThrust += thruster.MaxEffectiveThrust;
                 }
+            }
+
+            public double CalcThrustEffectiveness(Vector3D DirectionVector)
+            {
+                return -thrustDirection.Dot(Vector3D.Normalize(DirectionVector));
             }
 
             public void ApplyThrustPercentage(double ThrustPercentage)
@@ -65,13 +77,9 @@ namespace IngameScript
                 {
                     thruster.ThrustOverridePercentage = (float)ThrustPercentage;
                 }
-            }
-            public void ApplyThrustForce(double ThrustForce)
-            {
-                foreach(IMyThrust thruster in thrusters)
-                {
-                    thruster.ThrustOverride = (float)(ThrustForce / thrusters.Count());
-                }
+
+                currentThrust = ThrustPercentage * maxEffectiveThrust;
+                availableThrust = maxEffectiveThrust - currentThrust;
             }
         }
     }
