@@ -94,7 +94,7 @@ namespace JSON_Parser
             {
                 if (objArr[i].GetType() == typeof(object[]))
                 {
-                    //If item in object array is an object array, call itself (recursive(
+                    //If item in object array is an object array, call itself (recursive)
                     finalStr += ObjectToString(objArr[i] as object[]);
 
                 } else if (objArr[i].GetType() == typeof(Vector3)) {
@@ -221,20 +221,26 @@ namespace JSON_Parser
             string trimmedObj = strObject.Remove(0, 1);
             trimmedObj = trimmedObj.Remove(trimmedObj.Length - 1, 1);
 
+            //Get all bracket positions
             Dictionary<string, List<int>> test = getBracketPos(trimmedObj);
 
             object[] objArr;
 
 
             //This finds the bracket links.
+            //Loop through open brackets (start at the end of dictionary)
             for (int i = test["["].Count - 1; i >= 0; i--)
             {
                 int difference = 0;
+                //loop through closing brackets
                 foreach (int bracketPos in test["]"])
                 {
+                    //Find position difference in string
                     difference = bracketPos - test["["][i];
+                    //If the difference is not negative and dictionary does not contain link
                     if (difference > 0 && !(linked.ContainsValue(bracketPos)))
                     {
+                        //Add position of opening and closing bracket.
                         linked.Add(test["["][i], bracketPos);
                         break;
                     }
