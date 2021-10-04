@@ -3,7 +3,7 @@ using System.Collections.Generic;
 
 namespace SatCom
 {
-    //custom vector3 class so that toString method is the same in SE
+    //custom vector3 class so that toString is the same in SE
     public class Vector3
     {
         double x;
@@ -25,8 +25,13 @@ namespace SatCom
 
     class Program
     {
+        //Global vars:
+
+        public static Dictionary<string, List<int>> bracketPos = new Dictionary<string, List<int>>();
+
+
         //Converts a string back into a vector3
-        public static Vector3 StringToVector3(string sVector)
+        static Vector3 StringToVector3(string sVector)
         {
             //Remove curly brackets
             if (sVector.StartsWith("{") && sVector.EndsWith("}"))
@@ -34,10 +39,10 @@ namespace SatCom
                 sVector = sVector.Substring(1, sVector.Length - 2);
             }
 
-            //Split the string where there is whitespace
+            //Split the string by whitespace
             string[] sArray = sVector.Split(' ');
 
-            //Parse the values into floats and create a Vector3
+            //Parse values into floats and create Vector3
             Vector3 position = new Vector3(
                 float.Parse(sArray[0].Substring(2, sArray[0].Length - 2)),
                 float.Parse(sArray[1].Substring(2, sArray[1].Length - 2)),
@@ -51,7 +56,8 @@ namespace SatCom
         static Dictionary<string, List<int>> getBracketPos(string packet)
         {
             //Creates bracket dictionary, adds two keys for { and }
-            Dictionary<string, List<int>> bracketPos = new Dictionary<string, List<int>>();
+
+            bracketPos.Clear();
 
             bracketPos.Add("[", new List<int>());
             bracketPos.Add("]", new List<int>());
@@ -59,6 +65,7 @@ namespace SatCom
             //Loop through string, checking for brackets
             for (int i = 0; i < packet.Length; i++)
             {
+                //Add bracket pos to its respective dictionary
                 if (packet[i] == '[')
                 {
                     bracketPos["["].Add(i);
@@ -77,7 +84,7 @@ namespace SatCom
             string final = "[";
             int i = 0;
             
-            //Loop through all objects
+            //Loop through all items in object
             foreach (object item in packet)
             {
                 if (item.GetType() == typeof(object[]))
@@ -86,7 +93,7 @@ namespace SatCom
                     final += objectToString((object[]) item);
                 } else
                 {
-                    //If not, convert type to string. If its a string, add ""
+                    //If not, convert type to string. If its a string, add "", if vec3 use toString, etc
                     if (item.GetType() == typeof(string))
                     {
                         final += "\"" + item + "\"";
@@ -130,6 +137,8 @@ namespace SatCom
                 linked.Add(closePos, 0);
                 foreach (int openPos in bracketPos["["])
                 {
+                    //Loop through opening and closing brackets. If the open bracket had not been taken and is closer than the last,
+                    //add/change linked
                     if (closePos > openPos && openPos > linked[closePos] && !(linked.ContainsValue(openPos)))
                     {
                         linked[closePos] = openPos;
@@ -144,6 +153,8 @@ namespace SatCom
             foreach(int potChild in linked.Keys)
             {
                 bool isChild = false;
+
+                //potChild = potential child, ignore terrible var name
 
                 //Loop through all linked brackets, checking if potChild is a child
                 foreach (KeyValuePair<int, int> parent in linked)
@@ -177,6 +188,9 @@ namespace SatCom
 
             }
 
+            //
+            //Creating two arrays here. Is it possible to use just one?
+            //
 
             //Convert the string into an object array
             object[] packetArr = packet.Split(',');
@@ -248,16 +262,29 @@ namespace SatCom
             return output;
         }
 
+
+        //Returns string for now, but should be void as it shouldn't return anything. Will be used to send message
+        //Packet may need to be 4 parts? Src -> Dest -> purpose -> content?
+        //Though content may already contain the purpose
+        static string createPacket(string source, string destination, object[] packet)
+        {
+            string finalPacket = "[" + source + "," + destination + "," + objectToString(packet) + "]";
+            //terminal.broadcast(source, finalPacket);
+            return finalPacket;
+        }
+
+
+
         static void Main(string[] args)
         {
+            //Create test object and convert to string
             object[] drone = new object[] { "43242345", "243525", new object[] { "312343", new Vector3(2, 3, 4), 23, new object[] { new Vector3(2, 4, 5), 23, "232" } }, new object[] { "test", new object[] { "brrr", 434.34, new Vector3(3, 54, 1) }, 123 } };
-
             string msg = objectToString(drone);
 
             Console.WriteLine(msg);
 
+            //Convert test string back into object
             object[] test = stringToObject(msg);
-
             Console.WriteLine(displayThing(test));
         }
     }
@@ -268,5 +295,23 @@ Packet structure:
 
 [source, destination, [content]]
 
+REMEMBER: While memory optimisation would be nice, performance is the most important thing, even at the cost of memory.
+
+TODO:
+ - Potentially use corountines during the encoding and decoding of the packet
+ - Reduce the amount of times lists are created and instead try to reuse ones that have already been created
+ - Create a function that creates a packet (source, dest, content) and decodes it
+ - Use regex to find all instances of brackets in a string.
+
+
+Some notes:
+
+What's the point of including the destination in the packet when the receiver already knows it's meant for them? Currently, it's precautionary.
+One possible reason could be that it lets the receiver know if the msg was only meant for itself, or a group of receivers.
+
+It seems that either clearing a list/dictionary or creating a new one depends on some factors such as size. Due to the small size of most lists,
+clearing the list is generally a better option, with it only struggling once there is over 100k items in it.
  
+
+The code here heavily relies on recursion. If there is an error in the packet information, this could potentially cause performance issues.
  */
