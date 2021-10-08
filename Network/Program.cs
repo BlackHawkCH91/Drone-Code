@@ -5,6 +5,7 @@ using SpaceEngineers.Game.ModAPI.Ingame;
 using System;
 using System.Collections;
 using System.Collections.Generic;
+using System.Collections.Immutable;
 using System.Linq;
 using System.Text;
 using VRage;
@@ -23,7 +24,7 @@ namespace IngameScript
     {
         // VARS
 
-        public static Dictionary<string, string> ipList = new Dictionary<string, string>();
+        public static Dictionary<string, object[]> ipList = new Dictionary<string, object[]>();
         public static Dictionary<string, List<int>> bracketPos = new Dictionary<string, List<int>>();
 
         bool setup = false;
@@ -37,15 +38,34 @@ namespace IngameScript
         List<IMyTextPanel> LCD = new List<IMyTextPanel>();
 
         //Information used to create a packet that will be sent back to the main base.
-        long gridId;
+        long pBId;
         string gridType;
-        Vector3 gridPos;
+        Vector3D gridPos;
+
+        object[] laserAntPos;
 
 
         //Functions ----------------------------------------------------------------------
 
+        //Functions are not obsolete. Can be used to load and unload saved data
+
+
+        //String-to-data and data-to-string functions hidden here:
+        
+        //So, for whatever fucking reason, vector3.ToString() doesn't always have "{}" at the start and end, thus causing issues for type casting in the stringToObject. This function purely
+        //exists to ensure all string vectors have {}.
+        public static string vector3ToString(string vector)
+        {
+            if (!(vector.StartsWith("{") && vector.EndsWith("}")))
+            {
+                vector = "{" + vector + "}";
+            }
+
+            return vector;
+        }
+
         //Converts a string back into a Vector3
-        public static Vector3 StringToVector3(string sVector)
+        public static Vector3D StringToVector3(string sVector)
         {
             //Remove curly brackets
             if (sVector.StartsWith("{") && sVector.EndsWith("}"))
@@ -53,27 +73,18 @@ namespace IngameScript
                 sVector = sVector.Substring(1, sVector.Length - 2);
             }
 
+
             //Split the string where there is whitespace (commas are not used for some reason)
             string[] sArray = sVector.Split(' ');
 
             //Parse the values into floats and create a Vector3
-            Vector3 position = new Vector3(
-                float.Parse(sArray[0].Substring(2, sArray[0].Length - 2)),
-                float.Parse(sArray[1].Substring(2, sArray[1].Length - 2)),
-                float.Parse(sArray[2].Substring(2, sArray[2].Length - 2))
+            Vector3D position = new Vector3D(
+                double.Parse(sArray[0].Substring(2, sArray[0].Length - 2)),
+                double.Parse(sArray[1].Substring(2, sArray[1].Length - 2)),
+                double.Parse(sArray[2].Substring(2, sArray[2].Length - 2))
             );
 
             return position;
-        }
-
-        //Gets block health
-        float GetMyTerminalBlockHealth(IMyTerminalBlock block)
-        {
-            IMySlimBlock slimblock = block.CubeGrid.GetCubeBlock(block.Position);
-            float MaxIntegrity = slimblock.MaxIntegrity;
-            float BuildIntegrity = slimblock.BuildIntegrity;
-            float CurrentDamage = slimblock.CurrentDamage;
-            return (BuildIntegrity - CurrentDamage) / MaxIntegrity;
         }
 
         //Gets positions of [] in strings
@@ -124,10 +135,10 @@ namespace IngameScript
                     {
                         final += "\"" + item + "\"";
                     }
-                    else if (item.GetType() == typeof(Vector3))
+                    else if (item.GetType() == typeof(Vector3D))
                     {
-                        Vector3 vec3 = (Vector3)item;
-                        final += vec3.ToString();
+                        Vector3D vec3 = (Vector3D)item;
+                        final += vector3ToString(vec3.ToString());
 
                     }
                     else
@@ -151,7 +162,7 @@ namespace IngameScript
         }
 
         //Converts string back into object
-        static object[] stringToObject(string packet)
+        public static object[] stringToObject(string packet)
         {
             //Remove start and ending brackets
             packet = packet.Substring(1, packet.Length - 2);
@@ -248,7 +259,7 @@ namespace IngameScript
                     }
                     else
                     {
-                        finalPacketArr[i] = Convert.ToInt32(item);
+                        finalPacketArr[i] = long.Parse(item);
                     }
                 }
                 else
@@ -273,10 +284,13 @@ namespace IngameScript
                     output += displayThing(array[i] as object[]);
                     output += "]";
                 }
-                else if (array[i].GetType() == typeof(Vector3))
+                else if (array[i].GetType() == typeof(Vector3D))
                 {
-                    Vector3 temp = (Vector3) array[i];
+                    Vector3D temp = (Vector3D) array[i];
                     output += temp.ToString();
+                } else if (array[i].GetType() == typeof(string))
+                {
+                    output += "\"" + array[i].ToString() + "\"";
                 }
                 else
                 {
@@ -291,88 +305,231 @@ namespace IngameScript
             return output;
         }
 
-        //Returns string for now, but should be void as it shouldn't return anything. Will be used to send message
-        //Packet may need to be 4 parts? Src -> Dest -> purpose -> content?
-        //Though content may already contain the purpose
-        static string createPacket(string source, string destination, object[] packet)
+        static string createPacketString(string source, string destination, string purpose, object[] packet)
         {
-            string finalPacket = "[" + source + "," + destination + "," + objectToString(packet) + "]";
+            string tempDest = destination;
+            long temp;
+            if (!(long.TryParse(destination, out temp)))
+            {
+                tempDest = "\"" + tempDest + "\"";
+            }
+            string finalPacket = "[" + source + "," + tempDest + ",\"" + purpose + "\"," + objectToString(packet) + "]";
             //terminal.broadcast(source, finalPacket);
             return finalPacket;
         }
 
-        //Send data
-        public void SendMessage(string tag, string contents)
+        //-----------------------------------------------------------------------------
+        
+
+
+        //Gets block health
+        double GetMyTerminalBlockHealth(IMyTerminalBlock block)
         {
-            IGC.SendBroadcastMessage<string>(tag, contents, TransmissionDistance.TransmissionDistanceMax);
+            IMySlimBlock slimblock = block.CubeGrid.GetCubeBlock(block.Position);
+            double MaxIntegrity = slimblock.MaxIntegrity;
+            double BuildIntegrity = slimblock.BuildIntegrity;
+            double CurrentDamage = slimblock.CurrentDamage;
+            return (BuildIntegrity - CurrentDamage) / MaxIntegrity;
         }
+
+        static string createPacketObject(string source, string destination, string purpose, object[] packet)
+        {
+            object[] finalPacket = new object[] { source, destination, purpose, packet };
+            //terminal.broadcast(source, finalPacket);
+            return objectToString(finalPacket);
+        }
+
+          //Send data. This function might be obselete/not needed.
+        public void SendMessage(string tag, object[] contents)
+        {
+            IGC.SendBroadcastMessage<object[]>(tag, contents, TransmissionDistance.TransmissionDistanceMax);
+            //IGC.SendBroadcastMessage<object[]>(tag, contents, TransmissionDistance.TransmissionDistanceMax);
+        }
+
 
         //Receive data
-        public void RecieveMessage(IMyBroadcastListener listener)
+        public void RecieveMessage(int listener)
         {
-            MyIGCMessage Message = listener.AcceptMessage();
-        }
-        //---------------------------------------------------------------------------------------------------------------
+            //Define message and bool to check if its a broadcast or not. Bool may not be needed.
+            //bool isBroadcast = false;
+            MyIGCMessage message;
 
+            //Check if it's a uni or broadcast and accept msg
+            if (listener == 0)
+            {
+                //Unicast
+                message = dirListener.AcceptMessage();
+            } else
+            {
+                //Broadcast
+                message = listeners[listener - 1].AcceptMessage();
+                //isBroadcast = true;
+            }
+
+            //Convert to object
+            Echo(message.Data.ToString());
+            string temp = message.Data.ToString();
+            object[] finalMsg = stringToObject(temp);
+            LCD[0].WriteText(displayThing(finalMsg));
+
+            object[] packetContent = finalMsg[3] as object[];
+
+            switch (finalMsg[2].ToString())
+            {
+                case "EstCon":
+
+                    //B: EstCon - [long source, long destination, "EstCon", [EstType, gridType, laserAntPos]]
+                    //U: EstCon - [long source, long destination, "EstCon", [gridType, laserAntPos]]
+                    //Add the IP to the IP list if is doesn't exist
+
+                    if (!(ipList.ContainsKey(finalMsg[0].ToString())))
+                    {
+                        ipList.Add(finalMsg[0].ToString(), new object[] { packetContent[2].ToString(), packetContent[2] });
+                    }
+
+                    //while (long) object is more readible, unboxing uses a lot of performace. May need to do some performance testing
+                    long ip = long.Parse(finalMsg[0] as string);
+
+                    //Send message back to sender.
+                    IGC.SendUnicastMessage<string>(ip, ip.ToString(), createPacketObject(pBId.ToString(), ip.ToString(), "EstCon", new object[] { gridType, laserAntPos }));
+                    //IGC.SendUnicastMessage(ip, ip.ToString(), createPacket(pBId.ToString(), ip.ToString(), "EstCon", new object[] { gridType, laserAntPos } ));
+                    break;
+
+                case "Distress":
+                    break;
+                default:
+                    break;
+            }
+        }
+
+
+        //Creates EstCon packet
+        public void establishConnection(string estType)
+        {
+            //B: EstCon - [long source, long destination, "EstCon", [EstType, gridType, laserAntPos]]
+            //Creates an EstCon broadcast packet. EstType tells other grids what grid types it wants. E.g. if estType is Outpost, only outposts will return data.
+            IGC.SendBroadcastMessage("EstCon", createPacketObject(pBId.ToString(), "All", "EstCon", new object[] { estType, gridType, laserAntPos }));
+            Echo("Sent EstCon broadcast to grid type: " + estType);
+            //IGC.SendBroadcastMessage("EstCon", createPacket(pBId.ToString(), "All", "EstCon", new object[] { estType, gridType, laserAntPos } ), TransmissionDistance.TransmissionDistanceMax);
+        }
 
 
         public void Init()
         {
+            Echo("Retrieving LaserAnt list...");
+            //Get all laser antennas and convert to object array
+            List<IMyLaserAntenna> laserAnts = new List<IMyLaserAntenna>();
+            GridTerminalSystem.GetBlocksOfType<IMyLaserAntenna>(laserAnts);
+
+            //Just keeps getting errors atm
+            //laserAntPos = laserAnts.Select(x => x.GetPosition()).ToArray();
+            laserAntPos = new object[laserAnts.Count];
+
+            for (int i = 0; i < laserAnts.Count; i++)
+            {
+                laserAntPos[i] = laserAnts[i].GetPosition();
+            }
+
+
+            Echo("Setting listerers");
             //Define uni and broadcast listeners. Direct sets are "default" tags, meaning all comms have these tags by default.
-            listeners.Add(IGC.RegisterBroadcastListener("EstCon"));
-            listeners.Add(IGC.RegisterBroadcastListener("LaserAnt"));
-            listeners.Add(IGC.RegisterBroadcastListener("Distress"));
+            string[] tagArr = new string[] { "EstCon", "LaserAnt", "Distress", "All" };
+
+            foreach (string tag in tagArr)
+            {
+                listeners.Add(IGC.RegisterBroadcastListener(tag));
+            }
+
 
             //It seems that although unicasts require a tag, the reciever does not need the tag to read the message. It seems the tag is
-            //more for grids that have multiple PBs.
+            //more for grids that have multiple PBs which is strange as the address is the PBs ID.
             dirListener = IGC.UnicastListener;
 
-            //Disable callback for all messages
+            //Disable callback for all messages (until I figure out how to use them)
             foreach (IMyBroadcastListener listener in listeners)
             {
                 listener.DisableMessageCallback();
             }
 
+            Echo("Retrieving grid blocks...");
             //Get blocks and ID
             mainProgBlock = GridTerminalSystem.GetBlockWithName("MainProgBlock");
             antenna = GridTerminalSystem.GetBlockWithName("Antenna") as IMyRadioAntenna;
 
-            gridId = mainProgBlock.EntityId;
+            GridTerminalSystem.GetBlocksOfType<IMyTextPanel>(LCD);
+
+            pBId = mainProgBlock.EntityId;
 
             setup = true;
             Echo("Active");
         }
 
 
-        //Set update time
+
+        //Default game functions ---------
         public Program()
         {
             //Add default and known IPs to ipList
-            ipList.Add("EstCon", "Default");
-            ipList.Add("Distress", "Default");
+            ipList.Add("EstCon", new object[] { "Default" });
+            ipList.Add("Distress", new object[] { "Default" });
+            ipList.Add("All", new object[] { "Default" } );
 
 
-            Runtime.UpdateFrequency = UpdateFrequency.Update1;
+            Runtime.UpdateFrequency = UpdateFrequency.Update100;
         }
+        bool runOnce = true;
 
-        public void Main(string argument, UpdateType updateSource)
+        void Main(string argument, UpdateType updateSource)
         {
-            gridPos = Me.CubeGrid.GetPosition();
+
+            //Argument is empty unless all the other functions have been commented/removed.
 
             //Initialise once
             if (!setup)
             {
-                Init();
                 gridType = argument;
+                Init();
+                setup = true;
+            }
+            gridPos = Me.CubeGrid.GetPosition();
+
+
+            //testing:
+
+            //Test packet
+
+            if (gridType == "Satellite")
+            {
+                Echo("Sending EstCon...");
+                establishConnection("Outpost");
+                runOnce = false;
             }
 
-            foreach (IMyBroadcastListener listener in listeners)
+            //Delete this if it works
+
+
+            //Get the satellite to send an EstCon to the outpost. 
+            //Need to find a way to display debug and packet information
+
+
+            //Handling messages here. Seems messy and inefficient
+            //By checking all listeners on a single frame, all information can be processed quickly. Because objects can be sent instead of strings,
+            //this process shouldn't be performance heavy.
+
+            if (dirListener.HasPendingMessage)
             {
-                if (listener.HasPendingMessage)
+                RecieveMessage(0);
+            }
+            
+            for (int i = 1; i <= listeners.Count; i++)
+            {
+                if (listeners[i - 1].HasPendingMessage)
                 {
-                    RecieveMessage(listener);
+                    RecieveMessage(i);
                 }
             }
+
+            //-----------------------------------------
         }
 
         public void Save()
@@ -383,7 +540,6 @@ namespace IngameScript
 }
 
 /*
-
 TODO:
 
  - Find a way to accept messages from both uni and broadcasts
@@ -401,5 +557,49 @@ Notes:
 
 Unicast listeners don't requrie a tag to listen to. Instead, the tag has to be manually filtered out if needed
 Try to use a single PB per grid (excluding outposts)
+
+Any default tags are a broadcast function. However, the response will most likely be a unicast.
+
+I currently don't understand how callback messages work. The API is useless and there is barely any information about it. I will either test it, or 
+I will simply create an ACK packet. While not important for some protocols, it is important for commands and whatnot.
+
+the argument may be a data string. Planning needed.
+
+
+Try to have the same script for all grids. May not be efficient in terms of memory, but helps with logistics and compatibility. Performance 
+shouldn't be affected as most variables and conditions will be set in the init function.
+
+Broadcast listeners do not need to be checked if they have a message for every frame. Even if they have multiple messages, they will still
+go through them in order. Coroutines may be able to be used when checking all listeners.
+
+
+Testing:
+
+1. see if data-to-string and string-to-data works. 
+2. Send an EstCon packet to the satellite and decode it. Ensure LaserSat info is included.
+
+
+
+
+
+Packet structure - [long source, long destination, string purpose, [content, content, etc]]
+
+B: EstCon - [long source, long destination, "EstCon", [EstType, gridType, laserAntPos ]]
+U: EstCon - [long source, long destination, "EstCon", [gridType, laserAntPos ]]
+
+Distress - [long source, long destination, "Distress", [position, dangerLvl ]]
+Info - [long source, long destination, "Info", [position, gridType, health, power, hydrogen, status, task ]]
+
+Status - idle, working, attached - pBId, etc
+
+
+
+IpList plan:
+
+When ships are created, they will send an EstCon broadcast to an outpost. Data will be exchanged and the outpost will send their IP list.
+Every so often, the main outpost will send an "All" broadcast, meaning all grids will receive the msg containing the IP list. This ensures all grids
+are kept updated. This information will be lost on log off, so upon initiallisation, all grids will send an EstCon request. 
+
+All grids will store a list of satellites + laser antenna positions
 
 */

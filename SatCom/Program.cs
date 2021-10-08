@@ -23,12 +23,24 @@ namespace SatCom
         }
     }
 
+
+    public class IMyBroadcastListener
+    {
+        string tag;
+        public IMyBroadcastListener (string tagArg)
+        {
+            tag = tagArg;
+        }
+    }
+
     class Program
     {
         //Global vars:
 
         public static Dictionary<string, List<int>> bracketPos = new Dictionary<string, List<int>>();
+        public static Dictionary<string, object[]> ipList = new Dictionary<string, object[]>();
 
+        public static List<IMyBroadcastListener> listeners = new List<IMyBroadcastListener>();
 
         //Converts a string back into a vector3
         static Vector3 StringToVector3(string sVector)
@@ -266,17 +278,102 @@ namespace SatCom
         //Returns string for now, but should be void as it shouldn't return anything. Will be used to send message
         //Packet may need to be 4 parts? Src -> Dest -> purpose -> content?
         //Though content may already contain the purpose
-        static string createPacket(string source, string destination, object[] packet)
+        static string createPacket(string source, string destination, string purpose, object[] packet)
         {
-            string finalPacket = "[" + source + "," + destination + "," + objectToString(packet) + "]";
+            string finalPacket = "[" + source + "," + destination + "," + purpose + "," + objectToString(packet) + "]";
             //terminal.broadcast(source, finalPacket);
             return finalPacket;
         }
 
 
 
+        /*/These two functions are broken atm. Need to make pseudo classes. "offline" testing purposes only
+
+        //Send data. This function might be obselete.
+        public static void SendMessage(string tag, string contents)
+        {
+            IGC.SendBroadcastMessage<string>(tag, contents, TransmissionDistance.TransmissionDistanceMax);
+        }
+
+        //Receive data
+        public static void RecieveMessage(int listener)
+        {
+            //Define message and bool to check if its a broadcast or not
+            //bool may not be needed.
+            bool isBroadcast = false;
+            MyIGCMessage message;
+
+            //Check if it's a uni or broadcast and accept msg
+            if (listener == 0)
+            {
+                message = dirListener.AcceptMessage();
+            }
+            else
+            {
+                message = listeners[listener - 1].AcceptMessage();
+                isBroadcast = true;
+            }
+
+            //Convert to object
+            object[] finalMsg = stringToObject(message.ToString());
+
+
+            object[] packetContent = finalMsg[3] as object[];
+            switch (finalMsg[2].ToString())
+            {
+                //This is a bit of a hot mess atm. Need to cleanup
+                case "EstCon":
+
+                    //B: EstCon - [long source, long destination, "EstCon", [EstType, gridType, laserAntPos]]
+                    //U: EstCon - [long source, long destination, "EstCon", [gridType, laserAntPos]]
+                    //Add the IP to the IP list if is doesn't exist
+
+                    if (!(ipList.ContainsKey(finalMsg[0].ToString())))
+                    {
+                        ipList.Add(finalMsg[0].ToString(), new object[] { packetContent[2].ToString(), packetContent[2] });
+                    }
+                    //Save IP to a var for readability
+                    long ip = long.Parse(finalMsg[0].ToString());
+                    //Send message back to sender.
+                    IGC.SendUnicastMessage(ip, ip.ToString(), createPacket(pBId.ToString(), ip.ToString(), "EstCon", new object[] { gridType, laserAntPos }));
+                    break;
+
+                case "Distress":
+                    break;
+                default:
+                    break;
+            }
+        }
+
+        public static void establishConnection(string estType)
+        {
+            //B: EstCon - [long source, long destination, "EstCon", [EstType, gridType, laserAntPos]]
+            //Creates an EstCon broadcast packet. EstType tells other grids what grid types it wants. E.g. if estType is Outpost, only outposts will return data.
+            IGC.SendBroadcastMessage("EstCon", createPacket(pBId.ToString(), "All", "EstCon", new object[] { estType, gridType, laserAntPos }), TransmissionDistance.TransmissionDistanceMax);
+        }*/
+
+        public static void Init()
+        {
+            //Define uni and broadcast listeners. Direct sets are "default" tags, meaning all comms have these tags by default.
+            string[] tagArr = new string[] { "EstCon", "LaserAnt", "Distress" };
+
+            foreach (string tag in tagArr)
+            {
+                listeners.Add(new IMyBroadcastListener(tag));
+            }
+
+
+            //It seems that although unicasts require a tag, the reciever does not need the tag to read the message. It seems the tag is
+            //more for grids that have multiple PBs.
+            
+            //dirListener = IGC.UnicastListener;
+        }
+
+
         static void Main(string[] args)
         {
+            //Init();
+
             //Create test object and convert to string
             object[] drone = new object[] { "43242345", "243525", new object[] { "312343", new Vector3(2, 3, 4), 23, new object[] { new Vector3(2, 4, 5), 23, "232" } }, new object[] { "test", new object[] { "brrr", 434.34, new Vector3(3, 54, 1) }, 123 } };
             string msg = objectToString(drone);
