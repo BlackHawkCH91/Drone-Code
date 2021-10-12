@@ -24,6 +24,7 @@ namespace IngameScript
     {
         // VARS
 
+        public Dictionary<long, string> packetBacklog = new Dictionary<long, string>();
         public static Dictionary<string, object[]> ipList = new Dictionary<string, object[]>();
         public static Dictionary<string, List<int>> bracketPos = new Dictionary<string, List<int>>();
 
@@ -47,22 +48,9 @@ namespace IngameScript
 
         //Functions ----------------------------------------------------------------------
 
-        //Functions are not obsolete. Can be used to load and unload saved data
-
 
         //String-to-data and data-to-string functions hidden here:
         
-        //So, for whatever fucking reason, vector3.ToString() doesn't always have "{}" at the start and end, thus causing issues for type casting in the stringToObject. This function purely
-        //exists to ensure all string vectors have {}.
-        public static string vector3ToString(string vector)
-        {
-            if (!(vector.StartsWith("{") && vector.EndsWith("}")))
-            {
-                vector = "{" + vector + "}";
-            }
-
-            return vector;
-        }
 
         //Converts a string back into a Vector3
         public static Vector3D StringToVector3(string sVector)
@@ -138,7 +126,7 @@ namespace IngameScript
                     else if (item.GetType() == typeof(Vector3D))
                     {
                         Vector3D vec3 = (Vector3D)item;
-                        final += vector3ToString(vec3.ToString());
+                        final += vec3.ToString();
 
                     }
                     else
@@ -245,7 +233,7 @@ namespace IngameScript
                 if (item.Length > 0)
                 {
                     //Order: Vector3, String, Double, Int, Subobject
-                    if (item[0] == '{')
+                    if (item[0] == '{' || item[0] == 'X')
                     {
                         finalPacketArr[i] = StringToVector3(item);
                     }
@@ -339,19 +327,57 @@ namespace IngameScript
             return objectToString(finalPacket);
         }
 
-          //Send data. This function might be obselete/not needed.
-        public void SendMessage(string tag, object[] contents)
+        //Send packet
+        public void sendMessage(bool isUni, string destination, string contents)
         {
-            IGC.SendBroadcastMessage<object[]>(tag, contents, TransmissionDistance.TransmissionDistanceMax);
+            //First check if it's a uni or broadcast
+            if (isUni)
+            {
+                //If reachable, send packet, otherwise, add packet to backlog
+                if (IGC.IsEndpointReachable(long.Parse(destination), TransmissionDistance.TransmissionDistanceMax))
+                {
+                    IGC.SendUnicastMessage(long.Parse(destination), contents, TransmissionDistance.TransmissionDistanceMax);
+                } else
+                {
+                    packetBacklog.Add(long.Parse(destination), contents);
+                }
+            } else
+            {
+                //Send broadcast
+                IGC.SendBroadcastMessage(destination, contents, TransmissionDistance.TransmissionDistanceMax);
+            }
+            
             //IGC.SendBroadcastMessage<object[]>(tag, contents, TransmissionDistance.TransmissionDistanceMax);
         }
 
+        //Sends packets in backlog every so often
+        public void sendBackLog()
+        {
+            //Set count to var. This is because the length of dict will change
+            int packetCount = packetBacklog.Count;
+
+            for (int i = 0; i < packetCount; i++)
+            {
+                //Get current packet
+                KeyValuePair<long, string> packet = packetBacklog.ElementAt(i);
+
+                //First check if point is reachable
+                if (IGC.IsEndpointReachable(packet.Key))
+                {
+                    //If it is, send message, remove key from dict and subtract 1 from i and count
+                    IGC.SendUnicastMessage(packet.Key, packet.Key.ToString(), packet.Value);
+                    packetBacklog.Remove(packet.Key);
+                    i--;
+                    packetCount--;
+                }
+            }
+        }
 
         //Receive data
-        public void RecieveMessage(int listener)
+        public void recieveMessage(int listener)
         {
             //Define message and bool to check if its a broadcast or not. Bool may not be needed.
-            //bool isBroadcast = false;
+            bool isBroadcast = false;
             MyIGCMessage message;
 
             //Check if it's a uni or broadcast and accept msg
@@ -363,7 +389,7 @@ namespace IngameScript
             {
                 //Broadcast
                 message = listeners[listener - 1].AcceptMessage();
-                //isBroadcast = true;
+                isBroadcast = true;
             }
 
             //Convert to object
@@ -380,19 +406,24 @@ namespace IngameScript
 
                     //B: EstCon - [long source, long destination, "EstCon", [EstType, gridType, laserAntPos]]
                     //U: EstCon - [long source, long destination, "EstCon", [gridType, laserAntPos]]
-                    //Add the IP to the IP list if is doesn't exist
 
+                    //Add the IP to the IP list if is doesn't exist
                     if (!(ipList.ContainsKey(finalMsg[0].ToString())))
                     {
                         ipList.Add(finalMsg[0].ToString(), new object[] { packetContent[2].ToString(), packetContent[2] });
                     }
 
-                    //while (long) object is more readible, unboxing uses a lot of performace. May need to do some performance testing
-                    long ip = long.Parse(finalMsg[0] as string);
+                    if (isBroadcast)
+                    {
+                        //while (long) object is more readible, unboxing uses a lot of performace. May need to do some performance testing
+                        long ip = long.Parse(finalMsg[0] as string);
 
-                    //Send message back to sender.
-                    IGC.SendUnicastMessage<string>(ip, ip.ToString(), createPacketObject(pBId.ToString(), ip.ToString(), "EstCon", new object[] { gridType, laserAntPos }));
-                    //IGC.SendUnicastMessage(ip, ip.ToString(), createPacket(pBId.ToString(), ip.ToString(), "EstCon", new object[] { gridType, laserAntPos } ));
+                        //Send message back to sender.
+                        sendMessage(true, ip.ToString(), createPacketObject(pBId.ToString(), ip.ToString(), "EstCon", new object[] { gridType, laserAntPos }));
+                        //IGC.SendUnicastMessage<string>(ip, ip.ToString(), createPacketObject(pBId.ToString(), ip.ToString(), "EstCon", new object[] { gridType, laserAntPos }));
+                        //IGC.SendUnicastMessage(ip, ip.ToString(), createPacket(pBId.ToString(), ip.ToString(), "EstCon", new object[] { gridType, laserAntPos } ));
+                    }
+
                     break;
 
                 case "Distress":
@@ -408,7 +439,8 @@ namespace IngameScript
         {
             //B: EstCon - [long source, long destination, "EstCon", [EstType, gridType, laserAntPos]]
             //Creates an EstCon broadcast packet. EstType tells other grids what grid types it wants. E.g. if estType is Outpost, only outposts will return data.
-            IGC.SendBroadcastMessage("EstCon", createPacketObject(pBId.ToString(), "All", "EstCon", new object[] { estType, gridType, laserAntPos }));
+            //IGC.SendBroadcastMessage("EstCon", createPacketObject(pBId.ToString(), "All", "EstCon", new object[] { estType, gridType, laserAntPos }));
+            sendMessage(false, "EstCon", createPacketObject(pBId.ToString(), "All", "EstCon", new object[] { estType, gridType, laserAntPos }));
             Echo("Sent EstCon broadcast to grid type: " + estType);
             //IGC.SendBroadcastMessage("EstCon", createPacket(pBId.ToString(), "All", "EstCon", new object[] { estType, gridType, laserAntPos } ), TransmissionDistance.TransmissionDistanceMax);
         }
@@ -478,10 +510,27 @@ namespace IngameScript
             Runtime.UpdateFrequency = UpdateFrequency.Update100;
         }
         bool runOnce = true;
+        int newLines = 1;
 
         void Main(string argument, UpdateType updateSource)
         {
+            //This is just for testing. Can be removed later.
+            if (gridType == "Outpost")
+            {
+                string displayString = "";
+                foreach (KeyValuePair<string, object[]> item in ipList)
+                {
+                    displayString += item.Key + ", ";
 
+                    if (displayString.Length >= (42 * newLines))
+                    {
+                        displayString += "\n";
+                        newLines++;
+                    }
+                }
+
+                LCD[1].WriteText(displayString);
+            }
             //Argument is empty unless all the other functions have been commented/removed.
 
             //Initialise once
@@ -518,14 +567,14 @@ namespace IngameScript
 
             if (dirListener.HasPendingMessage)
             {
-                RecieveMessage(0);
+                recieveMessage(0);
             }
             
             for (int i = 1; i <= listeners.Count; i++)
             {
                 if (listeners[i - 1].HasPendingMessage)
                 {
-                    RecieveMessage(i);
+                    recieveMessage(i);
                 }
             }
 
@@ -542,28 +591,24 @@ namespace IngameScript
 /*
 TODO:
 
- - Find a way to accept messages from both uni and broadcasts
  - Create a function that sends a broadcast and returns a list of IP (tag) addresses
- - Create a function that can send a request to connect laser antennas
  - Find a way to create "anonymous" broadcasts (use laser antenna to broadcast briefly so that the ping barely shows up)
  - Distress signal (connect to nearest source. Depending on danger, connect via laser ant, use anonymous broadcast, or do a full broadcast.
    Limit range when a grid has been found)
 
- - Encode and create a packet, send it to a grid, and get the receiver to decode the packet
  - Get the satellite to send it's information to the test outpost
 
 
 Notes:
 
-Unicast listeners don't requrie a tag to listen to. Instead, the tag has to be manually filtered out if needed
+Unicast listeners don't require a tag to listen to. Instead, the tag has to be manually filtered out if needed
 Try to use a single PB per grid (excluding outposts)
 
 Any default tags are a broadcast function. However, the response will most likely be a unicast.
 
-I currently don't understand how callback messages work. The API is useless and there is barely any information about it. I will either test it, or 
-I will simply create an ACK packet. While not important for some protocols, it is important for commands and whatnot.
+Don't use callback messages. That requires extra processes which can be replaced with an if statement checking is point is reachable.
 
-the argument may be a data string. Planning needed.
+Argument should be used to define grid type. Use custom data for extra data and user configuration
 
 
 Try to have the same script for all grids. May not be efficient in terms of memory, but helps with logistics and compatibility. Performance 
@@ -575,10 +620,19 @@ go through them in order. Coroutines may be able to be used when checking all li
 
 Testing:
 
-1. see if data-to-string and string-to-data works. 
-2. Send an EstCon packet to the satellite and decode it. Ensure LaserSat info is included.
+ - Switch EstCon around. Make outpost send EstCon broadcast and see if response from satellite is being sent properly or is being sent to
+   backlog
+
+ - Test if backlog is working. Can be tested by making broadcaster range larger than reciever range.
+
+ - See if isEndpointReachable still works when reciever is only acting as a listener (antenna on, but range set to 0)
 
 
+
+Optimisation:
+
+ - Although object arrays cannot be used for packets, string arrays can. Use it for the structure of the packet:
+   string[] testPacket = new testPacket[] {"source", "destination", "Purpose", "data-to-string"};
 
 
 
