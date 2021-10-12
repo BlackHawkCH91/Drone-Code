@@ -50,7 +50,7 @@ namespace IngameScript
 
 
         //String-to-data and data-to-string functions hidden here:
-        
+
 
         //Converts a string back into a Vector3
         public static Vector3D StringToVector3(string sVector)
@@ -274,9 +274,10 @@ namespace IngameScript
                 }
                 else if (array[i].GetType() == typeof(Vector3D))
                 {
-                    Vector3D temp = (Vector3D) array[i];
+                    Vector3D temp = (Vector3D)array[i];
                     output += temp.ToString();
-                } else if (array[i].GetType() == typeof(string))
+                }
+                else if (array[i].GetType() == typeof(string))
                 {
                     output += "\"" + array[i].ToString() + "\"";
                 }
@@ -307,7 +308,7 @@ namespace IngameScript
         }
 
         //-----------------------------------------------------------------------------
-        
+
 
 
         //Gets block health
@@ -337,16 +338,18 @@ namespace IngameScript
                 if (IGC.IsEndpointReachable(long.Parse(destination), TransmissionDistance.TransmissionDistanceMax))
                 {
                     IGC.SendUnicastMessage(long.Parse(destination), contents, TransmissionDistance.TransmissionDistanceMax);
-                } else
+                }
+                else
                 {
                     packetBacklog.Add(long.Parse(destination), contents);
                 }
-            } else
+            }
+            else
             {
                 //Send broadcast
                 IGC.SendBroadcastMessage(destination, contents, TransmissionDistance.TransmissionDistanceMax);
             }
-            
+
             //IGC.SendBroadcastMessage<object[]>(tag, contents, TransmissionDistance.TransmissionDistanceMax);
         }
 
@@ -385,7 +388,8 @@ namespace IngameScript
             {
                 //Unicast
                 message = dirListener.AcceptMessage();
-            } else
+            }
+            else
             {
                 //Broadcast
                 message = listeners[listener - 1].AcceptMessage();
@@ -504,7 +508,7 @@ namespace IngameScript
             //Add default and known IPs to ipList
             ipList.Add("EstCon", new object[] { "Default" });
             ipList.Add("Distress", new object[] { "Default" });
-            ipList.Add("All", new object[] { "Default" } );
+            ipList.Add("All", new object[] { "Default" });
 
 
             Runtime.UpdateFrequency = UpdateFrequency.Update100;
@@ -569,7 +573,7 @@ namespace IngameScript
             {
                 recieveMessage(0);
             }
-            
+
             for (int i = 1; i <= listeners.Count; i++)
             {
                 if (listeners[i - 1].HasPendingMessage)
@@ -590,70 +594,38 @@ namespace IngameScript
 
 /*
 TODO:
-
  - Create a function that sends a broadcast and returns a list of IP (tag) addresses
  - Find a way to create "anonymous" broadcasts (use laser antenna to broadcast briefly so that the ping barely shows up)
  - Distress signal (connect to nearest source. Depending on danger, connect via laser ant, use anonymous broadcast, or do a full broadcast.
    Limit range when a grid has been found)
-
  - Get the satellite to send it's information to the test outpost
-
-
 Notes:
-
 Unicast listeners don't require a tag to listen to. Instead, the tag has to be manually filtered out if needed
 Try to use a single PB per grid (excluding outposts)
-
 Any default tags are a broadcast function. However, the response will most likely be a unicast.
-
 Don't use callback messages. That requires extra processes which can be replaced with an if statement checking is point is reachable.
-
 Argument should be used to define grid type. Use custom data for extra data and user configuration
-
-
 Try to have the same script for all grids. May not be efficient in terms of memory, but helps with logistics and compatibility. Performance 
 shouldn't be affected as most variables and conditions will be set in the init function.
-
 Broadcast listeners do not need to be checked if they have a message for every frame. Even if they have multiple messages, they will still
 go through them in order. Coroutines may be able to be used when checking all listeners.
-
-
 Testing:
-
  - Switch EstCon around. Make outpost send EstCon broadcast and see if response from satellite is being sent properly or is being sent to
    backlog
-
  - Test if backlog is working. Can be tested by making broadcaster range larger than reciever range.
-
  - See if isEndpointReachable still works when reciever is only acting as a listener (antenna on, but range set to 0)
-
-
-
 Optimisation:
-
  - Although object arrays cannot be used for packets, string arrays can. Use it for the structure of the packet:
    string[] testPacket = new testPacket[] {"source", "destination", "Purpose", "data-to-string"};
-
-
-
 Packet structure - [long source, long destination, string purpose, [content, content, etc]]
-
 B: EstCon - [long source, long destination, "EstCon", [EstType, gridType, laserAntPos ]]
 U: EstCon - [long source, long destination, "EstCon", [gridType, laserAntPos ]]
-
 Distress - [long source, long destination, "Distress", [position, dangerLvl ]]
 Info - [long source, long destination, "Info", [position, gridType, health, power, hydrogen, status, task ]]
-
 Status - idle, working, attached - pBId, etc
-
-
-
 IpList plan:
-
 When ships are created, they will send an EstCon broadcast to an outpost. Data will be exchanged and the outpost will send their IP list.
 Every so often, the main outpost will send an "All" broadcast, meaning all grids will receive the msg containing the IP list. This ensures all grids
 are kept updated. This information will be lost on log off, so upon initiallisation, all grids will send an EstCon request. 
-
 All grids will store a list of satellites + laser antenna positions
-
 */
