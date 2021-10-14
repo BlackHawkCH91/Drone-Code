@@ -429,18 +429,12 @@ namespace IngameScript
             {
                 case "EstCon":
 
-                    //B: EstCon - [long source, long destination, "EstCon", [EstType, gridType, laserAntPos]]
-                    //U: EstCon - [long source, long destination, "EstCon", [gridType, laserAntPos]]
+                    //EstCon - [long source, long destination, "EstCon", [gridType, laserAntPos]]
 
                     //Add the IP to the IP list if is doesn't exist
                     if (!(ipList.ContainsKey(finalMsg[0].ToString())))
                     {
-                        int x = 1;
-                        if (isBroadcast)
-                        {
-                            x = 2;
-                        }
-                        ipList.Add(finalMsg[0].ToString(), new object[] { packetContent[x].ToString(), packetContent[x] });
+                        ipList.Add(finalMsg[0].ToString(), new object[] { packetContent[0].ToString(), packetContent[1] });
                     }
 
                     if (isBroadcast && (packetContent[0].ToString() == gridType || packetContent[0].ToString() == "All"))
@@ -467,7 +461,7 @@ namespace IngameScript
         {
             //B: EstCon - [long source, long destination, "EstCon", [EstType, gridType, laserAntPos]]
             //Creates an EstCon broadcast packet. EstType tells other grids what grid types it wants. E.g. if estType is Outpost, only outposts will return data.
-            sendMessage(false, "EstCon", createPacketString(pBId.ToString(), "All", "EstCon", new object[] { estType, gridType, laserAntPos }));
+            sendMessage(false, estType, createPacketString(pBId.ToString(), estType, "EstCon", new object[] { gridType, laserAntPos }));
             Echo("Sent EstCon broadcast to grid type: " + estType);
         }
 
@@ -528,9 +522,13 @@ namespace IngameScript
         public Program()
         {
             //Add default and known IPs to ipList
-            ipList.Add("EstCon", new object[] { "Default" });
+            /*ipList.Add("EstCon", new object[] { "Default" });
             ipList.Add("Distress", new object[] { "Default" });
-            ipList.Add("All", new object[] { "Default" } );
+            ipList.Add("All", new object[] { "Default" } );*/
+
+            ipList["Estcon"] = new object[] { "Default" };
+            ipList["Distress"] = new object[] { "Default" };
+            ipList["All"] = new object[] { "Default" };
 
 
             Runtime.UpdateFrequency = UpdateFrequency.Update100;
@@ -541,10 +539,16 @@ namespace IngameScript
         void Main(string argument, UpdateType updateSource)
         {
 
+            if (!(string.IsNullOrEmpty(argument)))
+            {
+                gridType = argument;
+                ipList[gridType] = new object[] { "Default" };
+            }
+
             //Initialise once
             if (!setup)
             {
-                gridType = argument;
+                
                 Echo(gridType);
                 Init();
                 setup = true;
@@ -600,7 +604,7 @@ namespace IngameScript
             if (gridType == "Satellite")
             {
                 Echo("Sending EstCon...");
-                establishConnection("Outpost");
+                establishConnection("All");
                 runOnce = false;
             }
 
