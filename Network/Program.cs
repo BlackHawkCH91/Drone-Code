@@ -29,14 +29,13 @@ namespace IngameScript
         public static Dictionary<string, List<int>> bracketPos = new Dictionary<string, List<int>>();
 
         bool setup = false;
-        //int timer = 0;
 
         //Listeners and display for sending and recieving data
         List<IMyBroadcastListener> listeners = new List<IMyBroadcastListener>();
         IMyUnicastListener dirListener;
         IMyRadioAntenna antenna;
         IMyTerminalBlock mainProgBlock;
-        List<IMyTextPanel> LCD = new List<IMyTextPanel>();
+        public List<IMyTextPanel> LCD = new List<IMyTextPanel>();
 
         //Information used to create a packet that will be sent back to the main base.
         long pBId;
@@ -51,8 +50,46 @@ namespace IngameScript
 
         //String-to-data and data-to-string functions hidden here:
         
+        //Convert MatrixD to string... I'm sorry, but there is no way to loop through properties
+
+        public static string matrixToString(MatrixD matrix)
+        {
+            string strMatrix = "M" + matrix.M11 + "|" + matrix.M12 + "|" + matrix.M13 + "|" + matrix.M14 + "|" +
+                            matrix.M21 + "|" + matrix.M22 + "|" + matrix.M23 + "|" + matrix.M24 + "|" +
+                            matrix.M31 + "|" + matrix.M32 + "|" + matrix.M33 + "|" + matrix.M34 + "|" +
+                            matrix.M41 + "|" + matrix.M42 + "|" + matrix.M43 + "|" + matrix.M44;
+
+            return strMatrix;
+        }
+
+        //Convert string to matrixD
+
+        public static MatrixD stringToMatrix(string strMatrix)
+        {
+            string temp = strMatrix.Substring(1);
+
+            //Get all matrix cells
+            string[] strNum = temp.Split('|');
+
+            //Create array and convert to double
+            double[] num = new double[16];
+
+            for (int i = 0; i < 16; i++)
+            {
+                num[i] = double.Parse(strNum[i]);
+            }
+
+            //Painfully insert each value
+            MatrixD matrix = new MatrixD(num[0], num[1], num[2], num[3],
+                                num[4], num[5], num[6], num[7],
+                                num[8], num[9], num[10], num[11],
+                                num[12], num[13], num[14], num[15]);
+
+            return matrix;
+        }
 
         //Converts a string back into a Vector3
+
         public static Vector3D StringToVector3(string sVector)
         {
             //Remove curly brackets
@@ -73,6 +110,11 @@ namespace IngameScript
             );
 
             return position;
+        }
+
+        public static Vector3D basicLocal(Vector3D reference, Vector3D position)
+        {
+            return position - reference;
         }
 
         //Gets positions of [] in strings
@@ -129,7 +171,13 @@ namespace IngameScript
                         final += vec3.ToString();
 
                     }
-                    else
+                    else if (item.GetType() == typeof(bool))  // New thing here. Needs testing
+                    {
+                        final += item.ToString(); //
+
+                    } else if (item.GetType() == typeof(MatrixD)) { // Matrix conversion
+                        final += matrixToString((MatrixD) item);
+                    } else
                     {
                         final += item;
                     }
@@ -241,6 +289,14 @@ namespace IngameScript
                     {
                         finalPacketArr[i] = item.Substring(1, item.Length - 2);
                     }
+                     else if (item.StartsWith("T") || item.StartsWith("F")) //New thing. Needs testing
+                    {
+                        finalPacketArr[i] = item.StartsWith("T"); //
+                    } else if (item[0] == 'M') // Another new thing
+                    {
+                        
+                        finalPacketArr[i] = stringToMatrix(item);
+                    }
                     else if (item.Contains("."))
                     {
                         finalPacketArr[i] = Convert.ToDouble(item);
@@ -279,6 +335,9 @@ namespace IngameScript
                 } else if (array[i].GetType() == typeof(string))
                 {
                     output += "\"" + array[i].ToString() + "\"";
+                } else if (array[i].GetType() == typeof(MatrixD))
+                {
+                    output += matrixToString((MatrixD) array[i]);
                 }
                 else
                 {
@@ -321,14 +380,6 @@ namespace IngameScript
             return (BuildIntegrity - CurrentDamage) / MaxIntegrity;
         }
 
-        //Not sure why I have two packet creation functions. For now commenting this out
-
-        /*static string createPacketObject(string source, string destination, string purpose, object[] packet)
-        {
-            object[] finalPacket = new object[] { source, destination, purpose, packet };
-            //terminal.broadcast(source, finalPacket);
-            return objectToString(finalPacket);
-        }*/
 
         //Send packet
         public void sendMessage(bool isUni, string destination, ImmutableArray<string> contents)
@@ -353,6 +404,7 @@ namespace IngameScript
             //IGC.SendBroadcastMessage<object[]>(tag, contents, TransmissionDistance.TransmissionDistanceMax);
         }
 
+
         //Sends packets in backlog every so often
         public void sendBackLog()
         {
@@ -375,6 +427,7 @@ namespace IngameScript
                 }
             }
         }
+
 
         //Receive data
         public void recieveMessage(int listener)
@@ -465,7 +518,7 @@ namespace IngameScript
             Echo("Sent EstCon broadcast to grid type: " + estType);
         }
 
-
+        //Initialliser, sets vars and listeners.
         public void Init()
         {
             Echo("Retrieving LaserAnt list...");
@@ -519,12 +572,11 @@ namespace IngameScript
 
 
         //Default game functions ---------
+
+        //Initialise some variables here
         public Program()
         {
             //Add default and known IPs to ipList
-            /*ipList.Add("EstCon", new object[] { "Default" });
-            ipList.Add("Distress", new object[] { "Default" });
-            ipList.Add("All", new object[] { "Default" } );*/
 
             ipList["Estcon"] = new object[] { "Default" };
             ipList["Distress"] = new object[] { "Default" };
@@ -533,12 +585,17 @@ namespace IngameScript
 
             Runtime.UpdateFrequency = UpdateFrequency.Update100;
         }
+
         bool runOnce = false;
         int newLines = 1;
 
         void Main(string argument, UpdateType updateSource)
         {
+            
+            gridPos = Me.CubeGrid.GetPosition();
 
+            //Only set gridType if argument is not empty. Prevents overwriting gridType to an empty string.
+            //This may be used instead of a bool (it seems bools are inconsistent). 
             if (!(string.IsNullOrEmpty(argument)))
             {
                 gridType = argument;
@@ -548,16 +605,27 @@ namespace IngameScript
             //Initialise once
             if (!setup)
             {
-                
-                Echo(gridType);
                 Init();
+ 
+                //String-to-data and data-to-string testing. Only use when adding new data types
+                //
+                /*object[] testObject = new object[] { mainProgBlock.WorldMatrix, mainProgBlock.GetPosition(), "Hello", 123, 123.456, true, false, new object[] { "more", true, false } };
+                string testString = objectToString(testObject);
+
+                object[] testObject2 = stringToObject(testString);
+                string testString2 = displayThing(testObject2);
+
+                LCD[3].WriteText(matrixToString(mainProgBlock.WorldMatrix));
+                LCD[3].WriteText(testString + "\n" + testString2);*/
+
+
                 setup = true;
+                //Remove this and set update frequency in program
                 Runtime.UpdateFrequency = UpdateFrequency.Update1;
             }
 
 
             //This is just for testing. Can be removed later.
-            //Echo("Type: " + gridType);
             if (gridType == "Outpost")
             {
                 Echo("Running outpost code.");
@@ -591,11 +659,6 @@ namespace IngameScript
 
                 LCD[2].WriteText(displayString);
             }
-            //Argument is empty unless all the other functions have been commented/removed.
-
-            
-            gridPos = Me.CubeGrid.GetPosition();
-
 
             //testing:
 
@@ -608,23 +671,18 @@ namespace IngameScript
                 runOnce = false;
             }
 
-            //Delete this if it works
-
-
-            //Get the satellite to send an EstCon to the outpost. 
-            //Need to find a way to display debug and packet information
-
-
             //Handling messages here. Seems messy and inefficient
             //Checking all listeners on a single frame. If they all have messages, string-to-data will be running
             //multiple times on a tick. Use coroutines
 
+            //Check uni cast
             if (dirListener.HasPendingMessage)
             {
                 Echo("UniListener");
                 recieveMessage(0);
             }
 
+            //Chec all broadcast listeners
             string displayListener = "";
             for (int i = 1; i <= listeners.Count; i++)
             {
@@ -635,9 +693,6 @@ namespace IngameScript
                     recieveMessage(i);
                 }
             }
-            //Echo(displayListener);
-
-            //-----------------------------------------
         }
 
         public void Save()
@@ -652,33 +707,44 @@ TODO:
 
  - Create a function that sends a broadcast and returns a list of IP (tag) addresses
  - Find a way to create "anonymous" broadcasts (use laser antenna to broadcast briefly so that the ping barely shows up)
- - Distress signal (connect to nearest source. Depending on danger, connect via laser ant, use anonymous broadcast, or do a full broadcast.
-   Limit range when a grid has been found)
+ - Sorta realised that specific tags are useless. For distress, simply use the "All" tag. Packets have a "purpose" field which can be
+   filled as "Distress"
+ - Create a universal function that can encode and decode all date into/from a string. This will be stored on the "Storage" variable.
+ - Create an "Info" packet where grids can request info from other grids and those grids will respond with information about them.
+   
+   Info packet format: [source, destination, purpose, [gridType, worldMatrix, health, status, groupId, command]]
+   Status - "working" "idle" "danger" "docked"
 
- - Get the satellite to send it's information to the test outpost
- - When running code, only Init() appears to be running. 
+   Storage formate: [id, gridType, worldMatrix, health, status, groupId, command, lastUpdated]
+
+   Command Packet format: [source, destination, purpose, [priority, commandType, depends on command type]]
+   Command types: "Move" "Group" "Attack" "Mine" "Construct" "Power" "Dock"
+    - Move: [..., position]
+    - Group: [..., groupId]
+    - Attack: [..., targetPos]
+    - Mine: Depends on who receives command. Motherships receive bounding box, drones receive a position - [..., bounding box OR position]
+    - Construct: Same as Mine
+    - Power: [..., true/false] - Tells ship to land and power off. Used for when there is combat and server resources are important.
+    - Dock: [..., position, true/false] - Not sure what structure the packet should be. Tells ship to dock at a position.
+
+   Grid network strucute will use a basic hierachry: Outpost -> Group Leader/flagship -> Grids 
+   Commands can still be sent directly to grids if needed. 
+
+   Flagships may stored data on their group if needed.
+   
+
 
 
 Notes:
 
-Unicast listeners don't require a tag to listen to. Instead, the tag has to be manually filtered out if needed
-Try to use a single PB per grid (excluding outposts)
-
-Any default tags are a broadcast function. However, the response will most likely be a unicast.
-
-Don't use callback messages. That requires extra processes which can be replaced with an if statement checking is point is reachable.
-
-Argument should be used to define grid type. Use custom data for extra data and user configuration
-
-
-Try to have the same script for all grids. May not be efficient in terms of memory, but helps with logistics and compatibility. Performance 
-shouldn't be affected as most variables and conditions will be set in the init function.
-
-Broadcast listeners do not need to be checked if they have a message for every frame. Even if they have multiple messages, they will still
-go through them in order. Coroutines may be able to be used when checking all listeners.
+Use corountines when checking listeners. Calling objectToString multiple times can be costly.
 
 Once everything has been implemented, we need to stress test this system to ensure no errors occur that would bring down the entire system. Some tests like
-many grids, many groups, moving drones between groups, destroying grids, destroying outposts (this one will be difficult)
+many grids, many groups, moving drones between groups, destroying grids, destroying outposts (this one will be difficult). If the main outpost PB gets destroyed,
+a lot of data will be lost which may cause a lot of errors. A backup function can be made where all data is stored in a string. The string can then be copied
+and pasted into an external text file.
+
+Convert all string-to-data and data-to-string to use stringbuilder. Apparently it is much more efficient.
 
 
 Testing:
@@ -688,16 +754,9 @@ Testing:
  - Test if backlog is working. Can be tested by making broadcaster range larger than reciever range.
  - See if isEndpointReachable still works when reciever is only acting as a listener (antenna on, but range set to 0)
 
- - Test EstCon again as string[] is now used instead of just strings.
-
 
 Optimisation:
 
- - Although object arrays cannot be used for packets, string arrays can. Use it for the structure of the packet:
-   string[] testPacket = new testPacket[] {"source", "destination", "Purpose", "data-to-string"};
-    ^^^^^^
-    I've made this change. Need to do testing to ensure it works. Although minimal, reduces 4 "major" calculations to 
-    get an array from string for every packet.
 
 
 Packet structure - [long source, long destination, string purpose, [content, content, etc]]

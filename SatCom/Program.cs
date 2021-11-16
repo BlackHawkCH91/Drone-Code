@@ -1,5 +1,7 @@
 ﻿using System;
+using System.Text;
 using System.Collections.Generic;
+using System.Diagnostics;
 
 namespace SatCom
 {
@@ -131,6 +133,52 @@ namespace SatCom
             final += "]";
 
             return final;
+        }
+
+        static string objectToString2(object[] packet)
+        {
+            StringBuilder final = new StringBuilder("[", 200);
+            int i = 0;
+
+            //Loop through all items in object
+            foreach (object item in packet)
+            {
+                if (item.GetType() == typeof(object[]))
+                {
+                    //If it is an object array, use recursion
+                    final.Append(objectToString((object[])item));
+                }
+                else
+                {
+                    //If not, convert type to string. If its a string, add "", if vec3 use toString, etc
+                    if (item.GetType() == typeof(string))
+                    {
+                        final.Append("\"" + item + "\"");
+                    }
+                    else if (item.GetType() == typeof(Vector3))
+                    {
+                        Vector3 vec3 = (Vector3)item;
+                        final.Append(vec3.toString());
+
+                    }
+                    else
+                    {
+                        final.Append(item);
+                    }
+                }
+
+                //Prevent adding unnecessary comma
+                if (i < packet.Length - 1)
+                {
+                    final.Append(",");
+                }
+
+                i++;
+            }
+
+            final.Append("]");
+
+            return final.ToString();
         }
 
         //Converts string back into object
@@ -350,7 +398,7 @@ namespace SatCom
             //B: EstCon - [long source, long destination, "EstCon", [EstType, gridType, laserAntPos]]
             //Creates an EstCon broadcast packet. EstType tells other grids what grid types it wants. E.g. if estType is Outpost, only outposts will return data.
             IGC.SendBroadcastMessage("EstCon", createPacket(pBId.ToString(), "All", "EstCon", new object[] { estType, gridType, laserAntPos }), TransmissionDistance.TransmissionDistanceMax);
-        }*/
+        }
 
         public static void Init()
         {
@@ -367,7 +415,7 @@ namespace SatCom
             //more for grids that have multiple PBs.
             
             //dirListener = IGC.UnicastListener;
-        }
+        }*/
 
 
         static void Main(string[] args)
@@ -376,13 +424,23 @@ namespace SatCom
 
             //Create test object and convert to string
             object[] drone = new object[] { "43242345", "243525", new object[] { "312343", new Vector3(2, 3, 4), 23, new object[] { new Vector3(2, 4, 5), 23, "232" } }, new object[] { "test", new object[] { "brrr", 434.34, new Vector3(3, 54, 1) }, 123 } };
-            string msg = objectToString(drone);
 
+            Stopwatch timer = new Stopwatch();
+            timer.Start();
+            string msg = objectToString(drone);
             Console.WriteLine(msg);
+            timer.Stop();
+
+            Console.WriteLine("Time: " + timer.ElapsedMilliseconds.ToString());
+
 
             //Convert test string back into object
+            timer.Reset();
+            timer.Start();
             object[] test = stringToObject(msg);
             Console.WriteLine(displayThing(test));
+            timer.Stop();
+            Console.WriteLine("Time: " + timer.ElapsedMilliseconds.ToString());
         }
     }
 }
