@@ -28,9 +28,7 @@ namespace IngameScript
             public Vector3D thrustDirection;
             public double maxEffectiveThrust;
             public double currentThrust;
-            public double currentThrustPercentage;
             public double availableThrust;
-            public double availableThrustPercentage;
 
             public ThrustGroup(Vector3D ThrustDirection)
             {
@@ -81,9 +79,7 @@ namespace IngameScript
                 }
 
                 currentThrust = ThrustPercentage * maxEffectiveThrust;
-                currentThrustPercentage = ThrustPercentage;
                 availableThrust = maxEffectiveThrust - currentThrust;
-                availableThrustPercentage = availableThrust / maxEffectiveThrust;
             }
         }
     }

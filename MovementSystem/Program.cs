@@ -70,56 +70,48 @@ namespace IngameScript
                 // Calculate desired destination vector
                 Vector3D localDestVector = destinationVector.ConvertToLocalPosition(controller);
 
-                // Calculate velocity difference between desired velocity and current velocity
+                // Calculate desired velocity
                 Vector3D desiredVelocity = localDestVector * velocityProportionalGain;
                 if (desiredVelocity.Length() > maxSpeed)
                 {
                     desiredVelocity = Vector3D.Normalize(desiredVelocity) * maxSpeed;
                 }
 
-                Vector3D velocityDifference = desiredVelocity - controller.GetShipVelocities().LinearVelocity;
-                Echo(velocityDifference.ToString());
+                // Apply thrust to reach desired velocity
 
-                // Calculate max available thrusts for all thrust groups in the direction of the desired change in velocity
-                Dictionary<ThrustGroup, double> thrustAmounts = new Dictionary<ThrustGroup, double>();
-                Echo("");
-                foreach(ThrustGroup thrustGroup in thrustGroups)
-                {
-                    double availableThrustAlongVelocity = thrustGroup.CalcThrustEffectiveness(velocityDifference) * thrustGroup.availableThrust;
-                    
-                    if(availableThrustAlongVelocity >= 0)
-                    {
-                        thrustAmounts.Add(thrustGroup, availableThrustAlongVelocity);
-                    }
 
-                }
 
-                // Calculate minimum possible thrust in direction by a thrust group
-                double minPossibleThrust = double.PositiveInfinity;
-                foreach(KeyValuePair<ThrustGroup, double> Entry in thrustAmounts)
-                {
-                    if(Entry.Value < minPossibleThrust)
-                    {
-                        minPossibleThrust = Entry.Value;
-                    }
-                }
-
-                if(minPossibleThrust == double.PositiveInfinity)
-                {
-                    minPossibleThrust = 0;
-                }
-
-                foreach (KeyValuePair<ThrustGroup, double> Entry in thrustAmounts)
-                {
-                    ThrustGroup thrustGroup = Entry.Key;
-                    thrustGroup.ApplyThrustPercentage(thrustGroup.currentThrustPercentage + minPossibleThrust / thrustGroup.maxEffectiveThrust);
-                }
-                
                 yield return 0;
 
             }
             
 
+        }
+
+        public IEnumerator<int> temp()
+        {
+
+            while (true)
+            {
+                // Calculate desired destination vector
+                Vector3D localDestVector = destinationVector.ConvertToLocalPosition(controller);
+
+                // Get thrusters
+                GetThrusters(out thrustGroups);
+
+                // Counter any gravity influencing the ship
+                CounterGravity();
+
+                // Calculate desired velocity
+                Vector3D desiredVelocity = localDestVector * velocityProportionalGain;
+                if(desiredVelocity.Length() > maxSpeed)
+                {
+                    desiredVelocity = Vector3D.Normalize(desiredVelocity) * maxSpeed;
+                }
+
+                yield return 0;
+            }
+            
         }
 
         public IMyShipController GetMainRemoteControl()
@@ -191,10 +183,16 @@ namespace IngameScript
             foreach (ThrustGroup thrustGroup in thrustGroups)
             {
 
-                thrustGroup.ApplyThrustPercentage(thrustGroup.CalcThrustEffectiveness(gravity) * shipMass * gravity.Length() / thrustGroup.maxEffectiveThrust);
+                double thrustToApply = thrustGroup.CalcThrustEffectiveness(gravity) * shipMass * gravity.Length() / thrustGroup.maxEffectiveThrust;
+                foreach (IMyThrust thruster in thrustGroup.thrusters)
+                {
+                    thruster.CustomName = thrustToApply.ToString();
+                    thruster.ShowOnHUD = true;
+                }
+
+                thrustGroup.ApplyThrustPercentage(thrustToApply);
 
             }
         }
-
     }
 }
