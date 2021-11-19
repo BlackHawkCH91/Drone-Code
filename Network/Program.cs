@@ -44,14 +44,15 @@ namespace IngameScript
 
         object[] laserAntPos;
 
+        int[] ticks = new int[] { 0 }; //Coroutine ticks
+
 
         //Functions ----------------------------------------------------------------------
 
 
         //String-to-data and data-to-string functions hidden here:
         
-        //Convert MatrixD to string... I'm sorry, but there is no way to loop through properties
-
+        //Convert MatrixD to string
         public static string matrixToString(MatrixD matrix)
         {
             string strMatrix = "M" + matrix.M11 + "|" + matrix.M12 + "|" + matrix.M13 + "|" + matrix.M14 + "|" +
@@ -63,7 +64,6 @@ namespace IngameScript
         }
 
         //Convert string to matrixD
-
         public static MatrixD stringToMatrix(string strMatrix)
         {
             string temp = strMatrix.Substring(1);
@@ -88,8 +88,7 @@ namespace IngameScript
             return matrix;
         }
 
-        //Converts a string back into a Vector3
-
+        //Converts string to Vector3
         public static Vector3D StringToVector3(string sVector)
         {
             //Remove curly brackets
@@ -112,12 +111,34 @@ namespace IngameScript
             return position;
         }
 
-        public static Vector3D basicLocal(Vector3D reference, Vector3D position)
-        {
-            return position - reference;
-        }
+
 
         //Gets positions of [] in strings
+        /*public IEnumerator<int> bracketCheck()
+        {
+            //Loop through string
+            for (int i = 0; i < packet.Length; i++)
+            {
+                //Add bracket pos to its respective dictionary
+                if (packet[i] == '[')
+                {
+                    bracketPos["["].Add(i);
+                }
+                else if (packet[i] == ']')
+                {
+                    bracketPos["]"].Add(i);
+                }
+
+                //Yield every so often
+                if (i % 50 == 0)
+                {
+                    yield return ticks[0];
+                }
+            }
+
+            yield return ticks[0];
+        }*/
+
         static Dictionary<string, List<int>> getBracketPos(string packet)
         {
             //Creates bracket dictionary, adds two keys for { and }
@@ -128,6 +149,8 @@ namespace IngameScript
             bracketPos.Add("]", new List<int>());
 
             //Loop through string, checking for brackets
+            //Coroutine.AddCoroutine(bracketCheck);
+
             for (int i = 0; i < packet.Length; i++)
             {
                 //Add bracket pos to its respective dictionary
@@ -160,26 +183,30 @@ namespace IngameScript
                 }
                 else
                 {
+                    //ToString: System.String, System.Boolean, VRageMath.Vector3D, VRageMath.MatrixD
                     //If not, convert type to string. If its a string, add "", if vec3 use toString, etc
-                    if (item.GetType() == typeof(string))
-                    {
-                        final += "\"" + item + "\"";
-                    }
-                    else if (item.GetType() == typeof(Vector3D))
-                    {
-                        Vector3D vec3 = (Vector3D)item;
-                        final += vec3.ToString();
 
-                    }
-                    else if (item.GetType() == typeof(bool))  // New thing here. Needs testing
-                    {
-                        final += item.ToString(); //
+                    switch (item.GetType().ToString()) {
+                        case "System.String":
+                            final += "\"" + item + "\"";
+                            break;
 
-                    } else if (item.GetType() == typeof(MatrixD)) { // Matrix conversion
-                        final += matrixToString((MatrixD) item);
-                    } else
-                    {
-                        final += item;
+                        case "System.Boolean":
+                            final += item.ToString();
+                            break;
+
+                        case "VRageMath.Vector3D":
+                            Vector3D vec3 = (Vector3D)item;
+                            final += vec3.ToString();
+                            break;
+
+                        case "VRageMath.MatrixD":
+                            final += matrixToString((MatrixD)item);
+                            break;
+
+                        default:
+                            final += item;
+                            break;
                     }
                 }
 
@@ -521,10 +548,11 @@ namespace IngameScript
         //Initialliser, sets vars and listeners.
         public void Init()
         {
-            Echo("Retrieving LaserAnt list...");
             //Get all laser antennas and convert to object array
+            Echo("Retrieving LaserAnt list...");
             List<IMyLaserAntenna> laserAnts = new List<IMyLaserAntenna>();
             GridTerminalSystem.GetBlocksOfType<IMyLaserAntenna>(laserAnts);
+
 
             //Just keeps getting errors atm
             //laserAntPos = laserAnts.Select(x => x.GetPosition()).ToArray();
@@ -536,9 +564,9 @@ namespace IngameScript
             }
 
 
-            Echo("Setting listerers");
             //Define uni and broadcast listeners. Direct sets are "default" tags, meaning all comms have these tags by default.
-            string[] tagArr = new string[] { "EstCon", "LaserAnt", "Distress", "All" };
+            Echo("Setting listerers");
+            string[] tagArr = new string[] { "EstCon", "LaserAnt", "Distress", "All"};
 
             foreach (string tag in tagArr)
             {
@@ -556,8 +584,9 @@ namespace IngameScript
                 listener.DisableMessageCallback();
             }
 
-            Echo("Retrieving grid blocks...");
+
             //Get blocks and ID
+            Echo("Retrieving grid blocks...");
             mainProgBlock = GridTerminalSystem.GetBlockWithName("MainProgBlock");
             antenna = GridTerminalSystem.GetBlockWithName("Antenna") as IMyRadioAntenna;
 
@@ -581,7 +610,6 @@ namespace IngameScript
             ipList["Estcon"] = new object[] { "Default" };
             ipList["Distress"] = new object[] { "Default" };
             ipList["All"] = new object[] { "Default" };
-
 
             Runtime.UpdateFrequency = UpdateFrequency.Update100;
         }
@@ -607,7 +635,7 @@ namespace IngameScript
             {
                 Init();
  
-                //String-to-data and data-to-string testing. Only use when adding new data types
+                //String-data testing.
                 //
                 /*object[] testObject = new object[] { mainProgBlock.WorldMatrix, mainProgBlock.GetPosition(), "Hello", 123, 123.456, true, false, new object[] { "more", true, false } };
                 string testString = objectToString(testObject);
@@ -624,6 +652,9 @@ namespace IngameScript
                 Runtime.UpdateFrequency = UpdateFrequency.Update1;
             }
 
+
+
+            //testing:
 
             //This is just for testing. Can be removed later.
             if (gridType == "Outpost")
@@ -660,7 +691,6 @@ namespace IngameScript
                 LCD[2].WriteText(displayString);
             }
 
-            //testing:
 
             //Test packet
 
@@ -670,6 +700,8 @@ namespace IngameScript
                 establishConnection("All");
                 runOnce = false;
             }
+
+
 
             //Handling messages here. Seems messy and inefficient
             //Checking all listeners on a single frame. If they all have messages, string-to-data will be running
