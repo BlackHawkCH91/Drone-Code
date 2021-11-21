@@ -19,7 +19,7 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Test Code", "Test Code", "{
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "JSON_Parser", "JSON_Parser\JSON_Parser.csproj", "{DA6BBB91-CA6E-4512-957C-385282559837}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SatCom", "SatCom\SatCom.csproj", "{01018321-A64D-4044-9364-FC8BBE552D0A}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "SatCom", "SatCom\SatCom.csproj", "{01018321-A64D-4044-9364-FC8BBE552D0A}"
 EndProject
 Global
 	GlobalSection(SharedMSBuildProjectFiles) = preSolution

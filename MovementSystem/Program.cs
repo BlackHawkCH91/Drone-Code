@@ -37,7 +37,7 @@ namespace IngameScript
             Coroutine.AddCoroutine(MoveCoroutine);
 
         }
-        
+
         public void Save()
         {
 

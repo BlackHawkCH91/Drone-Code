@@ -55,7 +55,6 @@ namespace IngameScript
 
                 }
             }
-
         }
 
         static IMyGridProgramRuntimeInfo Runtime;
@@ -111,7 +110,7 @@ namespace IngameScript
                 }
 
                 // Remove all coroutines that are finished
-                foreach(IEnumerator<int> coroutine in coroutinesToRemove)
+                foreach (IEnumerator<int> coroutine in coroutinesToRemove)
                 {
 
                     activeCoroutines.Remove(coroutine);
@@ -129,7 +128,6 @@ namespace IngameScript
 
             activeCoroutines.Add(Coroutine);
             return Coroutine;
-
         }
 
         public static void PauseCoroutine(this IEnumerator<int> coroutine)
