@@ -173,56 +173,51 @@ namespace IngameScript
             string final = "[";
             int i = 0;
 
-            IEnumerator<int> objToStringCoroutine (object[] packet) =>
+            //Loop through all items in object
+            foreach (object item in packet)
             {
-                //Loop through all items in object
-                foreach (object item in packet)
+                if (item.GetType() == typeof(object[]))
                 {
-                    if (item.GetType() == typeof(object[]))
-                    {
-                        //If it is an object array, use recursion
-                        final += objectToString((object[])item);
-                    }
-                    else
-                    {
-                        //ToString: System.String, System.Boolean, VRageMath.Vector3D, VRageMath.MatrixD
-                        //If not, convert type to string. If its a string, add "", if vec3 use toString, etc
-
-                        switch (item.GetType().ToString()) {
-                            case "System.String":
-                                final += "\"" + item + "\"";
-                                break;
-
-                            case "System.Boolean":
-                                final += item.ToString();
-                                break;
-
-                            case "VRageMath.Vector3D":
-                                Vector3D vec3 = (Vector3D)item;
-                                final += vec3.ToString();
-                                break;
-
-                            case "VRageMath.MatrixD":
-                                final += matrixToString((MatrixD)item);
-                                break;
-
-                            default:
-                                final += item;
-                                break;
-                        }
-                    }
-
-                    //Prevent adding unnecessary comma
-                    if (i < packet.Length - 1)
-                    {
-                        final += ",";
-                    }
-
-                    i++;
-                    yield return 0
+                    //If it is an object array, use recursion
+                    final += objectToString((object[])item);
                 }
+                else
+                {
+                    //ToString: System.String, System.Boolean, VRageMath.Vector3D, VRageMath.MatrixD
+                    //If not, convert type to string. If its a string, add "", if vec3 use toString, etc
+
+                    switch (item.GetType().ToString()) {
+                        case "System.String":
+                            final += "\"" + item + "\"";
+                            break;
+
+                        case "System.Boolean":
+                            final += item.ToString();
+                            break;
+
+                        case "VRageMath.Vector3D":
+                            Vector3D vec3 = (Vector3D)item;
+                            final += vec3.ToString();
+                            break;
+
+                        case "VRageMath.MatrixD":
+                            final += matrixToString((MatrixD)item);
+                            break;
+
+                        default:
+                            final += item;
+                            break;
+                    }
+                }
+
+                //Prevent adding unnecessary comma
+                if (i < packet.Length - 1)
+                {
+                    final += ",";
+                }
+
+                i++;
             }
-            Coroutine.AddCoroutine(objToStringCoroutine);
 
             final += "]";
 
