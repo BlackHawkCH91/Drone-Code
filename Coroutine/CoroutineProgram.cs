@@ -123,7 +123,7 @@ namespace IngameScript
 
         }
 
-        public static IEnumerator<int> AddCoroutine(Func<IEnumerator<int>> CoroutineFunc, params object[] args)
+        public static IEnumerator<int> AddCoroutine(Delegate CoroutineFunc, params object[] args)
         {
             IEnumerator<int> Coroutine = (IEnumerator<int>)CoroutineFunc.DynamicInvoke(args);
 
