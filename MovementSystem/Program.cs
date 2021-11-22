@@ -34,7 +34,9 @@ namespace IngameScript
 
             controller = GetMainRemoteControl();
             Runtime.EstablishCoroutines();
-            Coroutine.AddCoroutine(MoveCoroutine);
+            //Coroutine.AddCoroutine(MoveCoroutine);
+
+            
 
         }
 

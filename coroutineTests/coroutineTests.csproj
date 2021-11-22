@@ -4,10 +4,10 @@
   <PropertyGroup>
     <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
     <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
-    <ProjectGuid>{059CAF3A-F0C7-4284-A14C-FC0F11E82B15}</ProjectGuid>
+    <ProjectGuid>{5C570A9B-D800-4F23-84D5-538B412A0E60}</ProjectGuid>
     <OutputType>Exe</OutputType>
     <RootNamespace>IngameScript</RootNamespace>
-    <AssemblyName>Network</AssemblyName>
+    <AssemblyName>coroutineTests</AssemblyName>
     <TargetFrameworkVersion>v4.6.1</TargetFrameworkVersion>
     <FileAlignment>512</FileAlignment>
     <AutoGenerateBindingRedirects>true</AutoGenerateBindingRedirects>
@@ -50,7 +50,6 @@
     <AdditionalFiles Include="thumb.png" />
     <AdditionalFiles Include="MDK\whitelist.cache" />
   </ItemGroup>
-  <Import Project="..\Vector3DExtensions\Vector3DExtensions.projitems" Label="Shared" />
   <Import Project="..\Coroutine\Coroutine.projitems" Label="Shared" />
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <Target Name="AfterBuild">
