@@ -25,7 +25,8 @@ namespace IngameScript
 
         public Program()
         {
-
+            Runtime.EstablishCoroutines();
+            Coroutine.AddCoroutine(new someshit(TestThing), "hello");
         }
 
         public void Save()
@@ -35,17 +36,18 @@ namespace IngameScript
 
         public void Main(string argument, UpdateType updateSource)
         {
-            Coroutine.AddCoroutine(new someshit(TestThing), "hello", "world");
+            Coroutine.StepCoroutines(updateSource);
+
         }
 
-        public delegate IEnumerator<int> someshit(string shit1, string shit2);
-        public IEnumerator<int> TestThing(string text1, string text2)
+        public delegate IEnumerator<int> someshit(string shit1);
+        public IEnumerator<int> TestThing(string text1)
         {
             while (true)
             {
                 Echo(text1);
                 yield return 10;
-                Echo(text2);
+                //Echo(text2);
                 yield return 10;
             }
             
