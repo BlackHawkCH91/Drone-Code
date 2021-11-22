@@ -36,6 +36,8 @@ namespace IngameScript
             Runtime.EstablishCoroutines();
             Coroutine.AddCoroutine(MoveCoroutine);
 
+            
+
         }
         
         public void Save()
