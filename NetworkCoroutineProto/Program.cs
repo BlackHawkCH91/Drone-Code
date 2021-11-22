@@ -49,9 +49,13 @@ namespace IngameScript
 
         //Functions ----------------------------------------------------------------------
 
+        //Function variables:
+        object objToStrItem;
+        string strItem = "";
+        List<object[]> objToStrArrays = new List<object[]>();
+
 
         //!String-to-data and data-to-string functions hidden here:
-        
 
         //?Conversion functions
 
@@ -113,8 +117,9 @@ namespace IngameScript
         }
 
 
+        
         //!Converts object to string
-        static string objectToString(object[] packet)
+        public string objectToString(object[] packet)
         {
             string final = "[";
             int i = 0;
@@ -122,41 +127,11 @@ namespace IngameScript
             //Loop through all items in object
             foreach (object item in packet)
             {
-                if (item.GetType() == typeof(object[]))
-                {
-                    //If it is an object array, use recursion
-                    final += objectToString((object[])item);
-                }
-                else
-                {
-                    //ToString: System.String, System.Boolean, VRageMath.Vector3D, VRageMath.MatrixD
-                    //If not, convert type to string. If its a string, add "", if vec3 use toString, etc
+                //Call item convert (coroutine) which runs the function to convert item to string
+                Coroutine.AddCoroutine(itemConvert);
+                final += strItem;
 
-                    switch (item.GetType().ToString()) {
-                        case "System.String":
-                            final += "\"" + item + "\"";
-                            break;
-
-                        case "System.Boolean":
-                            final += item.ToString();
-                            break;
-
-                        case "VRageMath.Vector3D":
-                            Vector3D vec3 = (Vector3D)item;
-                            final += vec3.ToString();
-                            break;
-
-                        case "VRageMath.MatrixD":
-                            final += matrixToString((MatrixD)item);
-                            break;
-
-                        default:
-                            final += item;
-                            break;
-                    }
-                }
-
-                //Prevent adding unnecessary comma
+                //Don't add comma for last item
                 if (i < packet.Length - 1)
                 {
                     final += ",";
@@ -169,6 +144,65 @@ namespace IngameScript
 
             return final;
         }
+
+        //!Coroutine for objToStr
+        public IEnumerator<int> itemConvert()
+        {
+            itemToString(objToStrItem);
+            yield return ticks[0];
+        }
+
+        //!Converts the item to string
+        void itemToString(object item)
+        {
+            //Empty global var
+            strItem = "";
+
+            //Check if its an object
+            if (item.GetType() == typeof(object[]))
+            {
+                //If it is an object array, use recursion
+
+                //First add object[] to global list 
+                objToStrArrays.Add((object[]) item);
+
+                //Then access it. Once finished with it, remove it from the list.
+                strItem += objectToString(objToStrArrays[objToStrArrays.Count - 1]);
+                objToStrArrays.RemoveAt(objToStrArrays.Count - 1);
+            }
+            else
+            {
+                //ToString: System.String, System.Boolean, VRageMath.Vector3D, VRageMath.MatrixD
+                //If not, convert type to string. If its a string, add "", if vec3 use toString, etc
+                objToStrItem = item;
+
+                strItem += strItem;
+                switch (item.GetType().ToString())
+                {
+                    case "System.String":
+                        strItem += "\"" + item + "\"";
+                        break;
+
+                    case "System.Boolean":
+                        strItem += item.ToString();
+                        break;
+
+                    case "VRageMath.Vector3D":
+                        Vector3D vec3 = (Vector3D)item;
+                        strItem += vec3.ToString();
+                        break;
+
+                    case "VRageMath.MatrixD":
+                        strItem += matrixToString((MatrixD)item);
+                        break;
+
+                    default:
+                        strItem += item;
+                        break;
+                }
+            }
+        }
+
 
 
         //!Gets position of brackets
@@ -200,6 +234,8 @@ namespace IngameScript
             return bracketPos;
         }
 
+
+        //TODO: Use coroutines for this
         //!Converts string back into object
         public static object[] stringToObject(string packet)
         {
@@ -292,12 +328,13 @@ namespace IngameScript
                     {
                         finalPacketArr[i] = item.Substring(1, item.Length - 2);
                     }
-                     else if (item.StartsWith("T") || item.StartsWith("F")) //New thing. Needs testing
+                    else if (item.StartsWith("T") || item.StartsWith("F")) //New thing. Needs testing
                     {
                         finalPacketArr[i] = item.StartsWith("T"); //
-                    } else if (item[0] == 'M') // Another new thing
+                    }
+                    else if (item[0] == 'M') // Another new thing
                     {
-                        
+
                         finalPacketArr[i] = stringToMatrix(item);
                     }
                     else if (item.Contains("."))
@@ -333,14 +370,16 @@ namespace IngameScript
                 }
                 else if (array[i].GetType() == typeof(Vector3D))
                 {
-                    Vector3D temp = (Vector3D) array[i];
+                    Vector3D temp = (Vector3D)array[i];
                     output += temp.ToString();
-                } else if (array[i].GetType() == typeof(string))
+                }
+                else if (array[i].GetType() == typeof(string))
                 {
                     output += "\"" + array[i].ToString() + "\"";
-                } else if (array[i].GetType() == typeof(MatrixD))
+                }
+                else if (array[i].GetType() == typeof(MatrixD))
                 {
-                    output += matrixToString((MatrixD) array[i]);
+                    output += matrixToString((MatrixD)array[i]);
                 }
                 else
                 {
@@ -356,7 +395,7 @@ namespace IngameScript
         }
 
         //!Creates a packet
-        static ImmutableArray<string> createPacketString(string source, string destination, string purpose, object[] packet)
+        ImmutableArray<string> createPacketString(string source, string destination, string purpose, object[] packet)
         {
             string tempDest = destination;
             long temp;
@@ -369,9 +408,9 @@ namespace IngameScript
             //terminal.broadcast(source, finalPacket);
             return finalPacket;
         }
-
-        //-----------------------------------------------------------------------------
         
+        //-----------------------------------------------------------------------------
+
 
 
         //!Gets block health
@@ -395,16 +434,18 @@ namespace IngameScript
                 if (IGC.IsEndpointReachable(long.Parse(destination), TransmissionDistance.TransmissionDistanceMax))
                 {
                     IGC.SendUnicastMessage<ImmutableArray<string>>(long.Parse(destination), destination, contents);
-                } else
+                }
+                else
                 {
                     packetBacklog.Add(long.Parse(destination), contents);
                 }
-            } else
+            }
+            else
             {
                 //Send broadcast
                 IGC.SendBroadcastMessage<ImmutableArray<string>>(destination, contents, TransmissionDistance.TransmissionDistanceMax);
             }
-            
+
             //IGC.SendBroadcastMessage<object[]>(tag, contents, TransmissionDistance.TransmissionDistanceMax);
         }
 
@@ -445,7 +486,8 @@ namespace IngameScript
             {
                 //Unicast
                 message = dirListener.AcceptMessage();
-            } else
+            }
+            else
             {
                 //Broadcast
                 message = listeners[listener - 1].AcceptMessage();
@@ -453,7 +495,7 @@ namespace IngameScript
             }
 
             //Convert to object
-            ImmutableArray<string> temp = (ImmutableArray<string>) message.Data;
+            ImmutableArray<string> temp = (ImmutableArray<string>)message.Data;
 
             object[] finalMsg;
             long source = long.Parse(temp[0]);
@@ -467,7 +509,8 @@ namespace IngameScript
                 long test;
                 long.TryParse(temp[1], out test);
                 finalMsg[1] = test;
-            } else
+            }
+            else
             {
                 string dest = temp[1].ToString();
                 finalMsg[1] = dest.Substring(1, dest.Length - 2);
@@ -543,7 +586,7 @@ namespace IngameScript
 
             //Define uni and broadcast listeners. Direct sets are "default" tags, meaning all comms have these tags by default.
             Echo("Setting listerers");
-            string[] tagArr = new string[] { "EstCon", "LaserAnt", "Distress", "All"};
+            string[] tagArr = new string[] { "EstCon", "LaserAnt", "Distress", "All" };
 
             foreach (string tag in tagArr)
             {
@@ -579,6 +622,17 @@ namespace IngameScript
 
         //Default game functions ---------
 
+        public IEnumerator<int> mainProgram()
+        {
+            object[] test = new object[] { "Hello", 123, true, new object[] { "ree", new object[] { 123, 43 }, new object[] { 321, "ree" }  } };
+            string displayTest = displayThing(test);
+            while (true)
+            {
+                LCD[3].WriteText(displayTest + "\n" + objectToString(test));
+                yield return 0;
+            }
+        }
+
         //!Initialise some variables here
         public Program()
         {
@@ -591,8 +645,8 @@ namespace IngameScript
             Runtime.UpdateFrequency = UpdateFrequency.Update100;
 
             //!Coroutine planning
-            //Runtime.EstablishCoroutines();
-            //Coroutine.AddCoroutine(displayInventory);
+            Runtime.EstablishCoroutines();
+            Coroutine.AddCoroutine(mainProgram);
         }
 
 
@@ -618,7 +672,7 @@ namespace IngameScript
             if (!setup)
             {
                 Init();
- 
+
                 //String-data testing.
                 //
                 /*object[] testObject = new object[] { mainProgBlock.WorldMatrix, mainProgBlock.GetPosition(), "Hello", 123, 123.456, true, false, new object[] { "more", true, false } };
@@ -633,7 +687,8 @@ namespace IngameScript
 
                 setup = true;
                 //Remove this and set update frequency in program
-                Runtime.UpdateFrequency = UpdateFrequency.Update1;
+
+                //?Runtime.UpdateFrequency = UpdateFrequency.Update1;
             }
 
 
@@ -641,7 +696,7 @@ namespace IngameScript
             //testing:
 
             //This is just for testing. Can be removed later.
-            if (gridType == "Outpost")
+            /*?if (gridType == "Outpost")
             {
                 Echo("Running outpost code.");
                 string displayString = "";
@@ -708,7 +763,7 @@ namespace IngameScript
                     displayListener += " true";
                     recieveMessage(i);
                 }
-            }
+            }*/
         }
 
         public void Save()
@@ -797,4 +852,6 @@ All grids will store a list of satellites + laser antenna positions
 
 
 //Test push ree
+
+75885892188854049
 */
