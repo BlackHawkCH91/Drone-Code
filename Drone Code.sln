@@ -21,16 +21,15 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "JSON_Parser", "JSON_Parser\
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "SatCom", "SatCom\SatCom.csproj", "{01018321-A64D-4044-9364-FC8BBE552D0A}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "NetworkCoroutineProto", "NetworkCoroutineProto\NetworkCoroutineProto.csproj", "{094AC9C6-DD91-47C7-933D-A71A2208E9BC}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "coroutineTests", "coroutineTests\coroutineTests.csproj", "{5C570A9B-D800-4F23-84D5-538B412A0E60}"
 EndProject
 Global
 	GlobalSection(SharedMSBuildProjectFiles) = preSolution
 		Coroutine\Coroutine.projitems*{059caf3a-f0c7-4284-a14c-fc0f11e82b15}*SharedItemsImports = 4
 		Vector3DExtensions\Vector3DExtensions.projitems*{059caf3a-f0c7-4284-a14c-fc0f11e82b15}*SharedItemsImports = 4
-		Coroutine\Coroutine.projitems*{094ac9c6-dd91-47c7-933d-a71a2208e9bc}*SharedItemsImports = 4
-		Vector3DExtensions\Vector3DExtensions.projitems*{094ac9c6-dd91-47c7-933d-a71a2208e9bc}*SharedItemsImports = 4
 		Coroutine\Coroutine.projitems*{4fea1d8d-11cc-4d65-993b-821aad1e7ed6}*SharedItemsImports = 4
 		Vector3DExtensions\Vector3DExtensions.projitems*{4fea1d8d-11cc-4d65-993b-821aad1e7ed6}*SharedItemsImports = 4
+		Coroutine\Coroutine.projitems*{5c570a9b-d800-4f23-84d5-538b412a0e60}*SharedItemsImports = 4
 		Coroutine\Coroutine.projitems*{807e7f93-033e-4d6d-a4bb-20385f3f3b1f}*SharedItemsImports = 13
 		Coroutine\Coroutine.projitems*{d7769a5c-4e12-41ff-bf4d-9edf0ff53d53}*SharedItemsImports = 4
 		Vector3DExtensions\Vector3DExtensions.projitems*{d7769a5c-4e12-41ff-bf4d-9edf0ff53d53}*SharedItemsImports = 4
@@ -80,13 +79,13 @@ Global
 		{01018321-A64D-4044-9364-FC8BBE552D0A}.Release|Any CPU.Build.0 = Release|Any CPU
 		{01018321-A64D-4044-9364-FC8BBE552D0A}.Release|x64.ActiveCfg = Release|Any CPU
 		{01018321-A64D-4044-9364-FC8BBE552D0A}.Release|x64.Build.0 = Release|Any CPU
-		{094AC9C6-DD91-47C7-933D-A71A2208E9BC}.Debug|Any CPU.ActiveCfg = Debug|x64
-		{094AC9C6-DD91-47C7-933D-A71A2208E9BC}.Debug|x64.ActiveCfg = Debug|x64
-		{094AC9C6-DD91-47C7-933D-A71A2208E9BC}.Debug|x64.Build.0 = Debug|x64
-		{094AC9C6-DD91-47C7-933D-A71A2208E9BC}.Release|Any CPU.ActiveCfg = Debug|x64
-		{094AC9C6-DD91-47C7-933D-A71A2208E9BC}.Release|Any CPU.Build.0 = Debug|x64
-		{094AC9C6-DD91-47C7-933D-A71A2208E9BC}.Release|x64.ActiveCfg = Debug|x64
-		{094AC9C6-DD91-47C7-933D-A71A2208E9BC}.Release|x64.Build.0 = Debug|x64
+		{5C570A9B-D800-4F23-84D5-538B412A0E60}.Debug|Any CPU.ActiveCfg = Debug|x64
+		{5C570A9B-D800-4F23-84D5-538B412A0E60}.Debug|x64.ActiveCfg = Debug|x64
+		{5C570A9B-D800-4F23-84D5-538B412A0E60}.Debug|x64.Build.0 = Debug|x64
+		{5C570A9B-D800-4F23-84D5-538B412A0E60}.Release|Any CPU.ActiveCfg = Debug|x64
+		{5C570A9B-D800-4F23-84D5-538B412A0E60}.Release|Any CPU.Build.0 = Debug|x64
+		{5C570A9B-D800-4F23-84D5-538B412A0E60}.Release|x64.ActiveCfg = Debug|x64
+		{5C570A9B-D800-4F23-84D5-538B412A0E60}.Release|x64.Build.0 = Debug|x64
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
@@ -96,7 +95,7 @@ Global
 		{DF63A6BF-0CE7-4A83-9475-2C405C25BD0F} = {611643A1-843E-4B4C-9F30-A47A8786B1A4}
 		{DA6BBB91-CA6E-4512-957C-385282559837} = {92BAC0A1-993A-40F9-9BF5-9AAAAEEF5433}
 		{01018321-A64D-4044-9364-FC8BBE552D0A} = {92BAC0A1-993A-40F9-9BF5-9AAAAEEF5433}
-		{094AC9C6-DD91-47C7-933D-A71A2208E9BC} = {92BAC0A1-993A-40F9-9BF5-9AAAAEEF5433}
+		{5C570A9B-D800-4F23-84D5-538B412A0E60} = {92BAC0A1-993A-40F9-9BF5-9AAAAEEF5433}
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution
 		SolutionGuid = {C4CF8A6F-F7EF-4814-93B5-C21F41C3EE0B}
