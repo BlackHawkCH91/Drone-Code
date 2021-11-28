@@ -44,7 +44,7 @@ namespace IngameScript
             while (true)
             {
                 Echo(text1);
-                yield return 10;
+                yield return 100;
                 Echo(text2);
                 yield return 10;
             }

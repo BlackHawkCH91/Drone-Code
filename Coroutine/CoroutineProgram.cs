@@ -60,11 +60,16 @@ namespace IngameScript
 
         static IMyGridProgramRuntimeInfo Runtime;
 
+        // Coroutine Lists
         private static List<IEnumerator<int>> activeCoroutines = new List<IEnumerator<int>>();
         private static List<PausedCoroutine> pausedCoroutines = new List<PausedCoroutine>();
 
+        // Corouitnes to remove lists
         private static List<IEnumerator<int>> coroutinesToRemove = new List<IEnumerator<int>>();
         private static List<PausedCoroutine> pausedCoroutinesToRemove = new List<PausedCoroutine>();
+
+        // Coroutines to pause lists
+        private static List<IEnumerator<int>> coroutinesToPause = new List<IEnumerator<int>>();
 
         public static void EstablishCoroutines(this IMyGridProgramRuntimeInfo GridRuntime)
         {
@@ -77,50 +82,47 @@ namespace IngameScript
             // Coroutine will trigger when user presses run or when it triggers itself
             if (updateSource == UpdateType.Once || updateSource == UpdateType.Terminal)
             {
-
                 CheckPausedCoroutines();
 
                 foreach (IEnumerator<int> coroutine in activeCoroutines)
                 {
-
                     bool hasMoreSteps = coroutine.MoveNext();
 
                     if (hasMoreSteps)
                     {
-
                         // if yield time is 0 then coroutine must be run next tick so do not create a "paused coroutine" for it
                         if (coroutine.Current > 0)
                         {
                             // Update frequency is changed to update once if it is not already set
                             Runtime.UpdateFrequency |= UpdateFrequency.Once;
-                            coroutine.PauseCoroutine();
+                            coroutinesToPause.Add(coroutine);
                         }
 
                         // Update frequency is changed to update once if it is not already set
                         Runtime.UpdateFrequency |= UpdateFrequency.Once;
-
                     }
                     else
                     {
-
                         coroutinesToRemove.Add(coroutine);
                         coroutine.Dispose();
-
                     }
-
                 }
+
+                // Pause all coroutines that need to be paused
+                foreach(IEnumerator<int> coroutine in coroutinesToPause)
+                {
+                    activeCoroutines.Remove(coroutine);
+                    pausedCoroutines.Add(new PausedCoroutine(coroutine, coroutine.Current));
+                }
+                coroutinesToPause.Clear();
 
                 // Remove all coroutines that are finished
-                foreach(IEnumerator<int> coroutine in coroutinesToRemove)
+                foreach (IEnumerator<int> coroutine in coroutinesToRemove)
                 {
-
                     activeCoroutines.Remove(coroutine);
-
                 }
                 coroutinesToRemove.Clear();
-
             }
-
         }
 
         public static IEnumerator<int> AddCoroutine(Delegate CoroutineFunc, params object[] args)
@@ -129,27 +131,6 @@ namespace IngameScript
 
             activeCoroutines.Add(Coroutine);
             return Coroutine;
-        }
-
-        private static void RunWrappedCoroutine()
-        {
-
-        }
-
-        public static void PauseCoroutine(this IEnumerator<int> coroutine)
-        {
-
-            activeCoroutines.Remove(coroutine);
-            pausedCoroutines.Add( new PausedCoroutine(coroutine, coroutine.Current) );
-
-        }
-
-        public static void PauseCoroutine(this IEnumerator<int> coroutine, int yieldTime)
-        {
-
-            activeCoroutines.Remove(coroutine);
-            pausedCoroutines.Add(new PausedCoroutine(coroutine, yieldTime));
-
         }
 
         private static void CheckPausedCoroutines()
