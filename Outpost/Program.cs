@@ -286,7 +286,7 @@ namespace IngameScript
         {
             //Runtime.UpdateFrequency = UpdateFrequency.Update1;
             Runtime.EstablishCoroutines();
-            Coroutine.AddCoroutine(displayInventory);
+            //Coroutine.AddCoroutine(displayInventory);
         }
 
         public void Save()
