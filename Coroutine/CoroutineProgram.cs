@@ -70,21 +70,28 @@ namespace IngameScript
         public class EventConnection
         {
             internal Delegate connectedMethod;
+            private EventSignal connectedSignal;
             public void Disconnect()
             {
-
+                connectedSignal.RemoveConnection(this);
             }
 
             // Constructor
-            public EventConnection(Delegate MethodToConnect)
+            public EventConnection(Delegate MethodToConnect, EventSignal SignalToConnect)
             {
                 connectedMethod = MethodToConnect;
+                connectedSignal = SignalToConnect;
             }
         }
 
         public class EventSignal
         {
             private List<EventConnection> connections = new List<EventConnection>();
+
+            internal void RemoveConnection(EventConnection connection)
+            {
+                connections.Remove(connection);
+            }
 
             public void Fire(params object[] args)
             {
@@ -96,7 +103,7 @@ namespace IngameScript
 
             public EventConnection Connect(Delegate MethodToConnect)
             {
-                return new EventConnection(MethodToConnect);
+                return new EventConnection(MethodToConnect, this);
             }
         }
 
