@@ -25,8 +25,9 @@ namespace IngameScript
 
         public Program()
         {
-            Runtime.EstablishCoroutines();
-            Coroutine.AddCoroutine(new testCoroutineAdder(testCoroutine), "hello", "world");
+            Runtime.EstablishTaskScheduler();
+            TaskScheduler.Coroutine NewCoroutine = TaskScheduler.CreateCoroutine(new Func<string, string, IEnumerator<int>>(testCoroutine), "hello", "world");
+            TaskScheduler.ResumeCoroutine(NewCoroutine);
         }
 
         public void Save()
@@ -36,7 +37,7 @@ namespace IngameScript
 
         public void Main(string argument, UpdateType updateSource)
         {
-            Coroutine.StepCoroutines(updateSource);
+            TaskScheduler.StepCoroutines(updateSource);
         }
 
         public IEnumerator<int> testCoroutine(string text1, string text2)
