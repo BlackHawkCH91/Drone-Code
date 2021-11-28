@@ -26,52 +26,104 @@ namespace IngameScript
      * - There are 60 ticks per ingame second
      * 
      */
-    public static class Coroutine
+    public static class TaskScheduler
     {
-        private class PausedCoroutine
+        public class Coroutine
         {
-            public IEnumerator<int> coroutine;
-            int yieldTime;
-
-            public PausedCoroutine(IEnumerator<int> givenCoroutine, int givenYieldTime)
+            internal int yieldTime = 0;
+            internal string status = "new";         // field
+            public string Status                    // property
             {
-                coroutine = givenCoroutine;
-                yieldTime = givenYieldTime;
+                get { return status; }
             }
 
-            public bool ResumingNow()
+            internal Delegate CoroutineMethod;
+            internal object[] InitialArgs;
+            internal IEnumerator<int> CoroutineEnumerator;
+
+            // Constructor
+            public Coroutine(Delegate coroutineMethod, params object[] args)
             {
-                if (yieldTime <= 0)
+                CoroutineEnumerator = (IEnumerator<int>)coroutineMethod.DynamicInvoke(args);
+            }
+
+            public void Kill()
+            {
+                status = "dead";
+                CoroutineEnumerator.Dispose();
+            }
+
+            internal bool RunningThisTick()
+            {
+                if(yieldTime <= 0)
                 {
-
                     return true;
-
                 }
                 else
                 {
-
                     yieldTime--;
                     return false;
+                }
+            }
+        }
 
+        public class EventConnection
+        {
+            internal Delegate connectedMethod;
+            public void Disconnect()
+            {
+
+            }
+
+            // Constructor
+            public EventConnection(Delegate MethodToConnect)
+            {
+                connectedMethod = MethodToConnect;
+            }
+        }
+
+        public class EventSignal
+        {
+            private List<EventConnection> connections = new List<EventConnection>();
+
+            public void Fire(params object[] args)
+            {
+                foreach (EventConnection connection in connections)
+                {
+                    CreateCoroutine(connection.connectedMethod, args);
                 }
             }
 
+            public EventConnection Connect(Delegate MethodToConnect)
+            {
+                return new EventConnection(MethodToConnect);
+            }
+        }
+
+        public class BindableEvent
+        {
+            public EventSignal Event;
+            public void Fire(params object[] args)
+            {
+                Event.Fire(args);
+            }
         }
 
         static IMyGridProgramRuntimeInfo Runtime;
 
         // Coroutine Lists
-        private static List<IEnumerator<int>> activeCoroutines = new List<IEnumerator<int>>();
-        private static List<PausedCoroutine> pausedCoroutines = new List<PausedCoroutine>();
+        private static List<Coroutine> activeCoroutines = new List<Coroutine>();
+        private static List<Coroutine> pausedCoroutines = new List<Coroutine>();
+        private static List<Coroutine> yieldedCoroutines = new List<Coroutine>();
 
-        // Corouitnes to remove lists
-        private static List<IEnumerator<int>> coroutinesToRemove = new List<IEnumerator<int>>();
-        private static List<PausedCoroutine> pausedCoroutinesToRemove = new List<PausedCoroutine>();
+        private static List<Coroutine> coroutinesToRemove = new List<Coroutine>();
+        private static List<Coroutine> coroutinesToPause = new List<Coroutine>();
+        private static List<Coroutine> coroutinesToYield = new List<Coroutine>();
+        private static List<Coroutine> coroutinesToResume = new List<Coroutine>();
 
-        // Coroutines to pause lists
-        private static List<IEnumerator<int>> coroutinesToPause = new List<IEnumerator<int>>();
+        private static List<Coroutine> yieldedCoroutinesToRemove = new List<Coroutine>();
 
-        public static void EstablishCoroutines(this IMyGridProgramRuntimeInfo GridRuntime)
+        public static void EstablishTaskScheduler(this IMyGridProgramRuntimeInfo GridRuntime)
         {
             Runtime = GridRuntime;
         }
@@ -82,20 +134,20 @@ namespace IngameScript
             // Coroutine will trigger when user presses run or when it triggers itself
             if (updateSource == UpdateType.Once || updateSource == UpdateType.Terminal)
             {
-                CheckPausedCoroutines();
+                CheckYieldedCoroutines();
 
-                foreach (IEnumerator<int> coroutine in activeCoroutines)
+                foreach (Coroutine coroutine in activeCoroutines)
                 {
-                    bool hasMoreSteps = coroutine.MoveNext();
+                    bool hasMoreSteps = coroutine.CoroutineEnumerator.MoveNext();
 
                     if (hasMoreSteps)
                     {
                         // if yield time is 0 then coroutine must be run next tick so do not create a "paused coroutine" for it
-                        if (coroutine.Current > 0)
+                        if (coroutine.CoroutineEnumerator.Current > 0)
                         {
                             // Update frequency is changed to update once if it is not already set
                             Runtime.UpdateFrequency |= UpdateFrequency.Once;
-                            coroutinesToPause.Add(coroutine);
+                            coroutinesToYield.Add(coroutine);
                         }
 
                         // Update frequency is changed to update once if it is not already set
@@ -104,65 +156,124 @@ namespace IngameScript
                     else
                     {
                         coroutinesToRemove.Add(coroutine);
-                        coroutine.Dispose();
                     }
                 }
 
-                // Pause all coroutines that need to be paused
-                foreach(IEnumerator<int> coroutine in coroutinesToPause)
+                // Remove all coroutines to remove
+                foreach (Coroutine coroutine in coroutinesToRemove)
                 {
-                    activeCoroutines.Remove(coroutine);
-                    pausedCoroutines.Add(new PausedCoroutine(coroutine, coroutine.Current));
+                    InternalRemoveCoroutine(coroutine);
+                }
+                coroutinesToRemove.Clear();
+
+                // Pause all coroutines that must be paused
+                foreach (Coroutine coroutine in coroutinesToPause)
+                {
+                    InternalPauseCoroutine(coroutine);
                 }
                 coroutinesToPause.Clear();
 
-                // Remove all coroutines that are finished
-                foreach (IEnumerator<int> coroutine in coroutinesToRemove)
+                // Yield all coroutines that must be yielded
+                foreach (Coroutine coroutine in coroutinesToYield)
                 {
-                    activeCoroutines.Remove(coroutine);
+                    InternalYieldCoroutine(coroutine, coroutine.CoroutineEnumerator.Current);
                 }
-                coroutinesToRemove.Clear();
+                coroutinesToYield.Clear();
+
+                // Resume all coroutines that must be resumed
+                foreach (Coroutine coroutine in coroutinesToResume)
+                {
+                    InternalResumeCoroutine(coroutine);
+                }
+                coroutinesToResume.Clear();
             }
         }
 
-        public static IEnumerator<int> AddCoroutine(Delegate CoroutineFunc, params object[] args)
+        public static Coroutine CreateCoroutine(Delegate CoroutineFunc, params object[] args)
         {
-            IEnumerator<int> Coroutine = (IEnumerator<int>)CoroutineFunc.DynamicInvoke(args);
-
-            activeCoroutines.Add(Coroutine);
+            Coroutine Coroutine = new Coroutine(CoroutineFunc, args);
             return Coroutine;
         }
 
-        private static void CheckPausedCoroutines()
+        private static void InternalPauseCoroutine(Coroutine coroutine)
         {
-            foreach(PausedCoroutine pausedCoroutine in pausedCoroutines)
+            activeCoroutines.Remove(coroutine);
+            yieldedCoroutines.Remove(coroutine);
+
+            pausedCoroutines.Add(coroutine);
+            coroutine.status = "paused";
+        }
+        public static void PauseCoroutine(Coroutine coroutine)
+        {
+            // Flag coroutine to be paused next coroutine step
+            coroutinesToPause.Add(coroutine);
+        }
+
+        private static void InternalResumeCoroutine(Coroutine coroutine)
+        {
+            pausedCoroutines.Remove(coroutine);
+            yieldedCoroutines.Remove(coroutine);
+
+            // Add coroutine to active list and set yield time to 0 to execute next frame
+            activeCoroutines.Add(coroutine);
+            coroutine.yieldTime = 0;
+            coroutine.status = "running";
+        }
+        public static void ResumeCoroutine(Coroutine coroutine)
+        {
+            coroutinesToResume.Add(coroutine);
+        }
+
+        private static void InternalRemoveCoroutine(Coroutine coroutine)
+        {
+            activeCoroutines.Remove(coroutine);
+            pausedCoroutines.Remove(coroutine);
+            yieldedCoroutines.Remove(coroutine);
+            coroutinesToRemove.Remove(coroutine);
+            coroutinesToPause.Remove(coroutine);
+            coroutinesToYield.Remove(coroutine);
+            coroutinesToResume.Remove(coroutine);
+            coroutine.Kill();
+        }
+        public static void RemoveCoroutine(Coroutine coroutine)
+        {
+            coroutinesToRemove.Add(coroutine);
+        }
+
+        private static void InternalYieldCoroutine(Coroutine coroutine, int YieldTime)
+        {
+            activeCoroutines.Remove(coroutine);
+            yieldedCoroutines.Add(coroutine);
+
+            coroutine.yieldTime = YieldTime;
+        }
+
+        private static void CheckYieldedCoroutines()
+        {
+            foreach (Coroutine coroutine in yieldedCoroutines)
             {
-
-                if (pausedCoroutine.ResumingNow())
+                if (coroutine.RunningThisTick())
                 {
-                    
-                    activeCoroutines.Add(pausedCoroutine.coroutine);
-                    pausedCoroutinesToRemove.Add(pausedCoroutine);
-
-                } else
+                    activeCoroutines.Add(coroutine);
+                    yieldedCoroutinesToRemove.Add(coroutine);
+                }
+                else
                 {
                     // Update frequency is changed to update once if it is not already set to make sure that execution will continue until all coroutines resume
                     Runtime.UpdateFrequency |= UpdateFrequency.Once;
                 }
-
             }
 
             // Remove all coroutines that have been resumed
-            foreach (PausedCoroutine pausedCoroutine in pausedCoroutinesToRemove)
+            foreach (Coroutine coroutine in yieldedCoroutinesToRemove)
             {
-
-                pausedCoroutines.Remove(pausedCoroutine);
-
+                yieldedCoroutines.Remove(coroutine);
             }
-            pausedCoroutinesToRemove.Clear();
+            yieldedCoroutinesToRemove.Clear();
 
         }
 
     }
+    
 
 }
