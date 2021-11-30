@@ -28,7 +28,7 @@ namespace IngameScript
             Runtime.EstablishTaskScheduler(Echo);
             TaskScheduler.Coroutine NewCoroutine = TaskScheduler.CreateCoroutine(new Func<string, string, IEnumerator<int>>(testCoroutine), "hello", "world");
             TaskScheduler.ResumeCoroutine(NewCoroutine);
-            TestEvent.Connect(new Func<IEnumerator<int>>(TestEventMethod));
+            TestEvent.Connect(new Func<string, string, IEnumerator<int>>(TestEventMethod));
         }
 
         public void Save()
@@ -41,17 +41,16 @@ namespace IngameScript
             TaskScheduler.StepCoroutines(updateSource);
         }
 
-        public IEnumerator<int> TestEventMethod()
+        public IEnumerator<int> TestEventMethod(string textToWrite1, string textToWrite2)
         {
-                yield return 0;
-                TestEvent.Fire();
+            IMyTextSurface TextSurface = Me.GetSurface(1);
+            TextSurface.WriteText(textToWrite1 + " " + textToWrite2);
+            yield return 0;
         }
 
         public IEnumerator<int> testCoroutine(string text1, string text2)
         {
-            TestEvent.Fire();
-            yield return 0;
-            /*IMyTextSurface TextSurface = Me.GetSurface(0);
+            IMyTextSurface TextSurface = Me.GetSurface(0);
 
             while (true)
             {
@@ -59,12 +58,12 @@ namespace IngameScript
                 yield return 5;
                 TextSurface.WriteText("world");
                 yield return 10;
-                TestEvent.Fire();
+                TestEvent.Fire("possibly", "maybe");
                 yield return 10;
-                TestEvent.Fire();
+                TestEvent.Fire("working", "i think");
                 yield return 5;
-            }*/
-
+            }
+            
         }
         public delegate IEnumerator<int> testCoroutineAdder(string text1, string text2);
     }
