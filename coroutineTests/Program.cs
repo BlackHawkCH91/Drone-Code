@@ -22,12 +22,13 @@ namespace IngameScript
 {
     partial class Program : MyGridProgram
     {
-
+        TaskScheduler.BindableEvent TestEvent = new TaskScheduler.BindableEvent();
         public Program()
         {
-            Runtime.EstablishTaskScheduler();
+            Runtime.EstablishTaskScheduler(Echo);
             TaskScheduler.Coroutine NewCoroutine = TaskScheduler.CreateCoroutine(new Func<string, string, IEnumerator<int>>(testCoroutine), "hello", "world");
             TaskScheduler.ResumeCoroutine(NewCoroutine);
+            TestEvent.Connect(new Func<IEnumerator<int>>(TestEventMethod));
         }
 
         public void Save()
@@ -40,16 +41,30 @@ namespace IngameScript
             TaskScheduler.StepCoroutines(updateSource);
         }
 
+        public IEnumerator<int> TestEventMethod()
+        {
+                yield return 0;
+                TestEvent.Fire();
+        }
+
         public IEnumerator<int> testCoroutine(string text1, string text2)
         {
+            TestEvent.Fire();
+            yield return 0;
+            /*IMyTextSurface TextSurface = Me.GetSurface(0);
+
             while (true)
             {
-                Echo(text1);
-                yield return 100;
-                Echo(text2);
+                TextSurface.WriteText("hello");
+                yield return 5;
+                TextSurface.WriteText("world");
                 yield return 10;
-            }
-            
+                TestEvent.Fire();
+                yield return 10;
+                TestEvent.Fire();
+                yield return 5;
+            }*/
+
         }
         public delegate IEnumerator<int> testCoroutineAdder(string text1, string text2);
     }

@@ -77,7 +77,7 @@ namespace IngameScript
             }
 
             // Constructor
-            public EventConnection(Delegate MethodToConnect, EventSignal SignalToConnect)
+            internal EventConnection(Delegate MethodToConnect, EventSignal SignalToConnect)
             {
                 connectedMethod = MethodToConnect;
                 connectedSignal = SignalToConnect;
@@ -86,7 +86,7 @@ namespace IngameScript
 
         public class EventSignal
         {
-            private List<EventConnection> connections = new List<EventConnection>();
+            private List<EventConnection> connections;
 
             internal void RemoveConnection(EventConnection connection)
             {
@@ -97,26 +97,52 @@ namespace IngameScript
             {
                 foreach (EventConnection connection in connections)
                 {
-                    CreateCoroutine(connection.connectedMethod, args);
+                    ResumeCoroutine(CreateCoroutine(connection.connectedMethod, args));
                 }
             }
 
             public EventConnection Connect(Delegate MethodToConnect)
             {
-                return new EventConnection(MethodToConnect, this);
+                EventConnection NewConn = new EventConnection(MethodToConnect, this);
+                connections.Add(NewConn);
+                return NewConn;
+            }
+
+            internal EventSignal()
+            {
+                connections = new List<EventConnection>();
             }
         }
 
         public class BindableEvent
         {
             public EventSignal Event;
-            public void Fire(params object[] args)
+            public FireDelegate Fire;
+            public ConnectDelegate Connect;
+
+            public delegate void FireDelegate(params object[] args);
+            public delegate EventConnection ConnectDelegate(Delegate MethodToConnect);
+
+            /*public EventConnection Connect(Delegate MethodToConnect)
+            {
+                return Event.Connect(MethodToConnect);
+            }*/
+
+            /*public void Fire(params object[] args)
             {
                 Event.Fire(args);
+            }*/
+
+            public BindableEvent()
+            {
+                Event = new EventSignal();
+                Fire = new FireDelegate(Event.Fire);
+                Connect = new ConnectDelegate(Event.Connect);
             }
         }
 
         static IMyGridProgramRuntimeInfo Runtime;
+        static Action<string> Echo;
 
         // Coroutine Lists
         private static List<Coroutine> activeCoroutines = new List<Coroutine>();
@@ -130,9 +156,10 @@ namespace IngameScript
 
         private static List<Coroutine> yieldedCoroutinesToRemove = new List<Coroutine>();
 
-        public static void EstablishTaskScheduler(this IMyGridProgramRuntimeInfo GridRuntime)
+        public static void EstablishTaskScheduler(this IMyGridProgramRuntimeInfo GridRuntime, Action<string> GridEcho)
         {
             Runtime = GridRuntime;
+            Echo = GridEcho;
         }
 
         public static void StepCoroutines(UpdateType updateSource)
@@ -142,7 +169,9 @@ namespace IngameScript
             if (updateSource == UpdateType.Once || updateSource == UpdateType.Terminal)
             {
                 CheckYieldedCoroutines();
-
+                Echo("Active Coroutines: " + (activeCoroutines.Count() + yieldedCoroutines.Count()));
+                Echo("pausedCoroutines: " + pausedCoroutines.Count());
+                // Step all active coroutines
                 foreach (Coroutine coroutine in activeCoroutines)
                 {
                     bool hasMoreSteps = coroutine.CoroutineEnumerator.MoveNext();
@@ -199,6 +228,7 @@ namespace IngameScript
         public static Coroutine CreateCoroutine(Delegate CoroutineFunc, params object[] args)
         {
             Coroutine Coroutine = new Coroutine(CoroutineFunc, args);
+            PauseCoroutine(Coroutine);
             return Coroutine;
         }
 
@@ -236,7 +266,6 @@ namespace IngameScript
             activeCoroutines.Remove(coroutine);
             pausedCoroutines.Remove(coroutine);
             yieldedCoroutines.Remove(coroutine);
-            coroutinesToRemove.Remove(coroutine);
             coroutinesToPause.Remove(coroutine);
             coroutinesToYield.Remove(coroutine);
             coroutinesToResume.Remove(coroutine);
