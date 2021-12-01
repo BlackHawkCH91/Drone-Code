@@ -34,12 +34,14 @@ namespace IngameScript
                 double velocityProportionalGain = 0.1;*/
 
         // Controller vars
-        double PGain = 0;
+        double PGain = 1;
         double DGain = 0;
         double IGain = 0;
+        double decayRatio = 0.1;
 
         Vector3D destinationVector = new Vector3(11749.23, -81914.21, -86689.26);
         List<ThrustGroup> thrustGroups = new List<ThrustGroup>();
+        List<DecayingIntegralPIDController> PIDControllers = new List<DecayingIntegralPIDController>();
         IMyShipController controller;
 
         public Program()
@@ -48,7 +50,7 @@ namespace IngameScript
             controller = GetMainRemoteControl();
             Runtime.EstablishTaskScheduler(Echo);
             TaskScheduler.ResumeCoroutine(TaskScheduler.CreateCoroutine(new Func<IEnumerator<int>>(MoveCoroutine)));
-
+            TaskScheduler.ResumeCoroutine(TaskScheduler.CreateCoroutine(new Func<IEnumerator<int>>(StatusTracker)));
         }
 
         public void Save()
@@ -65,23 +67,52 @@ namespace IngameScript
 
         }
 
+        public IEnumerator<int> StatusTracker()
+        {
+            while (true)
+            {
+                Echo(
+                    "Max Instruction Count: " + Runtime.MaxInstructionCount.ToString() + "\n" +
+                    "Current Instruction Count: " + Runtime.CurrentInstructionCount.ToString() + "\n" +
+                    "Max Call Chain Depth: " + Runtime.MaxCallChainDepth.ToString() + "\n" +
+                    "Current Call Chain Depth: " + Runtime.CurrentCallChainDepth.ToString() + "\n" +
+                    "Last Run Time: " + Runtime.LastRunTimeMs.ToString() + "\n" +
+                    "Time Since Last Run: " + Runtime.TimeSinceLastRun.ToString()
+                    );
+                yield return 0;
+            }
+        }
 
         public IEnumerator<int> MoveControllerCoroutine()
         {
+            // Set up PID controllers
+            for (int i = 0; i < 3; i++)
+            {
+                PIDControllers.Add(new DecayingIntegralPIDController(PGain, IGain, DGain, decayRatio));
+            }
 
-            Vector3D errorVal = destinationVector.ConvertToLocalPosition(controller);
+            // Calc movement
+            while (true)
+            {
+                // Get time since last control input
+                double timeStep = Runtime.TimeSinceLastRun.TotalSeconds;
 
-            // Get P control value
-            Vector3D PVal = errorVal * PGain;
+                // Get control value
+                Vector3D errorVal = destinationVector.ConvertToLocalPosition(controller);
+                Vector3D controlVal = new Vector3D(
+                    PIDControllers[0].GetControlValue(errorVal.X, timeStep),
+                    PIDControllers[1].GetControlValue(errorVal.X, timeStep),
+                    PIDControllers[2].GetControlValue(errorVal.X, timeStep)
+                    );
 
-            // Get I control value
-            Vector3D IVal = errorVal * IGain;
+                // Apply control value
+                Me.GetSurface(1).WriteText(controlVal.ToString());
 
-            // Get D control value
-            Vector3D DVal = ;
+                yield return 0;
+            }
+        }
 
-
-            /*// Display controller direction vector
+/*            // Display controller direction vector
             controller.CustomName = controller.WorldMatrix.Forward.ToString();
             controller.ShowOnHUD = true;
 
@@ -110,12 +141,12 @@ namespace IngameScript
                 
                 yield return 0;
 
-            }*/
+            }
             
 
         }
 
-/*        // Desired velocity controlled by P controller
+        // Desired velocity controlled by P controller
         public Vector3D CalcDesiredVelocity()
         {
             Vector3D currVelocity = controller.GetShipVelocities().LinearVelocity;
@@ -210,7 +241,7 @@ namespace IngameScript
 
         }
 
-        public void CounterGravity()
+/*        public void CounterGravity()
         {
             // Get gravity and mass
             Vector3D gravity = controller.GetNaturalGravity();
@@ -223,7 +254,7 @@ namespace IngameScript
                 thrustGroup.ApplyThrustPercentage(thrustGroup.CalcThrustEffectiveness(gravity) * shipMass * gravity.Length() / thrustGroup.maxEffectiveThrust);
 
             }
-        }
+        }*/
 
     }
 }
