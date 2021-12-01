@@ -23,7 +23,7 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "SatCom", "SatCom\SatCom.csp
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "coroutineTests", "coroutineTests\coroutineTests.csproj", "{5C570A9B-D800-4F23-84D5-538B412A0E60}"
 EndProject
-Project("{D954291E-2A0B-460D-934E-DC6B0785DB48}") = "PIDController", "PIDController\PIDController.shproj", "{0E1D74B7-E0EB-4913-935E-5638D4D2D985}"
+Project("{D954291E-2A0B-460D-934E-DC6B0785DB48}") = "Controller", "PIDController\Controller.shproj", "{0E1D74B7-E0EB-4913-935E-5638D4D2D985}"
 EndProject
 Global
 	GlobalSection(SharedMSBuildProjectFiles) = preSolution
