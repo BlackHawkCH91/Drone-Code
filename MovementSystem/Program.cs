@@ -34,13 +34,12 @@ namespace IngameScript
                 double velocityProportionalGain = 0.1;*/
 
         // Controller vars
-        double PGain = .001;
-        double DGain = 0;
-        double IGain = 0;
-        double decayRatio = 0.1;
+        double PGain = 0.05;
+        double DGain = 0.45;
+        double IGain = 0.7;
+        double decayRatio = 0.0025;
 
         Vector3D destinationVector = new Vector3(11749.23, -81914.21, -86689.26);
-        List<ThrustGroup> thrustGroups = new List<ThrustGroup>();
         List<DecayingIntegralPIDController> PIDControllers = new List<DecayingIntegralPIDController>();
         IMyShipController controller;
 
@@ -104,10 +103,17 @@ namespace IngameScript
                     PIDControllers[1].GetControlValue(errorVal.Y, timeStep),
                     PIDControllers[2].GetControlValue(errorVal.Z, timeStep)
                     );
+
+                // Check if control val has an index > 1, if it does then multiply it by the inverse of this value to make the max value 1
+                double maxVal = Math.Abs(controlVal.AbsMax());
+                if (maxVal > 1){
+                    controlVal *= 1 / maxVal;
+                }
                 
                 // Get list of thrusters which are capable of applying thrust in control direction
                 List<ThrustGroup> effectiveThrustGroups = new List<ThrustGroup>();
-                foreach (ThrustGroup thrustGroup in GetThrusters())
+                List<ThrustGroup> thrustGroups = GetThrusters();
+                foreach (ThrustGroup thrustGroup in thrustGroups)
                 {
                     if (thrustGroup.CanApplyThrust(controlVal))
                     {
@@ -115,24 +121,23 @@ namespace IngameScript
                     }
                 }
 
-                /*
-                 * X: Left / right
-                 * Y: Up / down
-                 * Z: Forward / Backward
-                 * 
-                 * Z AND Y ARE CURRENTLY FLIPPED
-                 */
-
                 // Apply control value
                 string controlText = "";
-                foreach(ThrustGroup thrustGroup in effectiveThrustGroups)
+                foreach(ThrustGroup thrustGroup in thrustGroups)
                 {
-                    double thrustPercent = Vector3D.ProjectOnVector(ref controlVal, ref thrustGroup.thrustDirection).Length();
-                    //thrustGroup.ApplyThrustPercentage(thrustPercent);
+                    if (effectiveThrustGroups.Contains(thrustGroup))
+                    {
+                        double thrustPercent = Vector3D.ProjectOnVector(ref controlVal, ref thrustGroup.thrustDirection).Length();
+                        thrustGroup.ApplyThrustPercentage(thrustPercent);
 
-                    // DEBUG
-                    thrustGroup.thrusters[0].CustomData = thrustPercent.ToString();
-                    controlText += "Direction: " + Vector3D.Round(thrustGroup.thrustDirection, 1).ToString() + "\npercent:" + thrustPercent.ToString() + "\n";
+                        // DEBUG
+                        thrustGroup.thrusters[0].CustomData = thrustPercent.ToString();
+                        controlText += "Direction: " + Vector3D.Round(thrustGroup.thrustDirection, 1).ToString() + "\npercent:" + thrustPercent.ToString() + "\n";
+                    } 
+                    else
+                    {
+                        thrustGroup.ApplyThrustPercentage(0);
+                    }
                 }
 
                 Me.GetSurface(0).WriteText(
