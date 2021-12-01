@@ -75,7 +75,7 @@ namespace IngameScript
 
             public bool CanApplyThrust(Vector3D DirectionVector)
             {
-                if (thrustDirection.Dot(Vector3D.Normalize(DirectionVector)) < 0)
+                if (thrustDirection.Dot(Vector3D.Normalize(DirectionVector)) > 0)
                 {
                     return true;
                 }
@@ -87,6 +87,10 @@ namespace IngameScript
 
             public void ApplyThrustPercentage(double ThrustPercentage)
             {
+                if(ThrustPercentage > 1)
+                {
+                    ThrustPercentage = 1;
+                }
                 foreach(IMyThrust thruster in thrusters)
                 {
                     thruster.ThrustOverridePercentage = (float)ThrustPercentage;

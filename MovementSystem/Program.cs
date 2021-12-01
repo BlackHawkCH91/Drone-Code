@@ -34,7 +34,7 @@ namespace IngameScript
                 double velocityProportionalGain = 0.1;*/
 
         // Controller vars
-        double PGain = 1;
+        double PGain = .001;
         double DGain = 0;
         double IGain = 0;
         double decayRatio = 0.1;
@@ -76,8 +76,8 @@ namespace IngameScript
                     "Current Instruction Count: " + Runtime.CurrentInstructionCount.ToString() + "\n" +
                     "Max Call Chain Depth: " + Runtime.MaxCallChainDepth.ToString() + "\n" +
                     "Current Call Chain Depth: " + Runtime.CurrentCallChainDepth.ToString() + "\n" +
-                    "Last Run Time: " + Runtime.LastRunTimeMs.ToString() + "\n" +
-                    "Time Since Last Run: " + Runtime.TimeSinceLastRun.ToString()
+                    "Last Run Time ms: " + Runtime.LastRunTimeMs.ToString() + "\n" +
+                    "Time Since Last Run ms: " + Runtime.TimeSinceLastRun.TotalMilliseconds.ToString()
                     );
                 yield return 0;
             }
@@ -101,13 +101,51 @@ namespace IngameScript
                 Vector3D errorVal = destinationVector.ConvertToLocalPosition(controller);
                 Vector3D controlVal = new Vector3D(
                     PIDControllers[0].GetControlValue(errorVal.X, timeStep),
-                    PIDControllers[1].GetControlValue(errorVal.X, timeStep),
-                    PIDControllers[2].GetControlValue(errorVal.X, timeStep)
+                    PIDControllers[1].GetControlValue(errorVal.Y, timeStep),
+                    PIDControllers[2].GetControlValue(errorVal.Z, timeStep)
                     );
+                
+                // Get list of thrusters which are capable of applying thrust in control direction
+                List<ThrustGroup> effectiveThrustGroups = new List<ThrustGroup>();
+                foreach (ThrustGroup thrustGroup in GetThrusters())
+                {
+                    if (thrustGroup.CanApplyThrust(controlVal))
+                    {
+                        effectiveThrustGroups.Add(thrustGroup);
+                    }
+                }
+
+                /*
+                 * X: Left / right
+                 * Y: Up / down
+                 * Z: Forward / Backward
+                 * 
+                 * Z AND Y ARE CURRENTLY FLIPPED
+                 */
 
                 // Apply control value
-                Me.GetSurface(1).WriteText(controlVal.ToString());
+                string controlText = "";
+                foreach(ThrustGroup thrustGroup in effectiveThrustGroups)
+                {
+                    double thrustPercent = Vector3D.ProjectOnVector(ref controlVal, ref thrustGroup.thrustDirection).Length();
+                    //thrustGroup.ApplyThrustPercentage(thrustPercent);
 
+                    // DEBUG
+                    thrustGroup.thrusters[0].CustomData = thrustPercent.ToString();
+                    controlText += "Direction: " + Vector3D.Round(thrustGroup.thrustDirection, 1).ToString() + "\npercent:" + thrustPercent.ToString() + "\n";
+                }
+
+                Me.GetSurface(0).WriteText(
+                    "ErrorVal\nX: " + errorVal.X.ToString() +
+                    "\nY: " + errorVal.Y.ToString() +
+                    "\nZ: " + errorVal.Z.ToString() +
+                    "\nControlVal\n" +
+                    "X: " + controlVal.X.ToString() +
+                    "\nY: " + controlVal.Y.ToString() +
+                    "\nZ: " + controlVal.Z.ToString() +
+                    "\nControlText\n" + 
+                    controlText
+                    );
                 yield return 0;
             }
         }
@@ -204,10 +242,10 @@ namespace IngameScript
             throw new Exception("No remote controls found");
         }
 
-        public void GetThrusters(out List<ThrustGroup> ThrustGroupArray)
+        public List<ThrustGroup> GetThrusters()
         {
             // Clear any previous thruster groups
-            ThrustGroupArray = new List<ThrustGroup>();
+            List<ThrustGroup> ThrustGroupArray = new List<ThrustGroup>();
 
             // Get all thrusters
             List<IMyThrust> allThrusters = new List<IMyThrust>();
@@ -217,7 +255,7 @@ namespace IngameScript
             foreach (IMyThrust thruster in allThrusters)
             {
                 // Get thrust direction of thruster by using worldmatrix.backwards
-                Vector3D thrustDirection = thruster.WorldMatrix.Backward;
+                Vector3D thrustDirection = thruster.WorldMatrix.Backward.ConvertToLocalDirection(controller);
 
                 bool thrustGroupFound = false;
                 // Check if a thrust group for this direction exists, if it does then add this thruster to it and stop checking directions
@@ -239,6 +277,7 @@ namespace IngameScript
 
             }
 
+            return ThrustGroupArray;
         }
 
 /*        public void CounterGravity()
