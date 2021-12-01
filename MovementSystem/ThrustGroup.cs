@@ -73,6 +73,18 @@ namespace IngameScript
                 return -thrustDirection.Dot(Vector3D.Normalize(DirectionVector));
             }
 
+            public bool CanApplyThrust(Vector3D DirectionVector)
+            {
+                if (thrustDirection.Dot(Vector3D.Normalize(DirectionVector)) < 0)
+                {
+                    return true;
+                }
+                else
+                {
+                    return false;
+                }
+            }
+
             public void ApplyThrustPercentage(double ThrustPercentage)
             {
                 foreach(IMyThrust thruster in thrusters)

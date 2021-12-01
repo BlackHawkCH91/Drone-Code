@@ -23,10 +23,13 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "SatCom", "SatCom\SatCom.csp
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "coroutineTests", "coroutineTests\coroutineTests.csproj", "{5C570A9B-D800-4F23-84D5-538B412A0E60}"
 EndProject
+Project("{D954291E-2A0B-460D-934E-DC6B0785DB48}") = "PIDController", "PIDController\PIDController.shproj", "{0E1D74B7-E0EB-4913-935E-5638D4D2D985}"
+EndProject
 Global
 	GlobalSection(SharedMSBuildProjectFiles) = preSolution
 		Coroutine\Coroutine.projitems*{059caf3a-f0c7-4284-a14c-fc0f11e82b15}*SharedItemsImports = 4
 		Vector3DExtensions\Vector3DExtensions.projitems*{059caf3a-f0c7-4284-a14c-fc0f11e82b15}*SharedItemsImports = 4
+		PIDController\PIDController.projitems*{0e1d74b7-e0eb-4913-935e-5638d4d2d985}*SharedItemsImports = 13
 		Coroutine\Coroutine.projitems*{4fea1d8d-11cc-4d65-993b-821aad1e7ed6}*SharedItemsImports = 4
 		Vector3DExtensions\Vector3DExtensions.projitems*{4fea1d8d-11cc-4d65-993b-821aad1e7ed6}*SharedItemsImports = 4
 		Coroutine\Coroutine.projitems*{5c570a9b-d800-4f23-84d5-538b412a0e60}*SharedItemsImports = 4
@@ -96,6 +99,7 @@ Global
 		{DA6BBB91-CA6E-4512-957C-385282559837} = {92BAC0A1-993A-40F9-9BF5-9AAAAEEF5433}
 		{01018321-A64D-4044-9364-FC8BBE552D0A} = {92BAC0A1-993A-40F9-9BF5-9AAAAEEF5433}
 		{5C570A9B-D800-4F23-84D5-538B412A0E60} = {92BAC0A1-993A-40F9-9BF5-9AAAAEEF5433}
+		{0E1D74B7-E0EB-4913-935E-5638D4D2D985} = {611643A1-843E-4B4C-9F30-A47A8786B1A4}
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution
 		SolutionGuid = {C4CF8A6F-F7EF-4814-93B5-C21F41C3EE0B}

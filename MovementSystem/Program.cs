@@ -17,15 +17,28 @@ using VRage.Game.ModAPI.Ingame.Utilities;
 using VRage.Game.ObjectBuilders.Definitions;
 using VRageMath;
 
+/*
+ * MOVEMENT CONTROLLER STEPS:
+ * 1. CALC DESIRED VELOCITY
+ * 2. GET THRUSTERS
+ * 3. CALC DESIRED THRUST TO HIT DESIRED VELOCITY
+ * 4. REPEAT
+ */
+
 namespace IngameScript
 {
     partial class Program : MyGridProgram
     {
-        // VARS
-        double maxSpeed = 100;
-        double velocityProportionalGain = 0.125;
+        // Velocity Controller Vars
+        /*        double maxSpeed = 100;
+                double velocityProportionalGain = 0.1;*/
 
-        Vector3D destinationVector = new Vector3(31273.08, -1882.8, 52451.49);
+        // Controller vars
+        double PGain = 0;
+        double DGain = 0;
+        double IGain = 0;
+
+        Vector3D destinationVector = new Vector3(11749.23, -81914.21, -86689.26);
         List<ThrustGroup> thrustGroups = new List<ThrustGroup>();
         IMyShipController controller;
 
@@ -33,10 +46,8 @@ namespace IngameScript
         {
 
             controller = GetMainRemoteControl();
-            Runtime.EstablishCoroutines();
-            //Coroutine.AddCoroutine(MoveCoroutine);
-
-            
+            Runtime.EstablishTaskScheduler(Echo);
+            TaskScheduler.ResumeCoroutine(TaskScheduler.CreateCoroutine(new Func<IEnumerator<int>>(MoveCoroutine)));
 
         }
 
@@ -50,41 +61,36 @@ namespace IngameScript
         public void Main(string argument, UpdateType updateSource)
         {
 
-            Coroutine.StepCoroutines(updateSource);
+            TaskScheduler.StepCoroutines(updateSource);
 
         }
 
 
-        public IEnumerator<int> MoveCoroutine()
+        public IEnumerator<int> MoveControllerCoroutine()
         {
-            // Display controller direction vector
+
+            Vector3D errorVal = destinationVector.ConvertToLocalPosition(controller);
+
+            // Get P control value
+            Vector3D PVal = errorVal * PGain;
+
+            // Get I control value
+            Vector3D IVal = errorVal * IGain;
+
+            // Get D control value
+            Vector3D DVal = ;
+
+
+            /*// Display controller direction vector
             controller.CustomName = controller.WorldMatrix.Forward.ToString();
             controller.ShowOnHUD = true;
 
             while (true)
             {
-                // Get thrusters and their orientations
-                GetThrusters(out thrustGroups);
-
-                // Counter any gravity influencing the ship
-                CounterGravity();
-
-                // Calculate desired destination vector
-                Vector3D localDestVector = destinationVector.ConvertToLocalPosition(controller);
-
-                // Calculate velocity difference between desired velocity and current velocity
-                Vector3D desiredVelocity = localDestVector * velocityProportionalGain;
-                if (desiredVelocity.Length() > maxSpeed)
-                {
-                    desiredVelocity = Vector3D.Normalize(desiredVelocity) * maxSpeed;
-                }
-
-                Vector3D velocityDifference = desiredVelocity - controller.GetShipVelocities().LinearVelocity;
-                Echo(velocityDifference.ToString());
+                Vector3D desiredVelocityChange = CalcDesiredVelocity() - controller.GetShipVelocities().LinearVelocity;
 
                 // Calculate max available thrusts for all thrust groups in the direction of the desired change in velocity
                 Dictionary<ThrustGroup, double> thrustAmounts = new Dictionary<ThrustGroup, double>();
-                Echo("");
                 foreach(ThrustGroup thrustGroup in thrustGroups)
                 {
                     double availableThrustAlongVelocity = thrustGroup.CalcThrustEffectiveness(velocityDifference) * thrustGroup.availableThrust;
@@ -96,21 +102,6 @@ namespace IngameScript
 
                 }
 
-                // Calculate minimum possible thrust in direction by a thrust group
-                double minPossibleThrust = double.PositiveInfinity;
-                foreach(KeyValuePair<ThrustGroup, double> Entry in thrustAmounts)
-                {
-                    if(Entry.Value < minPossibleThrust)
-                    {
-                        minPossibleThrust = Entry.Value;
-                    }
-                }
-
-                if(minPossibleThrust == double.PositiveInfinity)
-                {
-                    minPossibleThrust = 0;
-                }
-
                 foreach (KeyValuePair<ThrustGroup, double> Entry in thrustAmounts)
                 {
                     ThrustGroup thrustGroup = Entry.Key;
@@ -119,10 +110,46 @@ namespace IngameScript
                 
                 yield return 0;
 
-            }
+            }*/
             
 
         }
+
+/*        // Desired velocity controlled by P controller
+        public Vector3D CalcDesiredVelocity()
+        {
+            Vector3D currVelocity = controller.GetShipVelocities().LinearVelocity;
+
+            // Calculate desired destination vector
+            Vector3D localDestVector = destinationVector.ConvertToLocalPosition(controller);
+
+            // Calculate velocity difference between desired velocity and current velocity
+            Vector3D desiredVelocity = localDestVector * velocityProportionalGain;
+            if (desiredVelocity.Length() > maxSpeed)
+            {
+                desiredVelocity = Vector3D.Normalize(desiredVelocity) * maxSpeed;
+            }
+
+            return desiredVelocity;
+        }
+
+        public Vector3D CalcDesiredThrust(Vector3D desiredVelocityChange)
+        {
+            // Get thrusters and their orientations
+            GetThrusters(out thrustGroups);
+
+            // Go through each thrust group and check if it can apply thrust for this velocity
+            List<ThrustGroup> effectiveThrustGroups = new List<ThrustGroup>();
+            foreach(ThrustGroup thrustGroup in thrustGroups)
+            {
+                if (thrustGroup.CanApplyThrust(desiredVelocityChange))
+                {
+                    effectiveThrustGroups.Add(thrustGroup);
+                }
+            }
+
+
+        }*/
 
         public IMyShipController GetMainRemoteControl()
         {
