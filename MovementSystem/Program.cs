@@ -45,7 +45,6 @@ namespace IngameScript
 
         public Program()
         {
-
             controller = GetMainRemoteControl();
             Runtime.EstablishTaskScheduler(Echo);
             TaskScheduler.ResumeCoroutine(TaskScheduler.CreateCoroutine(new Func<IEnumerator<int>>(MoveControllerCoroutine)));
@@ -127,12 +126,12 @@ namespace IngameScript
                 {
                     if (effectiveThrustGroups.Contains(thrustGroup))
                     {
-                        double thrustPercent = Vector3D.ProjectOnVector(ref controlVal, ref thrustGroup.thrustDirection).Length();
+                        double thrustPercent = Vector3D.ProjectOnVector(ref controlVal, ref thrustGroup.thrustForceDirection).Length();
                         thrustGroup.ApplyThrustPercentage(thrustPercent);
 
                         // DEBUG
                         thrustGroup.thrusters[0].CustomData = thrustPercent.ToString();
-                        controlText += "Direction: " + Vector3D.Round(thrustGroup.thrustDirection, 1).ToString() + "\npercent:" + thrustPercent.ToString() + "\n";
+                        controlText += "Direction: " + Vector3D.Round(thrustGroup.thrustForceDirection, 1).ToString() + "\npercent:" + thrustPercent.ToString() + "\n";
                     } 
                     else
                     {
@@ -266,7 +265,7 @@ namespace IngameScript
                 // Check if a thrust group for this direction exists, if it does then add this thruster to it and stop checking directions
                 foreach(ThrustGroup thrustGroup in ThrustGroupArray)
                 {
-                    if(thrustGroup.thrustDirection == thrustDirection)
+                    if(thrustGroup.thrustForceDirection == thrustDirection)
                     {
                         thrustGroup.AddThruster(thruster);
                         thrustGroupFound = true;
