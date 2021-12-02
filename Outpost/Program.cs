@@ -285,7 +285,7 @@ namespace IngameScript
         public Program()
         {
             //Runtime.UpdateFrequency = UpdateFrequency.Update1;
-            Runtime.EstablishCoroutines();
+            //Runtime.EstablishCoroutines();
             //Coroutine.AddCoroutine(displayInventory);
         }
 
@@ -296,7 +296,7 @@ namespace IngameScript
 
         public void Main(string argument, UpdateType updateSource)
         {
-            Coroutine.StepCoroutines(updateSource);
+            //Coroutine.StepCoroutines(updateSource);
 
 
             //Initialise

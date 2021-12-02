@@ -25,7 +25,7 @@ namespace IngameScript
         TaskScheduler.BindableEvent TestEvent = new TaskScheduler.BindableEvent();
         public Program()
         {
-            Runtime.EstablishTaskScheduler(Echo);
+            TaskScheduler.EstablishTaskScheduler(Runtime, Echo, true);
             TaskScheduler.Coroutine NewCoroutine = TaskScheduler.CreateCoroutine(new Func<string, string, IEnumerator<int>>(testCoroutine), "hello", "world");
             TaskScheduler.ResumeCoroutine(NewCoroutine);
             TestEvent.Connect(new Func<string, string, IEnumerator<int>>(TestEventMethod));

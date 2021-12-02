@@ -480,7 +480,8 @@ namespace IngameScript
 
             if (gridType == "Outpost")
             {
-                LCD[0].WriteText(displayThing(finalMsg));
+                Echo("writing");
+                LCD[1].WriteText(displayThing(finalMsg));
             }
 
             //Packet format: [Source, Desination, Purpose, Content[]]
@@ -490,6 +491,7 @@ namespace IngameScript
             {
                 case "EstCon":
 
+                    Echo("EstCon");
                     //EstCon - [long source, long destination, "EstCon", [gridType, laserAntPos]]
 
                     if (isBroadcast && (packetContent[0].ToString() == gridType || packetContent[0].ToString() == "All"))
@@ -505,7 +507,7 @@ namespace IngameScript
                             ipListObj = new object[] { ipValue.Key, ipValue.Value };
                         }
 
-                        sendMessage(true, ip.ToString(), createPacketString(pBId.ToString(), ip.ToString(), "EstConRespond", ipListObj));
+                        //sendMessage(true, ip.ToString(), createPacketString(pBId.ToString(), ip.ToString(), "EstConRespond", ipListObj));
                     }
 
                     //Add the IP to the IP list if is doesn't exist
@@ -709,8 +711,10 @@ namespace IngameScript
             for (int i = 1; i <= listeners.Count; i++)
             {
                 displayListener += "Broad" + i + "\n";
+                Echo("Checking Broad");
                 if (listeners[i - 1].HasPendingMessage)
                 {
+                    Echo("found");
                     displayListener += " true";
                     recieveMessage(i);
                 }
