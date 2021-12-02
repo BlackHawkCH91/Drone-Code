@@ -141,8 +141,9 @@ namespace IngameScript
             }
         }
 
-        static IMyGridProgramRuntimeInfo Runtime;
-        static Action<string> Echo;
+        private static IMyGridProgramRuntimeInfo Runtime;
+        private static Action<string> Echo;
+        private static bool EchoStatus = false;
 
         // Coroutine Lists
         private static List<Coroutine> activeCoroutines = new List<Coroutine>();
@@ -156,10 +157,11 @@ namespace IngameScript
 
         private static List<Coroutine> yieldedCoroutinesToRemove = new List<Coroutine>();
 
-        public static void EstablishTaskScheduler(this IMyGridProgramRuntimeInfo GridRuntime, Action<string> GridEcho)
+        public static void EstablishTaskScheduler(IMyGridProgramRuntimeInfo GridRuntime, Action<string> GridEcho, bool echoStatus)
         {
             Runtime = GridRuntime;
             Echo = GridEcho;
+            EchoStatus = echoStatus;
         }
 
         public static void StepCoroutines(UpdateType updateSource)
@@ -168,9 +170,21 @@ namespace IngameScript
             // Coroutine will trigger when user presses run or when it triggers itself
             if (updateSource == UpdateType.Once || updateSource == UpdateType.Terminal)
             {
+                if (EchoStatus)
+                {
+                    Echo(
+                        "Active Coroutines: " + (activeCoroutines.Count() + yieldedCoroutines.Count()) + "\n" +
+                        "Paused Coroutines: " + pausedCoroutines.Count() + "\n" +
+                        "Max Instruction Count: " + Runtime.MaxInstructionCount.ToString() + "\n" +
+                        "Current Instruction Count: " + Runtime.CurrentInstructionCount.ToString() + "\n" +
+                        "Max Call Chain Depth: " + Runtime.MaxCallChainDepth.ToString() + "\n" +
+                        "Current Call Chain Depth: " + Runtime.CurrentCallChainDepth.ToString() + "\n" +
+                        "Last Run Time ms: " + Runtime.LastRunTimeMs.ToString() + "\n" +
+                        "Time Since Last Run ms: " + Runtime.TimeSinceLastRun.TotalMilliseconds.ToString()
+                        );
+                }
+
                 CheckYieldedCoroutines();
-                Echo("Active Coroutines: " + (activeCoroutines.Count() + yieldedCoroutines.Count()));
-                Echo("pausedCoroutines: " + pausedCoroutines.Count());
                 // Step all active coroutines
                 foreach (Coroutine coroutine in activeCoroutines)
                 {
