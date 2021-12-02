@@ -46,9 +46,8 @@ namespace IngameScript
         public Program()
         {
             controller = GetMainRemoteControl();
-            Runtime.EstablishTaskScheduler(Echo);
+            TaskScheduler.EstablishTaskScheduler(Runtime, Echo, true);
             TaskScheduler.ResumeCoroutine(TaskScheduler.CreateCoroutine(new Func<IEnumerator<int>>(MoveControllerCoroutine)));
-            TaskScheduler.ResumeCoroutine(TaskScheduler.CreateCoroutine(new Func<IEnumerator<int>>(StatusTracker)));
         }
 
         public void Save()
@@ -63,22 +62,6 @@ namespace IngameScript
 
             TaskScheduler.StepCoroutines(updateSource);
 
-        }
-
-        public IEnumerator<int> StatusTracker()
-        {
-            while (true)
-            {
-                Echo(
-                    "Max Instruction Count: " + Runtime.MaxInstructionCount.ToString() + "\n" +
-                    "Current Instruction Count: " + Runtime.CurrentInstructionCount.ToString() + "\n" +
-                    "Max Call Chain Depth: " + Runtime.MaxCallChainDepth.ToString() + "\n" +
-                    "Current Call Chain Depth: " + Runtime.CurrentCallChainDepth.ToString() + "\n" +
-                    "Last Run Time ms: " + Runtime.LastRunTimeMs.ToString() + "\n" +
-                    "Time Since Last Run ms: " + Runtime.TimeSinceLastRun.TotalMilliseconds.ToString()
-                    );
-                yield return 0;
-            }
         }
 
         public IEnumerator<int> MoveControllerCoroutine()
