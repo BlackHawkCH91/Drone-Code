@@ -44,8 +44,11 @@ namespace IngameScript
         public IEnumerator<int> TestEventMethod(string textToWrite1, string textToWrite2)
         {
             IMyTextSurface TextSurface = Me.GetSurface(1);
-            TextSurface.WriteText(textToWrite1 + " " + textToWrite2);
-            yield return 0;
+            while (true)
+            {
+                TextSurface.WriteText(textToWrite1 + " " + textToWrite2);
+                yield return 0;
+            }
         }
 
         public IEnumerator<int> testCoroutine(string text1, string text2)
@@ -54,16 +57,10 @@ namespace IngameScript
 
             while (true)
             {
-                TextSurface.WriteText("hello");
-                yield return 5;
-                TextSurface.WriteText("world");
-                yield return 10;
                 TestEvent.Fire("possibly", "maybe");
-                yield return 10;
-                TestEvent.Fire("working", "i think");
-                yield return 5;
+                yield return 0;
             }
-            
+
         }
         public delegate IEnumerator<int> testCoroutineAdder(string text1, string text2);
     }

@@ -25,7 +25,7 @@ namespace IngameScript
         public class ThrustGroup
         {
             public List<IMyThrust> thrusters;
-            public Vector3D thrustDirection;
+            public Vector3D thrustForceDirection;
             public double maxEffectiveThrust;
             public double currentThrust;
             public double currentThrustPercentage;
@@ -35,13 +35,13 @@ namespace IngameScript
             public ThrustGroup(Vector3D ThrustDirection)
             {
                 thrusters = new List<IMyThrust>();
-                thrustDirection = ThrustDirection;
+                thrustForceDirection = ThrustDirection;
                 maxEffectiveThrust = 0;
             }
             public ThrustGroup(Vector3D ThrustDirection, IMyThrust Thruster)
             {
                 thrusters = new List<IMyThrust>();
-                thrustDirection = ThrustDirection;
+                thrustForceDirection = ThrustDirection;
                 thrusters.Add(Thruster);
                 CalcMaxEffectiveThrust();
             }
@@ -49,7 +49,7 @@ namespace IngameScript
             public ThrustGroup(Vector3D ThrustDirection, List<IMyThrust> ThrusterList)
             {
                 thrusters = ThrusterList;
-                thrustDirection = ThrustDirection;
+                thrustForceDirection = ThrustDirection;
                 CalcMaxEffectiveThrust();
             }
 
@@ -70,11 +70,27 @@ namespace IngameScript
 
             public double CalcThrustEffectiveness(Vector3D DirectionVector)
             {
-                return -thrustDirection.Dot(Vector3D.Normalize(DirectionVector));
+                return -thrustForceDirection.Dot(Vector3D.Normalize(DirectionVector));
+            }
+
+            public bool CanApplyThrust(Vector3D DirectionVector)
+            {
+                if (thrustForceDirection.Dot(Vector3D.Normalize(DirectionVector)) > 0)
+                {
+                    return true;
+                }
+                else
+                {
+                    return false;
+                }
             }
 
             public void ApplyThrustPercentage(double ThrustPercentage)
             {
+                if(ThrustPercentage > 1)
+                {
+                    ThrustPercentage = 1;
+                }
                 foreach(IMyThrust thruster in thrusters)
                 {
                     thruster.ThrustOverridePercentage = (float)ThrustPercentage;
