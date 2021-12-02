@@ -25,7 +25,10 @@ namespace IngameScript
         //!VARS
 
         public Dictionary<long, ImmutableArray<string>> packetBacklog = new Dictionary<long, ImmutableArray<string>>();
-        public static Dictionary<string, object[]> ipList = new Dictionary<string, object[]>();
+
+        public DateTime ipListUpdate;
+        public static List<string> tagList = new List<string>();
+        public static Dictionary<long, object[]> ipList = new Dictionary<long, object[]>();
         public static Dictionary<string, List<int>> bracketPos = new Dictionary<string, List<int>>();
 
         bool setup = false;
@@ -169,7 +172,6 @@ namespace IngameScript
 
             return final;
         }
-
 
         //!Gets position of brackets
         static Dictionary<string, List<int>> getBracketPos(string packet)
@@ -434,6 +436,7 @@ namespace IngameScript
 
 
         //!Receive packets/messages and decode them
+        //TODO: Test Estcon listen and response
         public void recieveMessage(int listener)
         {
             //Define message and bool to check if its a broadcast or not. Bool may not be needed.
@@ -480,6 +483,7 @@ namespace IngameScript
                 LCD[0].WriteText(displayThing(finalMsg));
             }
 
+            //Packet format: [Source, Desination, Purpose, Content[]]
             object[] packetContent = finalMsg[3] as object[];
 
             switch (finalMsg[2].ToString())
@@ -488,24 +492,31 @@ namespace IngameScript
 
                     //EstCon - [long source, long destination, "EstCon", [gridType, laserAntPos]]
 
-                    //Add the IP to the IP list if is doesn't exist
-                    if (!(ipList.ContainsKey(finalMsg[0].ToString())))
-                    {
-                        ipList.Add(finalMsg[0].ToString(), new object[] { packetContent[0].ToString(), packetContent[1] });
-                    }
-
                     if (isBroadcast && (packetContent[0].ToString() == gridType || packetContent[0].ToString() == "All"))
                     {
                         //while (long) object is more readible, unboxing uses a lot of performace. May need to do some performance testing
                         long ip = source;
 
-                        //Send unicast back to sender.
-                        sendMessage(true, ip.ToString(), createPacketString(pBId.ToString(), ip.ToString(), "EstCon", new object[] { gridType, laserAntPos }));
+                        object[] ipListObj = new object[ipList.Count];
+
+                        //Convert list to object arr.
+                        foreach (KeyValuePair<long, object[]> ipValue in ipList)
+                        {
+                            ipListObj = new object[] { ipValue.Key, ipValue.Value };
+                        }
+
+                        sendMessage(true, ip.ToString(), createPacketString(pBId.ToString(), ip.ToString(), "EstConRespond", ipListObj));
+                    }
+
+                    //Add the IP to the IP list if is doesn't exist
+                    if (!(ipList.ContainsKey((long)finalMsg[0])))
+                    {
+                        ipList.Add((long)finalMsg[0], new object[] { packetContent[0].ToString(), packetContent[1] });
                     }
 
                     break;
 
-                case "Distress":
+                case "EstConRespond":
                     break;
                 default:
                     break;
@@ -542,10 +553,10 @@ namespace IngameScript
 
 
             //Define uni and broadcast listeners. Direct sets are "default" tags, meaning all comms have these tags by default.
-            Echo("Setting listerers");
-            string[] tagArr = new string[] { "EstCon", "LaserAnt", "Distress", "All"};
 
-            foreach (string tag in tagArr)
+            //string[] tagArr = new string[] { "EstCon", "LaserAnt", "Distress", "All"};
+
+            foreach (string tag in tagList)
             {
                 listeners.Add(IGC.RegisterBroadcastListener(tag));
             }
@@ -584,34 +595,32 @@ namespace IngameScript
         {
             //Add default and known IPs to ipList
 
-            ipList["Estcon"] = new object[] { "Default" };
-            ipList["Distress"] = new object[] { "Default" };
-            ipList["All"] = new object[] { "Default" };
+            tagList.Add("All");
+
+
+            //!Useless tags, delete unused ones at the end.
+            //ipList["Distress"] = new object[] { "Default" };
+            //ipList["Estcon"] = new object[] { "Default" };
+            //ipList["All"] = new object[] { "Default" };
+            //ipList["EstConRespond"]
 
             Runtime.UpdateFrequency = UpdateFrequency.Update100;
-
-            //!Coroutine planning
-            //Runtime.EstablishCoroutines();
-            //Coroutine.AddCoroutine(displayInventory);
         }
 
 
-        bool runOnce = false;
+        //bool runOnce = false;
         int newLines = 1;
 
         void Main(string argument, UpdateType updateSource)
         {
-            //!Coroutine planning
-            Coroutine.StepCoroutines(updateSource);
-
             gridPos = Me.CubeGrid.GetPosition();
 
             //Only set gridType if argument is not empty. Prevents overwriting gridType to an empty string.
             //This may be used instead of a bool (it seems bools are inconsistent). 
             if (!(string.IsNullOrEmpty(argument)))
             {
-                gridType = argument;
-                ipList[gridType] = new object[] { "Default" };
+                //gridType = argument;
+                tagList.Add(argument);
             }
 
             //Initialise once
@@ -645,7 +654,7 @@ namespace IngameScript
             {
                 Echo("Running outpost code.");
                 string displayString = "";
-                foreach (KeyValuePair<string, object[]> item in ipList)
+                foreach (KeyValuePair<long, object[]> item in ipList)
                 {
                     displayString += item.Key + ", ";
 
@@ -682,23 +691,20 @@ namespace IngameScript
             {
                 Echo("Sending EstCon...");
                 establishConnection("All");
-                runOnce = false;
+                //runOnce = false;
             }
 
 
+            // Use coroutines to check messages.
 
-            //Handling messages here. Seems messy and inefficient
-            //Checking all listeners on a single frame. If they all have messages, string-to-data will be running
-            //multiple times on a tick. Use coroutines
-
-            //Check uni cast
+            //Check antenna listeners
             if (dirListener.HasPendingMessage)
             {
                 Echo("UniListener");
                 recieveMessage(0);
             }
 
-            //Chec all broadcast listeners
+            //String var is for testing only. Removed when finished
             string displayListener = "";
             for (int i = 1; i <= listeners.Count; i++)
             {
@@ -723,8 +729,6 @@ TODO:
 
  - Create a function that sends a broadcast and returns a list of IP (tag) addresses
  - Find a way to create "anonymous" broadcasts (use laser antenna to broadcast briefly so that the ping barely shows up)
- - Sorta realised that specific tags are useless. For distress, simply use the "All" tag. Packets have a "purpose" field which can be
-   filled as "Distress"
  - Create a universal function that can encode and decode all date into/from a string. This will be stored on the "Storage" variable.
  - Create an "Info" packet where grids can request info from other grids and those grids will respond with information about them.
    
@@ -743,42 +747,13 @@ TODO:
     - Power: [..., true/false] - Tells ship to land and power off. Used for when there is combat and server resources are important.
     - Dock: [..., position, true/false] - Not sure what structure the packet should be. Tells ship to dock at a position.
 
-   Grid network strucute will use a basic hierachry: Outpost -> Group Leader/flagship -> Grids 
-   Commands can still be sent directly to grids if needed. 
-
-   Flagships may stored data on their group if needed.
-   
-
-
-
-Notes:
-
-Use corountines when checking listeners. Calling objectToString multiple times can be costly.
-
-Once everything has been implemented, we need to stress test this system to ensure no errors occur that would bring down the entire system. Some tests like
-many grids, many groups, moving drones between groups, destroying grids, destroying outposts (this one will be difficult). If the main outpost PB gets destroyed,
-a lot of data will be lost which may cause a lot of errors. A backup function can be made where all data is stored in a string. The string can then be copied
-and pasted into an external text file.
-
-Convert all string-to-data and data-to-string to use stringbuilder. Apparently it is much more efficient.
-
-
-Testing:
-
- - Switch EstCon around. Make outpost send EstCon broadcast and see if response from satellite is being sent properly or is being sent to
-   backlog
- - Test if backlog is working. Can be tested by making broadcaster range larger than reciever range.
- - See if isEndpointReachable still works when reciever is only acting as a listener (antenna on, but range set to 0)
-
-
-Optimisation:
-
+   Command hierachry: Outpost -> Group Leader/flagship -> Grids 
 
 
 Packet structure - [long source, long destination, string purpose, [content, content, etc]]
 
 B: EstCon - [long source, long destination, "EstCon", [EstType, gridType, laserAntPos ]]
-U: EstCon - [long source, long destination, "EstCon", [gridType, laserAntPos ]]
+U: EstCon - [long source, long destination, "EstCon", [gridTyp11e, laserAntPos ]]
 
 Distress - [long source, long destination, "Distress", [position, dangerLvl ]]
 Info - [long source, long destination, "Info", [position, gridType, health, power, hydrogen, status, task ]]
@@ -787,14 +762,6 @@ Status - idle, working, attached - pBId, etc
 
 
 
-IpList plan:
-
-When ships are created, they will send an EstCon broadcast to an outpost. Data will be exchanged and the outpost will send their IP list.
-Every so often, the main outpost will send an "All" broadcast, meaning all grids will receive the msg containing the IP list. This ensures all grids
-are kept updated. This information will be lost on log off, so upon initiallisation, all grids will send an EstCon request. 
-
 All grids will store a list of satellites + laser antenna positions
 
-
-//Test push ree
 */
