@@ -582,7 +582,9 @@ namespace IngameScript
         //Initialise some variables here
         public Program()
         {
-            Runtime.UpdateFrequency = UpdateFrequency.Update100;
+            //Runtime.UpdateFrequency = UpdateFrequency.Update100;
+            TaskScheduler.EstablishTaskScheduler(Runtime, Echo, true);
+            TaskScheduler.ResumeCoroutine(TaskScheduler.CreateCoroutine(new Func<IEnumerator<int>>(IEnumMain)));
         }
 
         bool runOnce = false;
@@ -590,9 +592,6 @@ namespace IngameScript
 
         void Main(string argument, UpdateType updateSource)
         {
-
-            gridPos = Me.CubeGrid.GetPosition();
-
             //Only set gridType if argument is not empty. Prevents overwriting gridType to an empty string.
             //This may be used instead of a bool (it seems bools are inconsistent). 
             if (!(string.IsNullOrEmpty(argument)))
@@ -620,77 +619,90 @@ namespace IngameScript
 
                 setup = true;
                 //Remove this and set update frequency in program
-                Runtime.UpdateFrequency = UpdateFrequency.Update1;
+                //Runtime.UpdateFrequency = UpdateFrequency.Update1;
             }
 
 
-            //This is just for testing. Can be removed later.
-            if (gridType == "Outpost")
-            {
-                Echo("Running outpost code.");
-                string displayString = "";
-                foreach (KeyValuePair<string, object[]> item in ipList)
-                {
-                    displayString += item.Key + ", ";
+            TaskScheduler.StepCoroutines(updateSource);
 
-                    if (displayString.Length >= (42 * newLines))
+        }
+
+        public IEnumerator<int> IEnumMain()
+        {
+            while (true)
+            {
+                gridPos = Me.CubeGrid.GetPosition();
+
+                //This is just for testing. Can be removed later.
+                if (gridType == "Outpost")
+                {
+                    Echo("Running outpost code.");
+                    string displayString = "";
+                    foreach (KeyValuePair<string, object[]> item in ipList)
                     {
-                        displayString += "\n";
-                        newLines++;
+                        displayString += item.Key + ", ";
+
+                        if (displayString.Length >= (42 * newLines))
+                        {
+                            displayString += "\n";
+                            newLines++;
+                        }
+                    }
+
+                    LCD[1].WriteText(displayString);
+
+
+                    displayString = "";
+
+                    foreach (KeyValuePair<long, ImmutableArray<string>> item in packetBacklog)
+                    {
+                        displayString += item.Key + ", ";
+
+                        if (displayString.Length >= (42 * newLines))
+                        {
+                            displayString += "\n";
+                            newLines++;
+                        }
+                    }
+
+                    LCD[2].WriteText(displayString);
+                }
+
+                //testing:
+
+                //Test packet
+
+                if (gridType == "Satellite")
+                {
+                    Echo("Sending EstCon...");
+                    establishConnection("All");
+                    runOnce = false;
+                }
+
+                //Handling messages here. Seems messy and inefficient
+                //Checking all listeners on a single frame. If they all have messages, string-to-data will be running
+                //multiple times on a tick. Use coroutines
+
+                //Check uni cast
+                if (dirListener.HasPendingMessage)
+                {
+                    Echo("UniListener");
+                    recieveMessage(0);
+                }
+
+                //Chec all broadcast listeners
+                string displayListener = "";
+                for (int i = 1; i <= listeners.Count; i++)
+                {
+                    displayListener += "Broad" + i + "\n";
+                    if (listeners[i - 1].HasPendingMessage)
+                    {
+                        displayListener += " true";
+                        recieveMessage(i);
                     }
                 }
 
-                LCD[1].WriteText(displayString);
-
-
-                displayString = "";
-
-                foreach (KeyValuePair<long, ImmutableArray<string>> item in packetBacklog)
-                {
-                    displayString += item.Key + ", ";
-
-                    if (displayString.Length >= (42 * newLines))
-                    {
-                        displayString += "\n";
-                        newLines++;
-                    }
-                }
-
-                LCD[2].WriteText(displayString);
-            }
-
-            //testing:
-
-            //Test packet
-
-            if (gridType == "Satellite")
-            {
-                Echo("Sending EstCon...");
-                establishConnection("All");
-                runOnce = false;
-            }
-
-            //Handling messages here. Seems messy and inefficient
-            //Checking all listeners on a single frame. If they all have messages, string-to-data will be running
-            //multiple times on a tick. Use coroutines
-
-            //Check uni cast
-            if (dirListener.HasPendingMessage)
-            {
-                Echo("UniListener");
-                recieveMessage(0);
-            }
-
-            //Chec all broadcast listeners
-            string displayListener = "";
-            for (int i = 1; i <= listeners.Count; i++)
-            {
-                displayListener += "Broad" + i + "\n";
-                if (listeners[i - 1].HasPendingMessage)
-                {
-                    displayListener += " true";
-                    recieveMessage(i);
-                }
+                yield return 0;
             }
         }
 
