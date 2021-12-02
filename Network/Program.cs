@@ -22,13 +22,11 @@ namespace IngameScript
 {
     partial class Program : MyGridProgram
     {
-        //!VARS
+        // VARS
 
         public Dictionary<long, ImmutableArray<string>> packetBacklog = new Dictionary<long, ImmutableArray<string>>();
-
-        public DateTime ipListUpdate;
-        public static List<string> tagList = new List<string>();
-        public static Dictionary<long, object[]> ipList = new Dictionary<long, object[]>();
+        public static Dictionary<string, object[]> ipList = new Dictionary<string, object[]>();
+        public List<string> tagList = new List<string>();
         public static Dictionary<string, List<int>> bracketPos = new Dictionary<string, List<int>>();
 
         bool setup = false;
@@ -47,18 +45,14 @@ namespace IngameScript
 
         object[] laserAntPos;
 
-        int[] ticks = new int[] { 0 }; //Coroutine ticks
-
 
         //Functions ----------------------------------------------------------------------
 
 
-        //!String-to-data and data-to-string functions hidden here:
-        
+        //String-to-data and data-to-string functions hidden here:
 
-        //?Conversion functions
+        //Convert MatrixD to string... I'm sorry, but there is no way to loop through properties
 
-        //!Convert MatrixD to string
         public static string matrixToString(MatrixD matrix)
         {
             string strMatrix = "M" + matrix.M11 + "|" + matrix.M12 + "|" + matrix.M13 + "|" + matrix.M14 + "|" +
@@ -68,7 +62,9 @@ namespace IngameScript
 
             return strMatrix;
         }
-        //!Convert string to matrixD
+
+        //Convert string to matrixD
+
         public static MatrixD stringToMatrix(string strMatrix)
         {
             string temp = strMatrix.Substring(1);
@@ -92,7 +88,9 @@ namespace IngameScript
 
             return matrix;
         }
-        //!Converts string to Vector3
+
+        //Converts a string back into a Vector3
+
         public static Vector3D StringToVector3(string sVector)
         {
             //Remove curly brackets
@@ -115,8 +113,34 @@ namespace IngameScript
             return position;
         }
 
+        //Gets positions of [] in strings
+        static Dictionary<string, List<int>> getBracketPos(string packet)
+        {
+            //Creates bracket dictionary, adds two keys for { and }
 
-        //!Converts object to string
+            bracketPos.Clear();
+
+            bracketPos.Add("[", new List<int>());
+            bracketPos.Add("]", new List<int>());
+
+            //Loop through string, checking for brackets
+            for (int i = 0; i < packet.Length; i++)
+            {
+                //Add bracket pos to its respective dictionary
+                if (packet[i] == '[')
+                {
+                    bracketPos["["].Add(i);
+                }
+                else if (packet[i] == ']')
+                {
+                    bracketPos["]"].Add(i);
+                }
+            }
+
+            return bracketPos;
+        }
+
+        //Converts object to string
         static string objectToString(object[] packet)
         {
             string final = "[";
@@ -132,10 +156,9 @@ namespace IngameScript
                 }
                 else
                 {
-                    //ToString: System.String, System.Boolean, VRageMath.Vector3D, VRageMath.MatrixD
                     //If not, convert type to string. If its a string, add "", if vec3 use toString, etc
-
-                    switch (item.GetType().ToString()) {
+                    switch (item.GetType().ToString())
+                    {
                         case "System.String":
                             final += "\"" + item + "\"";
                             break;
@@ -173,36 +196,7 @@ namespace IngameScript
             return final;
         }
 
-        //!Gets position of brackets
-        static Dictionary<string, List<int>> getBracketPos(string packet)
-        {
-            //Creates bracket dictionary, adds two keys for { and }
-
-            bracketPos.Clear();
-
-            bracketPos.Add("[", new List<int>());
-            bracketPos.Add("]", new List<int>());
-
-            //Loop through string, checking for brackets
-            //Coroutine.AddCoroutine(bracketCheck);
-
-            for (int i = 0; i < packet.Length; i++)
-            {
-                //Add bracket pos to its respective dictionary
-                if (packet[i] == '[')
-                {
-                    bracketPos["["].Add(i);
-                }
-                else if (packet[i] == ']')
-                {
-                    bracketPos["]"].Add(i);
-                }
-            }
-
-            return bracketPos;
-        }
-
-        //!Converts string back into object
+        //Converts string back into object
         public static object[] stringToObject(string packet)
         {
             //Remove start and ending brackets
@@ -294,12 +288,13 @@ namespace IngameScript
                     {
                         finalPacketArr[i] = item.Substring(1, item.Length - 2);
                     }
-                     else if (item.StartsWith("T") || item.StartsWith("F")) //New thing. Needs testing
+                    else if (item.StartsWith("T") || item.StartsWith("F")) //New thing. Needs testing
                     {
                         finalPacketArr[i] = item.StartsWith("T"); //
-                    } else if (item[0] == 'M') // Another new thing
+                    }
+                    else if (item[0] == 'M') // Another new thing
                     {
-                        
+
                         finalPacketArr[i] = stringToMatrix(item);
                     }
                     else if (item.Contains("."))
@@ -321,7 +316,7 @@ namespace IngameScript
             return finalPacketArr;
         }
 
-        //!Debugging only, displays object arr as a string
+        //Debugging only, displays object arr as a string
         static string displayThing(object[] array)
         {
             string output = "";
@@ -335,14 +330,16 @@ namespace IngameScript
                 }
                 else if (array[i].GetType() == typeof(Vector3D))
                 {
-                    Vector3D temp = (Vector3D) array[i];
+                    Vector3D temp = (Vector3D)array[i];
                     output += temp.ToString();
-                } else if (array[i].GetType() == typeof(string))
+                }
+                else if (array[i].GetType() == typeof(string))
                 {
                     output += "\"" + array[i].ToString() + "\"";
-                } else if (array[i].GetType() == typeof(MatrixD))
+                }
+                else if (array[i].GetType() == typeof(MatrixD))
                 {
-                    output += matrixToString((MatrixD) array[i]);
+                    output += matrixToString((MatrixD)array[i]);
                 }
                 else
                 {
@@ -357,7 +354,6 @@ namespace IngameScript
             return output;
         }
 
-        //!Creates a packet
         static ImmutableArray<string> createPacketString(string source, string destination, string purpose, object[] packet)
         {
             string tempDest = destination;
@@ -373,10 +369,10 @@ namespace IngameScript
         }
 
         //-----------------------------------------------------------------------------
-        
 
 
-        //!Gets block health
+
+        //Gets block health
         double GetMyTerminalBlockHealth(IMyTerminalBlock block)
         {
             IMySlimBlock slimblock = block.CubeGrid.GetCubeBlock(block.Position);
@@ -387,7 +383,7 @@ namespace IngameScript
         }
 
 
-        //!Sends packet
+        //Send packet
         public void sendMessage(bool isUni, string destination, ImmutableArray<string> contents)
         {
             //First check if it's a uni or broadcast
@@ -397,21 +393,23 @@ namespace IngameScript
                 if (IGC.IsEndpointReachable(long.Parse(destination), TransmissionDistance.TransmissionDistanceMax))
                 {
                     IGC.SendUnicastMessage<ImmutableArray<string>>(long.Parse(destination), destination, contents);
-                } else
+                }
+                else
                 {
                     packetBacklog.Add(long.Parse(destination), contents);
                 }
-            } else
+            }
+            else
             {
                 //Send broadcast
                 IGC.SendBroadcastMessage<ImmutableArray<string>>(destination, contents, TransmissionDistance.TransmissionDistanceMax);
             }
-            
+
             //IGC.SendBroadcastMessage<object[]>(tag, contents, TransmissionDistance.TransmissionDistanceMax);
         }
 
 
-        //!Sends packets in backlog every so often
+        //Sends packets in backlog every so often
         public void sendBackLog()
         {
             //Set count to var. This is because the length of dict will change
@@ -435,8 +433,7 @@ namespace IngameScript
         }
 
 
-        //!Receive packets/messages and decode them
-        //TODO: Test Estcon listen and response
+        //Receive data
         public void recieveMessage(int listener)
         {
             //Define message and bool to check if its a broadcast or not. Bool may not be needed.
@@ -448,7 +445,8 @@ namespace IngameScript
             {
                 //Unicast
                 message = dirListener.AcceptMessage();
-            } else
+            }
+            else
             {
                 //Broadcast
                 message = listeners[listener - 1].AcceptMessage();
@@ -456,7 +454,7 @@ namespace IngameScript
             }
 
             //Convert to object
-            ImmutableArray<string> temp = (ImmutableArray<string>) message.Data;
+            ImmutableArray<string> temp = (ImmutableArray<string>)message.Data;
 
             object[] finalMsg;
             long source = long.Parse(temp[0]);
@@ -470,7 +468,8 @@ namespace IngameScript
                 long test;
                 long.TryParse(temp[1], out test);
                 finalMsg[1] = test;
-            } else
+            }
+            else
             {
                 string dest = temp[1].ToString();
                 finalMsg[1] = dest.Substring(1, dest.Length - 2);
@@ -480,45 +479,35 @@ namespace IngameScript
 
             if (gridType == "Outpost")
             {
-                Echo("writing");
-                LCD[1].WriteText(displayThing(finalMsg));
+                LCD[0].WriteText(displayThing(finalMsg));
             }
 
-            //Packet format: [Source, Desination, Purpose, Content[]]
             object[] packetContent = finalMsg[3] as object[];
 
             switch (finalMsg[2].ToString())
             {
                 case "EstCon":
 
-                    Echo("EstCon");
                     //EstCon - [long source, long destination, "EstCon", [gridType, laserAntPos]]
+
+                    //Add the IP to the IP list if is doesn't exist
+                    if (!(ipList.ContainsKey(finalMsg[0].ToString())))
+                    {
+                        ipList.Add(finalMsg[0].ToString(), new object[] { packetContent[0].ToString(), packetContent[1] });
+                    }
 
                     if (isBroadcast && (packetContent[0].ToString() == gridType || packetContent[0].ToString() == "All"))
                     {
                         //while (long) object is more readible, unboxing uses a lot of performace. May need to do some performance testing
                         long ip = source;
 
-                        object[] ipListObj = new object[ipList.Count];
-
-                        //Convert list to object arr.
-                        foreach (KeyValuePair<long, object[]> ipValue in ipList)
-                        {
-                            ipListObj = new object[] { ipValue.Key, ipValue.Value };
-                        }
-
-                        //sendMessage(true, ip.ToString(), createPacketString(pBId.ToString(), ip.ToString(), "EstConRespond", ipListObj));
-                    }
-
-                    //Add the IP to the IP list if is doesn't exist
-                    if (!(ipList.ContainsKey((long)finalMsg[0])))
-                    {
-                        ipList.Add((long)finalMsg[0], new object[] { packetContent[0].ToString(), packetContent[1] });
+                        //Send unicast back to sender.
+                        sendMessage(true, ip.ToString(), createPacketString(pBId.ToString(), ip.ToString(), "EstCon", new object[] { gridType, laserAntPos }));
                     }
 
                     break;
 
-                case "EstConRespond":
+                case "Distress":
                     break;
                 default:
                     break;
@@ -526,7 +515,7 @@ namespace IngameScript
         }
 
 
-        //!Creates EstCon packet
+        //Creates EstCon packet
         public void establishConnection(string estType)
         {
             //B: EstCon - [long source, long destination, "EstCon", [EstType, gridType, laserAntPos]]
@@ -535,14 +524,13 @@ namespace IngameScript
             Echo("Sent EstCon broadcast to grid type: " + estType);
         }
 
-        //!Initialliser, sets vars and listeners.
+        //Initialliser, sets vars and listeners.
         public void Init()
         {
-            //Get all laser antennas and convert to object array
             Echo("Retrieving LaserAnt list...");
+            //Get all laser antennas and convert to object array
             List<IMyLaserAntenna> laserAnts = new List<IMyLaserAntenna>();
             GridTerminalSystem.GetBlocksOfType<IMyLaserAntenna>(laserAnts);
-
 
             //Just keeps getting errors atm
             //laserAntPos = laserAnts.Select(x => x.GetPosition()).ToArray();
@@ -554,10 +542,10 @@ namespace IngameScript
             }
 
 
+            Echo("Setting listerers");
             //Define uni and broadcast listeners. Direct sets are "default" tags, meaning all comms have these tags by default.
 
-            //string[] tagArr = new string[] { "EstCon", "LaserAnt", "Distress", "All"};
-
+            tagList.Add("All");
             foreach (string tag in tagList)
             {
                 listeners.Add(IGC.RegisterBroadcastListener(tag));
@@ -574,9 +562,8 @@ namespace IngameScript
                 listener.DisableMessageCallback();
             }
 
-
-            //Get blocks and ID
             Echo("Retrieving grid blocks...");
+            //Get blocks and ID
             mainProgBlock = GridTerminalSystem.GetBlockWithName("MainProgBlock");
             antenna = GridTerminalSystem.GetBlockWithName("Antenna") as IMyRadioAntenna;
 
@@ -592,45 +579,34 @@ namespace IngameScript
 
         //Default game functions ---------
 
-        //!Initialise some variables here
+        //Initialise some variables here
         public Program()
         {
-            //Add default and known IPs to ipList
-
-            tagList.Add("All");
-
-
-            //!Useless tags, delete unused ones at the end.
-            //ipList["Distress"] = new object[] { "Default" };
-            //ipList["Estcon"] = new object[] { "Default" };
-            //ipList["All"] = new object[] { "Default" };
-            //ipList["EstConRespond"]
-
             Runtime.UpdateFrequency = UpdateFrequency.Update100;
         }
 
-
-        //bool runOnce = false;
+        bool runOnce = false;
         int newLines = 1;
 
         void Main(string argument, UpdateType updateSource)
         {
+
             gridPos = Me.CubeGrid.GetPosition();
 
             //Only set gridType if argument is not empty. Prevents overwriting gridType to an empty string.
             //This may be used instead of a bool (it seems bools are inconsistent). 
             if (!(string.IsNullOrEmpty(argument)))
             {
-                //gridType = argument;
-                tagList.Add(argument);
+                gridType = argument;
+                ipList[gridType] = new object[] { "Default" };
             }
 
             //Initialise once
             if (!setup)
             {
                 Init();
- 
-                //String-data testing.
+
+                //String-to-data and data-to-string testing. Only use when adding new data types
                 //
                 /*object[] testObject = new object[] { mainProgBlock.WorldMatrix, mainProgBlock.GetPosition(), "Hello", 123, 123.456, true, false, new object[] { "more", true, false } };
                 string testString = objectToString(testObject);
@@ -648,15 +624,12 @@ namespace IngameScript
             }
 
 
-
-            //testing:
-
             //This is just for testing. Can be removed later.
             if (gridType == "Outpost")
             {
                 Echo("Running outpost code.");
                 string displayString = "";
-                foreach (KeyValuePair<long, object[]> item in ipList)
+                foreach (KeyValuePair<string, object[]> item in ipList)
                 {
                     displayString += item.Key + ", ";
 
@@ -686,6 +659,7 @@ namespace IngameScript
                 LCD[2].WriteText(displayString);
             }
 
+            //testing:
 
             //Test packet
 
@@ -693,28 +667,27 @@ namespace IngameScript
             {
                 Echo("Sending EstCon...");
                 establishConnection("All");
-                //runOnce = false;
+                runOnce = false;
             }
 
+            //Handling messages here. Seems messy and inefficient
+            //Checking all listeners on a single frame. If they all have messages, string-to-data will be running
+            //multiple times on a tick. Use coroutines
 
-            // Use coroutines to check messages.
-
-            //Check antenna listeners
+            //Check uni cast
             if (dirListener.HasPendingMessage)
             {
                 Echo("UniListener");
                 recieveMessage(0);
             }
 
-            //String var is for testing only. Removed when finished
+            //Chec all broadcast listeners
             string displayListener = "";
             for (int i = 1; i <= listeners.Count; i++)
             {
                 displayListener += "Broad" + i + "\n";
-                Echo("Checking Broad");
                 if (listeners[i - 1].HasPendingMessage)
                 {
-                    Echo("found");
                     displayListener += " true";
                     recieveMessage(i);
                 }
@@ -751,21 +724,38 @@ TODO:
     - Power: [..., true/false] - Tells ship to land and power off. Used for when there is combat and server resources are important.
     - Dock: [..., position, true/false] - Not sure what structure the packet should be. Tells ship to dock at a position.
 
-   Command hierachry: Outpost -> Group Leader/flagship -> Grids 
+   Grid network strucute will use a basic hierachry: Outpost -> Group Leader/flagship -> Grids 
+   Commands can still be sent directly to grids if needed. 
+
+   Flagships may stored data on their group if needed.
+   
+
+
+
+Notes:
+
+Use corountines when checking listeners. Calling objectToString multiple times can be costly.
+
+
+Testing:
+
+ - Switch EstCon around. Make outpost send EstCon broadcast and see if response from satellite is being sent properly or is being sent to
+   backlog
+ - Test if backlog is working. Can be tested by making broadcaster range larger than reciever range.
+ - See if isEndpointReachable still works when reciever is only acting as a listener (antenna on, but range set to 0)
+
+
+Optimisation:
+
 
 
 Packet structure - [long source, long destination, string purpose, [content, content, etc]]
 
 B: EstCon - [long source, long destination, "EstCon", [EstType, gridType, laserAntPos ]]
-U: EstCon - [long source, long destination, "EstCon", [gridTyp11e, laserAntPos ]]
+U: EstCon - [long source, long destination, "EstCon", [gridType, laserAntPos ]]
 
 Distress - [long source, long destination, "Distress", [position, dangerLvl ]]
 Info - [long source, long destination, "Info", [position, gridType, health, power, hydrogen, status, task ]]
 
 Status - idle, working, attached - pBId, etc
-
-
-
-All grids will store a list of satellites + laser antenna positions
-
 */
