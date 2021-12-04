@@ -22,7 +22,7 @@ namespace IngameScript
 {
     partial class Program : MyGridProgram
     {
-        // VARS
+        //!VARS
 
         public Dictionary<long, ImmutableArray<string>> packetBacklog = new Dictionary<long, ImmutableArray<string>>();
         public static Dictionary<string, object[]> ipList = new Dictionary<string, object[]>();
@@ -38,21 +38,22 @@ namespace IngameScript
         IMyTerminalBlock mainProgBlock;
         public List<IMyTextPanel> LCD = new List<IMyTextPanel>();
 
-        //Information used to create a packet that will be sent back to the main base.
+        //!Information used to create a packet that will be sent back to the main base.
         long pBId;
         string gridType;
         Vector3D gridPos;
 
         object[] laserAntPos;
 
+        public int[] ticks = new int[] { 0 };
 
-        //Functions ----------------------------------------------------------------------
+
+        //?Functions ----------------------------------------------------------------------
 
 
-        //String-to-data and data-to-string functions hidden here:
+        //!String-to-data and data-to-string functions hidden here:
 
-        //Convert MatrixD to string... I'm sorry, but there is no way to loop through properties
-
+        //!Convert MatrixD to string... I'm sorry, but there is no way to loop through properties
         public static string matrixToString(MatrixD matrix)
         {
             string strMatrix = "M" + matrix.M11 + "|" + matrix.M12 + "|" + matrix.M13 + "|" + matrix.M14 + "|" +
@@ -63,8 +64,7 @@ namespace IngameScript
             return strMatrix;
         }
 
-        //Convert string to matrixD
-
+        //!Convert string to matrixD
         public static MatrixD stringToMatrix(string strMatrix)
         {
             string temp = strMatrix.Substring(1);
@@ -89,8 +89,7 @@ namespace IngameScript
             return matrix;
         }
 
-        //Converts a string back into a Vector3
-
+        //!Converts a string back into a Vector3
         public static Vector3D StringToVector3(string sVector)
         {
             //Remove curly brackets
@@ -113,7 +112,7 @@ namespace IngameScript
             return position;
         }
 
-        //Gets positions of [] in strings
+        //!Gets positions of [] in strings
         static Dictionary<string, List<int>> getBracketPos(string packet)
         {
             //Creates bracket dictionary, adds two keys for { and }
@@ -140,8 +139,17 @@ namespace IngameScript
             return bracketPos;
         }
 
-        //Converts object to string
+
+        //!Converts object to string
         string objectToString(object[] packet)
+        {
+            string final = "";
+
+            objToStrConverter(packet, ref final);
+
+            return final;
+        }
+        public IEnumerator<int> objToStrConverter(object[] packet, ref string output)
         {
             string final = "[";
             int i = 0;
@@ -192,18 +200,18 @@ namespace IngameScript
             }
 
             final += "]";
+            output += final;
 
-            return final;
+            return yieldEnum(ticks[0]);
         }
-
-        public IEnumerator<int> objToStrConverter(object[] packet, Action<string> callback = null)
+        public IEnumerator<int> yieldEnum(int tick)
         {
-            callback("test");
-
-            yield return 0;
+            yield return tick;
         }
+        //--------------------------------------------------------------------------------------------
 
-        //Converts string back into object
+
+        //!Converts string back into object
         public static object[] stringToObject(string packet)
         {
             //Remove start and ending brackets
@@ -323,7 +331,7 @@ namespace IngameScript
             return finalPacketArr;
         }
 
-        //Debugging only, displays object arr as a string
+        //!Debugging only, displays object arr as a string
         static string displayThing(object[] array)
         {
             string output = "";
@@ -361,6 +369,7 @@ namespace IngameScript
             return output;
         }
 
+        //!Creates a valid packet to send through antennas
         ImmutableArray<string> createPacketString(string source, string destination, string purpose, object[] packet)
         {
             string tempDest = destination;
@@ -379,7 +388,7 @@ namespace IngameScript
 
 
 
-        //Gets block health
+        //!Gets block health
         double GetMyTerminalBlockHealth(IMyTerminalBlock block)
         {
             IMySlimBlock slimblock = block.CubeGrid.GetCubeBlock(block.Position);
@@ -390,7 +399,7 @@ namespace IngameScript
         }
 
 
-        //Send packet
+        //!Send packet
         public void sendMessage(bool isUni, string destination, ImmutableArray<string> contents)
         {
             //First check if it's a uni or broadcast
@@ -416,7 +425,7 @@ namespace IngameScript
         }
 
 
-        //Sends packets in backlog every so often
+        //!Sends packets in backlog every so often
         public void sendBackLog()
         {
             //Set count to var. This is because the length of dict will change
@@ -440,7 +449,7 @@ namespace IngameScript
         }
 
 
-        //Receive data
+        //!Receive data
         public void recieveMessage(int listener)
         {
             //Define message and bool to check if its a broadcast or not. Bool may not be needed.
@@ -522,7 +531,7 @@ namespace IngameScript
         }
 
 
-        //Creates EstCon packet
+        //!Creates EstCon packet
         public void establishConnection(string estType)
         {
             //B: EstCon - [long source, long destination, "EstCon", [EstType, gridType, laserAntPos]]
@@ -531,7 +540,7 @@ namespace IngameScript
             Echo("Sent EstCon broadcast to grid type: " + estType);
         }
 
-        //Initialliser, sets vars and listeners.
+        //!Initialliser, sets vars and listeners.
         public void Init()
         {
             Echo("Retrieving LaserAnt list...");
@@ -584,9 +593,9 @@ namespace IngameScript
 
 
 
-        //Default game functions ---------
+        //?Default game functions ---------
 
-        //Initialise some variables here
+        //!Initialise some variables here
         public Program()
         {
             //Runtime.UpdateFrequency = UpdateFrequency.Update100;
@@ -642,8 +651,12 @@ namespace IngameScript
             {
                 gridPos = Me.CubeGrid.GetPosition();
 
+                object[] testThing = new object[] { "43242345", "243525", new object[] { "312343", new Vector3(2, 3, 4), 23, new object[] { new Vector3(2, 4, 5), 23, "232" } }, new object[] { "test", new object[] { "brrr", 434.34, new Vector3(3, 54, 1) }, 123 } };
+                //object[] testThing = new object[] { "234", 234 };
+                Echo(objectToString(testThing));
+
                 //This is just for testing. Can be removed later.
-                if (gridType == "Outpost")
+                /*if (gridType == "Outpost")
                 {
                     Echo("Running outpost code.");
                     string displayString = "";
@@ -709,7 +722,7 @@ namespace IngameScript
                         displayListener += " true";
                         recieveMessage(i);
                     }
-                }
+                }*/
 
                 yield return 0;
             }
