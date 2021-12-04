@@ -141,7 +141,7 @@ namespace IngameScript
         }
 
         //Converts object to string
-        static string objectToString(object[] packet)
+        string objectToString(object[] packet)
         {
             string final = "[";
             int i = 0;
@@ -194,6 +194,13 @@ namespace IngameScript
             final += "]";
 
             return final;
+        }
+
+        public IEnumerator<int> objToStrConverter(object[] packet, Action<string> callback = null)
+        {
+            callback("test");
+
+            yield return 0;
         }
 
         //Converts string back into object
@@ -354,7 +361,7 @@ namespace IngameScript
             return output;
         }
 
-        static ImmutableArray<string> createPacketString(string source, string destination, string purpose, object[] packet)
+        ImmutableArray<string> createPacketString(string source, string destination, string purpose, object[] packet)
         {
             string tempDest = destination;
             long temp;
@@ -621,6 +628,8 @@ namespace IngameScript
                 //Remove this and set update frequency in program
                 //Runtime.UpdateFrequency = UpdateFrequency.Update1;
             }
+
+            object[] test = new object[] { "hello", 123 };
 
 
             TaskScheduler.StepCoroutines(updateSource);
