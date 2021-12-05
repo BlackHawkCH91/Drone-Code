@@ -378,6 +378,11 @@ namespace IngameScript
 
             return finalPacketArr;
         }
+        IEnumerator<int> strToObjConverter()
+        {
+            return yieldEnum(ticks[0]);
+        }
+
 
         //!Debugging only, displays object arr as a string
         static string displayThing(object[] array)
