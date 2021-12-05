@@ -47,6 +47,8 @@ namespace IngameScript
 
         public int[] ticks = new int[] { 0 };
 
+        string outputTest = "";
+
 
         //?Functions ----------------------------------------------------------------------
 
@@ -141,11 +143,61 @@ namespace IngameScript
 
 
         //!Converts object to string
+        //Probably not worth converting to coroutine
         string objectToString(object[] packet)
         {
             string final = "";
-
             objToStrConverter(packet, ref final);
+
+            /*string final = "[";
+            int i = 0;
+
+            //Loop through all items in object
+            foreach (object item in packet)
+            {
+                if (item.GetType() == typeof(object[]))
+                {
+                    //If it is an object array, use recursion
+                    final += objectToString((object[])item);
+                }
+                else
+                {
+                    //If not, convert type to string. If its a string, add "", if vec3 use toString, etc
+                    switch (item.GetType().ToString())
+                    {
+                        case "System.String":
+                            final += "\"" + item + "\"";
+                            break;
+
+                        case "System.Boolean":
+                            final += item.ToString();
+                            break;
+
+                        case "VRageMath.Vector3D":
+                            Vector3D vec3 = (Vector3D)item;
+                            final += vec3.ToString();
+                            break;
+
+                        case "VRageMath.MatrixD":
+                            final += matrixToString((MatrixD)item);
+                            break;
+
+                        default:
+                            final += item;
+                            break;
+                    }
+                }
+
+                //Prevent adding unnecessary comma
+                if (i < packet.Length - 1)
+                {
+                    final += ",";
+                }
+
+                i++;
+            }
+
+            final += "]";*/
 
             return final;
         }
@@ -203,10 +255,6 @@ namespace IngameScript
             output += final;
 
             return yieldEnum(ticks[0]);
-        }
-        public IEnumerator<int> yieldEnum(int tick)
-        {
-            yield return tick;
         }
         //--------------------------------------------------------------------------------------------
 
@@ -540,6 +588,14 @@ namespace IngameScript
             Echo("Sent EstCon broadcast to grid type: " + estType);
         }
 
+        public IEnumerator<int> yieldEnum(int tick)
+        {
+            yield return tick;
+        }
+
+
+
+
         //!Initialliser, sets vars and listeners.
         public void Init()
         {
@@ -736,6 +792,10 @@ namespace IngameScript
 }
 
 /*
+//https://stackoverflow.com/questions/999020/why-cant-iterator-methods-take-either-ref-or-out-parameters#:~:text=If%20you%20want%20to%20return%20both%20an%20iterator%20and%20an%20int%20from%20your%20method%2C%20a%20workaround%20is%20this%3A 
+
+Sorry for long link. Shows how to return values from coroutines.
+ 
 TODO:
 
  - Create a function that sends a broadcast and returns a list of IP (tag) addresses
