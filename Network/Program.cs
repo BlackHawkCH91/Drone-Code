@@ -709,7 +709,9 @@ namespace IngameScript
 
                 object[] testThing = new object[] { "43242345", "243525", new object[] { "312343", new Vector3(2, 3, 4), 23, new object[] { new Vector3(2, 4, 5), 23, "232" } }, new object[] { "test", new object[] { "brrr", 434.34, new Vector3(3, 54, 1) }, 123 } };
                 //object[] testThing = new object[] { "234", 234 };
-                Echo(objectToString(testThing));
+                string strTestThing = objectToString(testThing);
+                Echo(strTestThing);
+                stringToObject(strTestThing);
 
                 //This is just for testing. Can be removed later.
                 /*if (gridType == "Outpost")
