@@ -105,11 +105,20 @@ namespace IngameScript
 
                 // Apply control value
                 string controlText = "";
+
+                Vector3D linearVelocity = controller.GetShipVelocities().LinearVelocity;
                 foreach(ThrustGroup thrustGroup in thrustGroups)
                 {
                     if (effectiveThrustGroups.Contains(thrustGroup))
                     {
                         double thrustPercent = Vector3D.ProjectOnVector(ref controlVal, ref thrustGroup.thrustForceDirection).Length();
+
+                        // If maxing out thruster and velocity is in the opposite direction of this thruster then turn thruster off to engage inertial dampeners
+                        if(thrustPercent >= 1 && linearVelocity.Dot(thrustGroup.thrustForceDirection) <= 0)
+                        {
+                            thrustPercent = 0;
+                        }
+
                         thrustGroup.ApplyThrustPercentage(thrustPercent);
 
                         // DEBUG
