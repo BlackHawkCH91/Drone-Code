@@ -50,6 +50,7 @@ namespace IngameScript
         string outputTest = "";
 
 
+
         //?Functions ----------------------------------------------------------------------
 
 
@@ -146,10 +147,9 @@ namespace IngameScript
         //Probably not worth converting to coroutine
         string objectToString(object[] packet)
         {
-            string final = "";
-            objToStrConverter(packet, ref final);
+            //objToStrConverter(packet, ref final);
 
-            /*string final = "[";
+            string final = "[";
             int i = 0;
 
             //Loop through all items in object
@@ -195,9 +195,10 @@ namespace IngameScript
                 }
 
                 i++;
+                //TaskScheduler.ResumeCoroutine(TaskScheduler.CreateCoroutine(new Func<IEnumerator<int>>(yieldThing)));
             }
 
-            final += "]";*/
+            final += "]";
 
             return final;
         }
@@ -378,10 +379,6 @@ namespace IngameScript
 
             return finalPacketArr;
         }
-        IEnumerator<int> strToObjConverter()
-        {
-            return yieldEnum(ticks[0]);
-        }
 
 
         //!Debugging only, displays object arr as a string
@@ -523,7 +520,7 @@ namespace IngameScript
             }
 
             //Convert to object
-            ImmutableArray<string> temp = (ImmutableArray<string>)message.Data;
+            ImmutableArray<string> temp = (ImmutableArray<string>) message.Data;
 
             object[] finalMsg;
             long source = long.Parse(temp[0]);
@@ -546,7 +543,7 @@ namespace IngameScript
 
             //DEBUG check. Delete later:
 
-            if (gridType == "Outpost")
+            if (gridType == "Outpost" && listener == 0)
             {
                 LCD[0].WriteText(displayThing(finalMsg));
             }
@@ -565,18 +562,40 @@ namespace IngameScript
                         ipList.Add(finalMsg[0].ToString(), new object[] { packetContent[0].ToString(), packetContent[1] });
                     }
 
-                    if (isBroadcast && (packetContent[0].ToString() == gridType || packetContent[0].ToString() == "All"))
+                    //Will probably change this to a broadcast that sends all drones an updated ip list.
+                    if (isBroadcast && (packetContent[0].ToString() == gridType || finalMsg[1].ToString() == "All"))
                     {
                         //while (long) object is more readible, unboxing uses a lot of performace. May need to do some performance testing
                         long ip = source;
 
                         //Send unicast back to sender.
+                        Echo("Sending uni");
                         sendMessage(true, ip.ToString(), createPacketString(pBId.ToString(), ip.ToString(), "EstCon", new object[] { gridType, laserAntPos }));
+                    }
+                    else if (!(isBroadcast))
+                    {
+                        //If its a uni (got response), send an ipList update to everyone.
+                        object[] updatedIPList = new object[ipList.Count];
+                        int counter = 0;
+
+                        foreach (KeyValuePair<string, object[]> ip in ipList)
+                        {
+                            updatedIPList[counter] = new object[] { ip.Key, ip.Value };
+                            counter++;
+                        }
+
+                        
+                        //LCD[2].WriteText(ipList.Count.ToString());
+                        //LCD[2].WriteText(displayThing(updatedIPList));
+
+
+                        sendMessage(false, "All", createPacketString(pBId.ToString(), "All", "IpUpdate", updatedIPList));
                     }
 
                     break;
 
-                case "Distress":
+                case "IpUpdate":
+
                     break;
                 default:
                     break;
@@ -664,7 +683,6 @@ namespace IngameScript
             TaskScheduler.ResumeCoroutine(TaskScheduler.CreateCoroutine(new Func<IEnumerator<int>>(IEnumMain)));
         }
 
-        bool runOnce = false;
         int newLines = 1;
 
         void Main(string argument, UpdateType updateSource)
@@ -706,20 +724,23 @@ namespace IngameScript
 
         }
 
+        //object[] testThing = new object[] { "43242345", "243525", new object[] { "312343", new Vector3(2, 3, 4), 23, new object[] { new Vector3(2, 4, 5), 23, "232" } }, new object[] { "test", new object[] { "brrr", 434.34, new Vector3(3, 54, 1) }, 123 } };
+        object[] testThing = new object[] { new Vector3D(2, 3, 4), "hello", 123, true };
+
         public IEnumerator<int> IEnumMain()
         {
             while (true)
             {
                 gridPos = Me.CubeGrid.GetPosition();
+                
 
-                object[] testThing = new object[] { "43242345", "243525", new object[] { "312343", new Vector3(2, 3, 4), 23, new object[] { new Vector3(2, 4, 5), 23, "232" } }, new object[] { "test", new object[] { "brrr", 434.34, new Vector3(3, 54, 1) }, 123 } };
-                //object[] testThing = new object[] { "234", 234 };
+                /*object[] testThing = new object[] { "234", 234 };
                 string strTestThing = objectToString(testThing);
                 Echo(strTestThing);
-                stringToObject(strTestThing);
+                stringToObject(strTestThing);*/
 
                 //This is just for testing. Can be removed later.
-                /*if (gridType == "Outpost")
+                if (gridType == "Outpost")
                 {
                     Echo("Running outpost code.");
                     string displayString = "";
@@ -757,11 +778,10 @@ namespace IngameScript
 
                 //Test packet
 
-                if (gridType == "Satellite")
+                if (gridType == "Outpost")
                 {
                     Echo("Sending EstCon...");
                     establishConnection("All");
-                    runOnce = false;
                 }
 
                 //Handling messages here. Seems messy and inefficient
@@ -785,7 +805,7 @@ namespace IngameScript
                         displayListener += " true";
                         recieveMessage(i);
                     }
-                }*/
+                }
 
                 yield return 0;
             }
