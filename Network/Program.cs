@@ -8,6 +8,7 @@ using System.Collections.Generic;
 using System.Collections.Immutable;
 using System.Linq;
 using System.Text;
+using System.Text.RegularExpressions;
 using VRage;
 using VRage.Collections;
 using VRage.Game;
@@ -26,6 +27,7 @@ namespace IngameScript
 
         public Dictionary<long, ImmutableArray<string>> packetBacklog = new Dictionary<long, ImmutableArray<string>>();
         public static Dictionary<string, object[]> ipList = new Dictionary<string, object[]>();
+        List<object[]> updatedIpList = new List<object[]>();
         public List<string> tagList = new List<string>();
         public static Dictionary<string, List<int>> bracketPos = new Dictionary<string, List<int>>();
 
@@ -48,6 +50,8 @@ namespace IngameScript
         public int[] ticks = new int[] { 0 };
 
         string outputTest = "";
+
+        bool showOnce = true;
 
 
 
@@ -575,26 +579,31 @@ namespace IngameScript
                     else if (!(isBroadcast))
                     {
                         //If its a uni (got response), send an ipList update to everyone.
-                        object[] updatedIPList = new object[ipList.Count];
-                        int counter = 0;
+                        //object[] updatedIPList = new object[ipList.Count];
+                        updatedIpList.Clear();
 
                         foreach (KeyValuePair<string, object[]> ip in ipList)
                         {
-                            updatedIPList[counter] = new object[] { ip.Key, ip.Value };
-                            counter++;
+                            updatedIpList.Add(new object[] { ip.Key, ip.Value });
                         }
 
-                        
-                        //LCD[2].WriteText(ipList.Count.ToString());
-                        //LCD[2].WriteText(displayThing(updatedIPList));
+
+                        if (showOnce)
+                        {
+                            //LCD[2].WriteText(displayThing(updatedIpList.ToArray()));
+                            showOnce = false;
+                        }
 
 
-                        sendMessage(false, "All", createPacketString(pBId.ToString(), "All", "IpUpdate", updatedIPList));
+                        sendMessage(false, "All", createPacketString(pBId.ToString(), "All", "IpUpdate", updatedIpList.ToArray()));
                     }
 
                     break;
 
                 case "IpUpdate":
+                    string output = displayThing(packetContent);
+
+                    LCD[2].WriteText(output);
 
                     break;
                 default:
@@ -771,14 +780,14 @@ namespace IngameScript
                         }
                     }
 
-                    LCD[2].WriteText(displayString);
+                    //LCD[2].WriteText(displayString);
                 }
 
                 //testing:
 
                 //Test packet
 
-                if (gridType == "Outpost")
+                if (gridType == "Satellite")
                 {
                     Echo("Sending EstCon...");
                     establishConnection("All");
@@ -791,7 +800,6 @@ namespace IngameScript
                 //Check uni cast
                 if (dirListener.HasPendingMessage)
                 {
-                    Echo("UniListener");
                     recieveMessage(0);
                 }
 
