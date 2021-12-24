@@ -26,7 +26,7 @@ namespace IngameScript
         //!VARS
 
         public Dictionary<long, ImmutableArray<string>> packetBacklog = new Dictionary<long, ImmutableArray<string>>();
-        public static Dictionary<string, object[]> ipList = new Dictionary<string, object[]>();
+        public static Dictionary<long, object[]> ipList = new Dictionary<long, object[]>();
         List<object[]> updatedIpList = new List<object[]>();
         public List<string> tagList = new List<string>();
         public static Dictionary<string, List<int>> bracketPos = new Dictionary<string, List<int>>();
@@ -49,10 +49,7 @@ namespace IngameScript
 
         public int[] ticks = new int[] { 0 };
 
-        string outputTest = "";
-
         bool showOnce = true;
-
 
 
         //?Functions ----------------------------------------------------------------------
@@ -561,9 +558,9 @@ namespace IngameScript
                     //EstCon - [long source, long destination, "EstCon", [gridType, laserAntPos]]
 
                     //Add the IP to the IP list if is doesn't exist
-                    if (!(ipList.ContainsKey(finalMsg[0].ToString())))
+                    if (!(ipList.ContainsKey((long) finalMsg[0])))
                     {
-                        ipList.Add(finalMsg[0].ToString(), new object[] { packetContent[0].ToString(), packetContent[1] });
+                        ipList.Add((long) finalMsg[0], new object[] { packetContent[0].ToString(), packetContent[1] });
                     }
 
                     //Will probably change this to a broadcast that sends all drones an updated ip list.
@@ -582,9 +579,12 @@ namespace IngameScript
                         //object[] updatedIPList = new object[ipList.Count];
                         updatedIpList.Clear();
 
-                        foreach (KeyValuePair<string, object[]> ip in ipList)
+                        foreach (KeyValuePair<long, object[]> ip in ipList)
                         {
-                            updatedIpList.Add(new object[] { ip.Key, ip.Value });
+                            if (ip.Key != (long) finalMsg[0])
+                            {
+                                updatedIpList.Add(new object[] { ip.Key, ip.Value });
+                            }
                         }
 
 
@@ -701,7 +701,7 @@ namespace IngameScript
             if (!(string.IsNullOrEmpty(argument)))
             {
                 gridType = argument;
-                ipList[gridType] = new object[] { "Default" };
+                //ipList[Me.EntityId] = new object[] { gridType, laserAntPos };
             }
 
             //Initialise once
@@ -741,7 +741,6 @@ namespace IngameScript
             while (true)
             {
                 gridPos = Me.CubeGrid.GetPosition();
-                
 
                 /*object[] testThing = new object[] { "234", 234 };
                 string strTestThing = objectToString(testThing);
@@ -753,7 +752,7 @@ namespace IngameScript
                 {
                     Echo("Running outpost code.");
                     string displayString = "";
-                    foreach (KeyValuePair<string, object[]> item in ipList)
+                    foreach (KeyValuePair<long, object[]> item in ipList)
                     {
                         displayString += item.Key + ", ";
 
