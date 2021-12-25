@@ -26,10 +26,13 @@ namespace IngameScript
         //!VARS
 
         public Dictionary<long, ImmutableArray<string>> packetBacklog = new Dictionary<long, ImmutableArray<string>>();
-        public static Dictionary<long, object[]> ipList = new Dictionary<long, object[]>();
+        public Dictionary<long, object[]> ipList = new Dictionary<long, object[]>();
         List<object[]> updatedIpList = new List<object[]>();
         public List<string> tagList = new List<string>();
-        public static Dictionary<string, List<int>> bracketPos = new Dictionary<string, List<int>>();
+        public Dictionary<string, List<int>> bracketPos = new Dictionary<string, List<int>>();
+
+        //[gridType, groupId, worldMatrix, movementVector, health, status, command, lastUpdate]
+        public Dictionary<long, object[]> droneTable = new Dictionary<long, object[]>();
 
         bool setup = false;
 
@@ -117,7 +120,7 @@ namespace IngameScript
         }
 
         //!Gets positions of [] in strings
-        static Dictionary<string, List<int>> getBracketPos(string packet)
+        Dictionary<string, List<int>> getBracketPos(string packet)
         {
             //Creates bracket dictionary, adds two keys for { and }
 
@@ -262,7 +265,7 @@ namespace IngameScript
 
 
         //!Converts string back into object
-        public static object[] stringToObject(string packet)
+        public object[] stringToObject(string packet)
         {
             //Remove start and ending brackets
             packet = packet.Substring(1, packet.Length - 2);
@@ -603,8 +606,8 @@ namespace IngameScript
                 case "IpUpdate":
                     string output = displayThing(packetContent);
 
-                    LCD[2].WriteText(output);
-
+                    break;
+                case "Info":
                     break;
                 default:
                     break;
@@ -826,21 +829,24 @@ namespace IngameScript
 }
 
 /*
-//https://stackoverflow.com/questions/999020/why-cant-iterator-methods-take-either-ref-or-out-parameters#:~:text=If%20you%20want%20to%20return%20both%20an%20iterator%20and%20an%20int%20from%20your%20method%2C%20a%20workaround%20is%20this%3A 
 
-Sorry for long link. Shows how to return values from coroutines.
  
 TODO:
 
- - Create a function that sends a broadcast and returns a list of IP (tag) addresses
+ - Create an "Info" packet where grids can request info from other grids and those grids will respond with information about them.
+ - Create debug screen which shows status of connections between satellites/relays
+ - Use corountines when checking listeners. Calling objectToString multiple times can be costly.
  - Find a way to create "anonymous" broadcasts (use laser antenna to broadcast briefly so that the ping barely shows up)
  - Create a universal function that can encode and decode all date into/from a string. This will be stored on the "Storage" variable.
- - Create an "Info" packet where grids can request info from other grids and those grids will respond with information about them.
-   
-   Info packet format: [source, destination, purpose, [gridType, worldMatrix, health, status, groupId, command]]
-   Status - "working" "idle" "danger" "docked"
 
-   Storage formate: [id, gridType, worldMatrix, health, status, groupId, command, lastUpdated]
+
+ - EstCon broadcast will only run every couple seconds.
+
+   
+   Info packet format: [source, destination, purpose, [gridType, groupId, worldMatrix, movementVector, health, status, command, lastUpdate]]
+   Status - "working" "idle" "danger" "docked/landed"
+
+   Storage formate: [gridType, groupId, worldMatrix, movementVector, health, status, command, lastUpdate]
 
    Command Packet format: [source, destination, purpose, [priority, commandType, depends on command type]]
    Command types: "Move" "Group" "Attack" "Mine" "Construct" "Power" "Dock"
@@ -849,41 +855,26 @@ TODO:
     - Attack: [..., targetPos]
     - Mine: Depends on who receives command. Motherships receive bounding box, drones receive a position - [..., bounding box OR position]
     - Construct: Same as Mine
-    - Power: [..., true/false] - Tells ship to land and power off. Used for when there is combat and server resources are important.
+    - Power: [..., true/false] - Tells ship to land and power off. Used for when there's combat and server resources are important.
     - Dock: [..., position, true/false] - Not sure what structure the packet should be. Tells ship to dock at a position.
 
    Grid network strucute will use a basic hierachry: Outpost -> Group Leader/flagship -> Grids 
    Commands can still be sent directly to grids if needed. 
 
-   Flagships may stored data on their group if needed.
+   Flagships may store data on their group if needed.
    
-
-
-
-Notes:
-
-Use corountines when checking listeners. Calling objectToString multiple times can be costly.
-
 
 Testing:
 
  - Switch EstCon around. Make outpost send EstCon broadcast and see if response from satellite is being sent properly or is being sent to
    backlog
  - Test if backlog is working. Can be tested by making broadcaster range larger than reciever range.
- - See if isEndpointReachable still works when reciever is only acting as a listener (antenna on, but range set to 0)
-
-
-Optimisation:
-
 
 
 Packet structure - [long source, long destination, string purpose, [content, content, etc]]
 
 B: EstCon - [long source, long destination, "EstCon", [EstType, gridType, laserAntPos ]]
 U: EstCon - [long source, long destination, "EstCon", [gridType, laserAntPos ]]
-
-Distress - [long source, long destination, "Distress", [position, dangerLvl ]]
-Info - [long source, long destination, "Info", [position, gridType, health, power, hydrogen, status, task ]]
 
 Status - idle, working, attached - pBId, etc
 */
