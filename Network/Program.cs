@@ -21,6 +21,33 @@ using VRageMath;
 
 namespace IngameScript
 {
+    public struct drone
+    {
+        //[gridType, groupId, worldMatrix, linearVelocity, angularVelocity, health, status, command, lastUpdate]
+        public string gridType { get; set; }
+        public long groupId { get; set; }
+        public MatrixD gridMatrix { get; set; }
+        public Vector3D linVel { get; set; }
+        public Vector3D angVel { get; set; }
+        public double health { get; set; }
+        public string status { get; set; }
+        public string command { get; set; }
+        public DateTime lastUpdate { get; set; }
+        
+        public drone(string _gridType, long _groupID, MatrixD _gridMatrix, Vector3D _linVel, Vector3D _angVel, double _health, string _status, string _command, DateTime _lastUpdate)
+        {
+            gridType = _gridType;
+            groupId = _groupID;
+            gridMatrix = _gridMatrix;
+            linVel = _linVel;
+            angVel = _angVel;
+            health = _health;
+            status = _status;
+            command = _command;
+            lastUpdate = _lastUpdate;
+        }
+    }
+
     partial class Program : MyGridProgram
     {
         //!VARS
@@ -32,7 +59,7 @@ namespace IngameScript
         public Dictionary<string, List<int>> bracketPos = new Dictionary<string, List<int>>();
 
         //[gridType, groupId, worldMatrix, movementVector, health, status, command, lastUpdate]
-        public Dictionary<long, object[]> droneTable = new Dictionary<long, object[]>();
+        public Dictionary<long, drone> droneTable = new Dictionary<long, drone>();
 
         bool setup = false;
 
@@ -46,12 +73,11 @@ namespace IngameScript
         //!Information used to create a packet that will be sent back to the main base.
         long pBId;
         string gridType;
-        Vector3D gridPos;
-
+        MatrixD gridMatrix;
+        Vector3D linearVelocity;
+        Vector3D angularVelocity;
         object[] laserAntPos;
-
         public int[] ticks = new int[] { 0 };
-
         bool showOnce = true;
 
 
@@ -205,61 +231,6 @@ namespace IngameScript
             final += "]";
 
             return final;
-        }
-        public IEnumerator<int> objToStrConverter(object[] packet, ref string output)
-        {
-            string final = "[";
-            int i = 0;
-
-            //Loop through all items in object
-            foreach (object item in packet)
-            {
-                if (item.GetType() == typeof(object[]))
-                {
-                    //If it is an object array, use recursion
-                    final += objectToString((object[])item);
-                }
-                else
-                {
-                    //If not, convert type to string. If its a string, add "", if vec3 use toString, etc
-                    switch (item.GetType().ToString())
-                    {
-                        case "System.String":
-                            final += "\"" + item + "\"";
-                            break;
-
-                        case "System.Boolean":
-                            final += item.ToString();
-                            break;
-
-                        case "VRageMath.Vector3D":
-                            Vector3D vec3 = (Vector3D)item;
-                            final += vec3.ToString();
-                            break;
-
-                        case "VRageMath.MatrixD":
-                            final += matrixToString((MatrixD)item);
-                            break;
-
-                        default:
-                            final += item;
-                            break;
-                    }
-                }
-
-                //Prevent adding unnecessary comma
-                if (i < packet.Length - 1)
-                {
-                    final += ",";
-                }
-
-                i++;
-            }
-
-            final += "]";
-            output += final;
-
-            return yieldEnum(ticks[0]);
         }
         //--------------------------------------------------------------------------------------------
 
@@ -527,7 +498,7 @@ namespace IngameScript
             ImmutableArray<string> temp = (ImmutableArray<string>) message.Data;
 
             object[] finalMsg;
-            long source = long.Parse(temp[0]);
+            string source = temp[0];
 
             //Generate object arr
             finalMsg = new object[] { source, temp[1], temp[2], stringToObject(temp[3]) };
@@ -569,12 +540,9 @@ namespace IngameScript
                     //Will probably change this to a broadcast that sends all drones an updated ip list.
                     if (isBroadcast && (packetContent[0].ToString() == gridType || finalMsg[1].ToString() == "All"))
                     {
-                        //while (long) object is more readible, unboxing uses a lot of performace. May need to do some performance testing
-                        long ip = source;
-
                         //Send unicast back to sender.
                         Echo("Sending uni");
-                        sendMessage(true, ip.ToString(), createPacketString(pBId.ToString(), ip.ToString(), "EstCon", new object[] { gridType, laserAntPos }));
+                        sendMessage(true, source, createPacketString(pBId.ToString(), source, "EstCon", new object[] { gridType, laserAntPos }));
                     }
                     else if (!(isBroadcast))
                     {
@@ -608,6 +576,17 @@ namespace IngameScript
 
                     break;
                 case "Info":
+                    //[gridType, groupId, worldMatrix, linearVelocity, angularVelocity, health, status, command, lastUpdate]
+                    if (isBroadcast)
+                    {
+                        sendMessage(false, source, createPacketString(pBId.ToString(), source, "Info", new object[] { gridType, 0, gridMatrix, linearVelocity, angularVelocity, 100, "Idle", "Mine" }));
+                    } else
+                    {
+                        //This is a lot of boxing/unboxing which might cause performance issues. Def needs to run on a coroutine
+                        object[] p = packetContent;
+                        droneTable.Add(long.Parse(source), new drone((string)p[0], (long)p[1], (MatrixD)p[2], (Vector3D)p[3], (Vector3D)p[4], (double)p[5], (string)p[6], (string)p[7], DateTime.Now));
+                    }
+
                     break;
                 default:
                     break;
@@ -624,11 +603,20 @@ namespace IngameScript
             Echo("Sent EstCon broadcast to grid type: " + estType);
         }
 
-        public IEnumerator<int> yieldEnum(int tick)
+
+        //!Broadcast to request info packets
+        public void requestInfo(string tag)
         {
-            yield return tick;
+            sendMessage(false, tag, createPacketString(pBId.ToString(), tag, "Info", new object[] { "placeholder" }));
+            Echo("Broadcasting info request.");
         }
 
+        //!Unicast to respond to info request
+        public void respondInfo(long ip)
+        {
+            //Info packet format:[source, destination, purpose, [gridType, groupId, worldMatrix, linearVelocity, angularVelocity, health, status, command, lastUpdate]]
+            sendMessage(true, ip.ToString(), createPacketString(pBId.ToString(), ip.ToString(), "Info", new object[] { gridType, 0, gridMatrix, linearVelocity, angularVelocity, 1, 1, "none", DateTime.Now}));
+        }
 
 
 
@@ -743,7 +731,7 @@ namespace IngameScript
         {
             while (true)
             {
-                gridPos = Me.CubeGrid.GetPosition();
+                gridMatrix = Me.CubeGrid.WorldMatrix;
 
                 /*object[] testThing = new object[] { "234", 234 };
                 string strTestThing = objectToString(testThing);
@@ -843,7 +831,7 @@ TODO:
  - EstCon broadcast will only run every couple seconds.
 
    
-   Info packet format: [source, destination, purpose, [gridType, groupId, worldMatrix, movementVector, health, status, command, lastUpdate]]
+   Info packet format: [source, destination, purpose, [gridType, groupId, worldMatrix, linearVelocity, angularVelocity, health, status, command, lastUpdate]]
    Status - "working" "idle" "danger" "docked/landed"
 
    Storage formate: [gridType, groupId, worldMatrix, movementVector, health, status, command, lastUpdate]
