@@ -584,7 +584,7 @@ namespace IngameScript
                     {
                         //This is a lot of boxing/unboxing which might cause performance issues. Def needs to run on a coroutine
                         object[] p = packetContent;
-                        droneTable.Add(long.Parse(source), new drone((string)p[0], (long)p[1], (MatrixD)p[2], (Vector3D)p[3], (Vector3D)p[4], (double)p[5], (string)p[6], (string)p[7], DateTime.Now));
+                        droneTable[long.Parse(source)] = new drone((string)p[0], (long)p[1], (MatrixD)p[2], (Vector3D)p[3], (Vector3D)p[4], (double)p[5], (string)p[6], (string)p[7], DateTime.Now);
                     }
 
                     break;
@@ -733,12 +733,6 @@ namespace IngameScript
             {
                 gridMatrix = Me.CubeGrid.WorldMatrix;
 
-                /*object[] testThing = new object[] { "234", 234 };
-                string strTestThing = objectToString(testThing);
-                Echo(strTestThing);
-                stringToObject(strTestThing);*/
-
-                //This is just for testing. Can be removed later.
                 if (gridType == "Outpost")
                 {
                     Echo("Running outpost code.");
@@ -771,6 +765,8 @@ namespace IngameScript
                     }
 
                     //LCD[2].WriteText(displayString);
+
+                    requestInfo("All");
                 }
 
                 //testing:
