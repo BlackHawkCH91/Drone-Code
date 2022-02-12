@@ -68,6 +68,7 @@ namespace IngameScript
         IMyUnicastListener dirListener;
         IMyRadioAntenna antenna;
         IMyTerminalBlock mainProgBlock;
+        IMyRemoteControl rc;
         public List<IMyTextPanel> LCD = new List<IMyTextPanel>();
 
         //!Information used to create a packet that will be sent back to the main base.
@@ -198,7 +199,9 @@ namespace IngameScript
                         case "System.String":
                             final += "\"" + item + "\"";
                             break;
-
+                        case "System.DateTime":
+                            final += "D" + item.ToString();
+                            break;
                         case "System.Boolean":
                             final += item.ToString();
                             break;
@@ -333,8 +336,10 @@ namespace IngameScript
                     }
                     else if (item[0] == 'M') // Another new thing
                     {
-
                         finalPacketArr[i] = stringToMatrix(item);
+                    } else if (item[0] == 'D')
+                    {
+                        finalPacketArr[i] = DateTime.Parse(item);
                     }
                     else if (item.Contains("."))
                     {
@@ -729,8 +734,13 @@ namespace IngameScript
 
         public IEnumerator<int> IEnumMain()
         {
+            rc = GridTerminalSystem.GetBlockWithName("rc") as IMyRemoteControl;
             while (true)
             {
+                MyShipVelocities vel = rc.GetShipVelocities();
+                linearVelocity = vel.LinearVelocity;
+                angularVelocity = vel.AngularVelocity;
+
                 gridMatrix = Me.CubeGrid.WorldMatrix;
 
                 if (gridType == "Outpost")
@@ -766,7 +776,16 @@ namespace IngameScript
 
                     //LCD[2].WriteText(displayString);
 
+                    //[gridType, groupId, worldMatrix, linearVelocity, angularVelocity, health, status, command, lastUpdate]
                     requestInfo("All");
+
+                    foreach (KeyValuePair<long, drone> drone in droneTable)
+                    {
+                        drone item = drone.Value;
+                        string pos = $"{item.gridMatrix.M41}, {item.gridMatrix.M42}, {item.gridMatrix.M43}";
+                        string output = $"{drone.Key} | {item.gridType} | {pos} | {item.lastUpdate}";
+                        LCD[2].WriteText(output);
+                    }
                 }
 
                 //testing:
