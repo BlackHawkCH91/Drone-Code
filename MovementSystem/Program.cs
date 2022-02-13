@@ -39,11 +39,12 @@ namespace IngameScript
         IMyShipController controller;
 
         // Movement Controller vars
-        Vector3D destinationVector = new Vector3(11749.23, -81914.21, -86689.26);
+        Vector3D destinationVector = new Vector3D(97809.81, -27403.02, 22361.28);
         List<DecayingIntegralPIDController> movementPIDControllers = new List<DecayingIntegralPIDController>();
 
         // Rotation Controller vars
-        Vector3D rotationDirection = new Vector3(1, 0, 0);
+        Vector3D rotationDirection = new Vector3D(97809.81, -27403.02, 22361.28);
+        Vector3D rotationUp;
         List<DecayingIntegralPIDController> rotationPIDControllers = new List<DecayingIntegralPIDController>();
 
         public Program()
@@ -51,6 +52,7 @@ namespace IngameScript
             controller = GetMainRemoteControl();
             TaskScheduler.EstablishTaskScheduler(Runtime, Echo, true);
             TaskScheduler.ResumeCoroutine(TaskScheduler.CreateCoroutine(new Func<IEnumerator<int>>(MoveControllerCoroutine)));
+            TaskScheduler.ResumeCoroutine(TaskScheduler.CreateCoroutine(new Func<IEnumerator<int>>(RotationControllerCoroutine)));
         }
 
         public void Save()
@@ -169,6 +171,10 @@ namespace IngameScript
                 rotationPIDControllers.Add(new DecayingIntegralPIDController(1, 0, 0, 0.0025));
             }
 
+            Vector3D before = rotationDirection.ConvertToLocalPosition(controller);
+            rotationDirection = rotationDirection.ConvertToLocalPosition(controller).ConvertToWorldDirection(controller).UnitVector();
+            rotationUp = Vector3D.CalculatePerpendicularVector(rotationDirection);
+
             // Calc rotation constantly
             while (true)
             {
@@ -187,6 +193,19 @@ namespace IngameScript
                  * 
                  */
 
+                double az;
+                double el;
+                double azUp;
+                double elUp;
+
+                Vector3D.GetAzimuthAndElevation(rotationDirection.ConvertToLocalDirection(worldMatrix), out az, out el);
+                Vector3D.GetAzimuthAndElevation(rotationUp.ConvertToLocalDirection(worldMatrix), out azUp, out elUp);
+                Vector3D eulerAngles;
+                Vector3D eulerAnglesRot;
+                MatrixD.GetEulerAnglesXYZ(ref worldMatrix, out eulerAngles);
+                MatrixD rotationMatrix = MatrixD.CreateLookAt(worldMatrix.Translation, rotationDirection, rotationUp);
+                MatrixD.GetEulerAnglesXYZ(ref rotationMatrix, out eulerAnglesRot);
+
                 // Pitch error
                 Vector3D pitchVct = rotationDirection.ProjectOnPlane(worldMatrix.Forward.Cross(worldMatrix.Up));
                 double pitchError = Math.Acos(pitchVct.Dot(worldMatrix.Forward));
@@ -196,8 +215,23 @@ namespace IngameScript
                 double yawError = Math.Acos(yawVct.Dot(worldMatrix.Forward));
 
                 // Roll error
-                Vector3D rollVct = rotationDirection.ProjectOnPlane(worldMatrix.Right.Cross(worldMatrix.Up));
+                Vector3D rollVct = rotationUp.ProjectOnPlane(worldMatrix.Up.Cross(worldMatrix.Right));
                 double rollError = Math.Acos(rollVct.Dot(worldMatrix.Up));
+
+                // Display control values
+                IMyTextSurface textSurface1 = ((IMyTextSurfaceProvider)GridTerminalSystem.GetBlockWithName("Cockpit")).GetSurface(1);
+                textSurface1.WriteText(
+                    $"Fwd:{worldMatrix.Forward.X.RoundToDp(2)}, {worldMatrix.Forward.Y.RoundToDp(2)}, {worldMatrix.Forward.Z.RoundToDp(2)}\n" +
+                    $"Up:{worldMatrix.Up.X.RoundToDp(2)}, {worldMatrix.Up.Y.RoundToDp(2)}, {worldMatrix.Up.Z.RoundToDp(2)}\n" +
+                    $"rotDir:{rotationDirection.X.RoundToDp(2)}, {rotationDirection.Y.RoundToDp(2)}, {rotationDirection.Z.RoundToDp(2)}\n" +
+                    $"rotUp:{rotationUp.X.RoundToDp(2)}, {rotationUp.Y.RoundToDp(2)}, {rotationUp.Z.RoundToDp(2)}"
+                    );
+                IMyTextSurface textSurface = ((IMyTextSurfaceProvider)GridTerminalSystem.GetBlockWithName("Cockpit")).GetSurface(0);
+                textSurface.WriteText($"yaw:{ az.RoundToDp(2)}\npitch:{el.RoundToDp(2)}\nroll:{rollError.RoundToDp(2)}\nazUp:{azUp.RoundToDp(2)}\nelUp:{elUp.RoundToDp(2)}");
+                IMyTextSurface textSurface2 = ((IMyTextSurfaceProvider)GridTerminalSystem.GetBlockWithName("Cockpit")).GetSurface(2);
+                textSurface2.WriteText($"eulerAngles: X:{eulerAngles.X.RoundToDp(2)}, Y:{eulerAngles.Y.RoundToDp(2)}, Z:{eulerAngles.Z.RoundToDp(2)}\n" +
+                    $"eulerAnglesRot: X:{eulerAnglesRot.X.RoundToDp(2)}, Y:{eulerAnglesRot.Y.RoundToDp(2)}, Z:{eulerAnglesRot.Z.RoundToDp(2)}");
+
 
                 // Apply control values
 
@@ -339,7 +373,7 @@ namespace IngameScript
 
         public List<GyroGroup> GetGyros()
         {
-
+            return new List<GyroGroup>();
         }
 /*        public void CounterGravity()
         {
