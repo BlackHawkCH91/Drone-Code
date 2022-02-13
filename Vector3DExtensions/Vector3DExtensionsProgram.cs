@@ -60,5 +60,14 @@ namespace IngameScript
 
         }
 
+        public static Vector3D UnitVector(this Vector3D vector)
+        {
+            return vector / vector.Length();
+        }
+
+        public static Vector3D ProjectOnPlane(this Vector3D vector, Vector3D normal)
+        {
+            return Vector3D.ProjectOnPlane(ref vector, ref normal);
+        }
     }
 }
