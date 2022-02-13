@@ -482,6 +482,7 @@ namespace IngameScript
         //!Receive data
         public void recieveMessage(int listener)
         {
+            Echo("recieving");
             //Define message and bool to check if its a broadcast or not. Bool may not be needed.
             bool isBroadcast = false;
             MyIGCMessage message;
@@ -505,9 +506,7 @@ namespace IngameScript
             object[] finalMsg;
             string source = temp[0];
 
-            //Generate object arr
             finalMsg = new object[] { source, temp[1], temp[2], stringToObject(temp[3]) };
-
             //Check if destination is a string or long. This may cause an error if dest is a long. Need to test this.
             if (!(finalMsg[1].ToString().StartsWith("\"")))
             {
@@ -533,7 +532,6 @@ namespace IngameScript
             switch (finalMsg[2].ToString())
             {
                 case "EstCon":
-                    Echo("1");
                     //EstCon - [long source, long destination, "EstCon", [gridType, laserAntPos]]
 
                     //Add the IP to the IP list if is doesn't exist
@@ -543,45 +541,36 @@ namespace IngameScript
                         ipList.Add((long) finalMsg[0], new object[] { packetContent[0].ToString(), packetContent[1] });
                     }
 
-                    Echo("2");
                     //Will probably change this to a broadcast that sends all drones an updated ip list.
                     if (isBroadcast && (packetContent[0].ToString() == gridType || finalMsg[1].ToString() == "All"))
                     {
-                        Echo("3");
                         //Send unicast back to sender.
                         Echo("Sending uni");
                         sendMessage(true, source, createPacketString(pBId.ToString(), source, "EstCon", new object[] { gridType, laserAntPos }));
                     }
                     else if (!(isBroadcast))
                     {
-                        Echo("4");
+                        //?This entire thing is a mess, gonna rewrite it. Commenting for now.
                         //If its a uni (got response), send an ipList update to everyone.
                         //object[] updatedIPList = new object[ipList.Count];
                         updatedIpList.Clear();
 
-                        foreach (KeyValuePair<long, object[]> ip in ipList)
+                        /*foreach (KeyValuePair<long, object[]> ip in ipList)
                         {
                             if (ip.Key != (long) finalMsg[0])
                             {
+                                //updatedIpList[ip.Key] = ip.Value;
                                 updatedIpList.Add(new object[] { ip.Key, ip.Value });
                             }
-                        }
+                        }*/
 
-
-                        if (showOnce)
-                        {
-                            //LCD[2].WriteText(displayThing(updatedIpList.ToArray()));
-                            showOnce = false;
-                        }
-
-
-                        sendMessage(false, "All", createPacketString(pBId.ToString(), "All", "IpUpdate", updatedIpList.ToArray()));
+                        //sendMessage(false, "All", createPacketString(pBId.ToString(), "All", "IpUpdate", updatedIpList.ToArray()));
                     }
 
                     break;
 
                 case "IpUpdate":
-                    Echo("5");
+                    //?Rewrite IP Update in general
                     string output = displayThing(packetContent);
 
                     break;
@@ -589,12 +578,13 @@ namespace IngameScript
                     //[gridType, groupId, worldMatrix, linearVelocity, angularVelocity, health, status, command, lastUpdate]
                     if (isBroadcast)
                     {
-                        sendMessage(false, source, createPacketString(pBId.ToString(), source, "Info", new object[] { gridType, 0, gridMatrix, linearVelocity, angularVelocity, 100, "Idle", "Mine" }));
+                        Echo("sending info");
+                        sendMessage(true, source, createPacketString(pBId.ToString(), source, "Info", new object[] { gridType, 0, gridMatrix, linearVelocity, angularVelocity, 100, "Idle", "Mine" }));
                     } else
                     {
                         //This is a lot of boxing/unboxing which might cause performance issues. Def needs to run on a coroutine
                         object[] p = packetContent;
-                        droneTable[long.Parse(source)] = new drone((string)p[0], (long)p[1], (MatrixD)p[2], (Vector3D)p[3], (Vector3D)p[4], (double)p[5], (string)p[6], (string)p[7], DateTime.Now);
+                        droneTable[long.Parse(source)] = new drone((string)p[0], long.Parse(p[1].ToString()), (MatrixD) p[2], (Vector3D) p[3], (Vector3D) p[4], long.Parse(p[5].ToString()), (string)p[6], (string)p[7], DateTime.Now);
                     }
 
                     break;
@@ -625,7 +615,8 @@ namespace IngameScript
         public void respondInfo(long ip)
         {
             //Info packet format:[source, destination, purpose, [gridType, groupId, worldMatrix, linearVelocity, angularVelocity, health, status, command, lastUpdate]]
-            sendMessage(true, ip.ToString(), createPacketString(pBId.ToString(), ip.ToString(), "Info", new object[] { gridType, 0, gridMatrix, linearVelocity, angularVelocity, 1, 1, "none", DateTime.Now}));
+            Echo("Sending info response");
+            sendMessage(true, ip.ToString(), createPacketString(pBId.ToString(), ip.ToString(), "Info", new object[] { gridType, 0, gridMatrix, linearVelocity, angularVelocity, 1, "Idle", "none", DateTime.Now}));
         }
 
 
@@ -779,16 +770,19 @@ namespace IngameScript
                         }
                     }
 
+                    requestInfo("All");
+
                     //LCD[2].WriteText(displayString);
 
                     //[gridType, groupId, worldMatrix, linearVelocity, angularVelocity, health, status, command, lastUpdate]
-                    requestInfo("All");
+
 
                     foreach (KeyValuePair<long, drone> drone in droneTable)
                     {
                         drone item = drone.Value;
                         string pos = $"{item.gridMatrix.M41}, {item.gridMatrix.M42}, {item.gridMatrix.M43}";
                         string output = $"{drone.Key} | {item.gridType} | {pos} | {item.lastUpdate}";
+                        Echo("drone stuff");
                         LCD[2].WriteText(output);
                     }
                 }
@@ -800,7 +794,7 @@ namespace IngameScript
                 if (gridType == "Satellite")
                 {
                     Echo("Sending EstCon...");
-                    establishConnection("All");
+                    //establishConnection("All");
                 }
 
                 //Handling messages here. Seems messy and inefficient
