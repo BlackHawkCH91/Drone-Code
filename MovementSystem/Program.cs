@@ -18,6 +18,12 @@ using VRage.Game.ObjectBuilders.Definitions;
 using VRageMath;
 
 /*
+ * Time To Target = sqrt((distance to target - velocity) / 2 * acceleration)
+ * 
+ */
+
+
+/*
  * MOVEMENT CONTROLLER STEPS:
  * 1. CALC DESIRED VELOCITY
  * 2. GET THRUSTERS
@@ -29,19 +35,16 @@ namespace IngameScript
 {
     partial class Program : MyGridProgram
     {
-        // Velocity Controller Vars
-        /*        double maxSpeed = 100;
-                double velocityProportionalGain = 0.1;*/
-
-        // Controller vars
-        double PGain = 0.05;
-        double DGain = 0.45;
-        double IGain = 0.7;
-        double decayRatio = 0.0025;
-
-        Vector3D destinationVector = new Vector3(11749.23, -81914.21, -86689.26);
-        List<DecayingIntegralPIDController> PIDControllers = new List<DecayingIntegralPIDController>();
+        // General use vars
         IMyShipController controller;
+
+        // Movement Controller vars
+        Vector3D destinationVector = new Vector3(11749.23, -81914.21, -86689.26);
+        List<DecayingIntegralPIDController> movementPIDControllers = new List<DecayingIntegralPIDController>();
+
+        // Rotation Controller vars
+        Vector3D rotationDirection = new Vector3(1, 0, 0);
+        List<DecayingIntegralPIDController> rotationPIDControllers = new List<DecayingIntegralPIDController>();
 
         public Program()
         {
@@ -66,13 +69,14 @@ namespace IngameScript
 
         public IEnumerator<int> MoveControllerCoroutine()
         {
+
             // Set up PID controllers
             for (int i = 0; i < 3; i++)
             {
-                PIDControllers.Add(new DecayingIntegralPIDController(PGain, IGain, DGain, decayRatio));
+                movementPIDControllers.Add(new DecayingIntegralPIDController(0.05, 0.7, 0.45, 0.0025));
             }
 
-            // Calc movement
+            // Calc movement constantly
             while (true)
             {
                 // Get time since last control input
@@ -81,9 +85,9 @@ namespace IngameScript
                 // Get control value
                 Vector3D errorVal = destinationVector.ConvertToLocalPosition(controller);
                 Vector3D controlVal = new Vector3D(
-                    PIDControllers[0].GetControlValue(errorVal.X, timeStep),
-                    PIDControllers[1].GetControlValue(errorVal.Y, timeStep),
-                    PIDControllers[2].GetControlValue(errorVal.Z, timeStep)
+                    movementPIDControllers[0].GetControlValue(errorVal.X, timeStep),
+                    movementPIDControllers[1].GetControlValue(errorVal.Y, timeStep),
+                    movementPIDControllers[2].GetControlValue(errorVal.Z, timeStep)
                     );
 
                 // Check if control val has an index > 1, if it does then multiply it by the inverse of this value to make the max value 1
@@ -105,6 +109,7 @@ namespace IngameScript
 
                 // Apply control value
                 string controlText = "";
+                Vector3D totalThrustForce = new Vector3D();
 
                 Vector3D linearVelocity = controller.GetShipVelocities().LinearVelocity;
                 foreach(ThrustGroup thrustGroup in thrustGroups)
@@ -113,15 +118,18 @@ namespace IngameScript
                     {
                         double thrustPercent = Vector3D.ProjectOnVector(ref controlVal, ref thrustGroup.thrustForceDirection).Length();
 
+/*
                         // If maxing out thruster and velocity is in the opposite direction of this thruster then turn thruster off to engage inertial dampeners
-                        if(thrustPercent >= 1 && linearVelocity.Dot(thrustGroup.thrustForceDirection) <= 0)
+                        if (thrustPercent >= 1 && linearVelocity.Dot(thrustGroup.thrustForceDirection) <= 0)
                         {
                             thrustPercent = 0;
                         }
-
+*/
+                        
                         thrustGroup.ApplyThrustPercentage(thrustPercent);
 
                         // DEBUG
+                        totalThrustForce += thrustGroup.thrustForceDirection * thrustGroup.maxEffectiveThrust * thrustPercent;
                         thrustGroup.thrusters[0].CustomData = thrustPercent.ToString();
                         controlText += "Direction: " + Vector3D.Round(thrustGroup.thrustForceDirection, 1).ToString() + "\npercent:" + thrustPercent.ToString() + "\n";
                     } 
@@ -131,8 +139,15 @@ namespace IngameScript
                     }
                 }
 
+                // Calc time to target var
+                double timeSquared = (errorVal.Length() - linearVelocity.Dot(errorVal.UnitVector())) / 2 * totalThrustForce.Dot(errorVal.UnitVector()) / controller.CalculateShipMass().TotalMass;
+                double timeToTarget = Math.Sqrt(Math.Abs(timeSquared)); //Math.Sqrt((errorVal.Length() - linearVelocity.Dot(errorVal.UnitVector())) / 2 * (totalThrustForce).Length() / controller.CalculateShipMass().TotalMass);
+
                 Me.GetSurface(0).WriteText(
-                    "ErrorVal\nX: " + errorVal.X.ToString() +
+                    "thing: " + linearVelocity.Dot(errorVal.UnitVector()) +
+                    "\nTimeSquared To Target: " + timeSquared.ToString() +
+                    "\nTime To Target: " + timeToTarget.ToString() + 
+                    "\nErrorVal\nX: " + errorVal.X.ToString() +
                     "\nY: " + errorVal.Y.ToString() +
                     "\nZ: " + errorVal.Z.ToString() +
                     "\nControlVal\n" +
@@ -144,6 +159,52 @@ namespace IngameScript
                     );
                 yield return 0;
             }
+        }
+
+        public IEnumerator<int> RotationControllerCoroutine()
+        {
+            // Set up PID Controllers for each axis of ship rotation
+            for (int i = 0; i < 3; i++)
+            {
+                rotationPIDControllers.Add(new DecayingIntegralPIDController(1, 0, 0, 0.0025));
+            }
+
+            // Calc rotation constantly
+            while (true)
+            {
+
+                MatrixD worldMatrix = controller.WorldMatrix;
+                // For each axis of ship rotation, calculate error and control values
+
+                /*
+                 * 1. project direction vector on plane formed by orthagonal axis pairs
+                 * 2. normalize vectors
+                 * 3. calc angle = arccos(dotp / (a*b))
+                 * 
+                 * pitch plane = forward + up vectors
+                 * yaw plane = forward + right vectors
+                 * roll plane = right + up vectors
+                 * 
+                 */
+
+                // Pitch error
+                Vector3D pitchVct = rotationDirection.ProjectOnPlane(worldMatrix.Forward.Cross(worldMatrix.Up));
+                double pitchError = Math.Acos(pitchVct.Dot(worldMatrix.Forward));
+
+                // Yaw error
+                Vector3D yawVct = rotationDirection.ProjectOnPlane(worldMatrix.Forward.Cross(worldMatrix.Right));
+                double yawError = Math.Acos(yawVct.Dot(worldMatrix.Forward));
+
+                // Roll error
+                Vector3D rollVct = rotationDirection.ProjectOnPlane(worldMatrix.Right.Cross(worldMatrix.Up));
+                double rollError = Math.Acos(rollVct.Dot(worldMatrix.Up));
+
+                // Apply control values
+
+
+                yield return 0;
+            }
+
         }
 
 /*            // Display controller direction vector
@@ -215,7 +276,7 @@ namespace IngameScript
 
 
         }*/
-
+        
         public IMyShipController GetMainRemoteControl()
         {
             // Get all remote control objects
@@ -276,6 +337,10 @@ namespace IngameScript
             return ThrustGroupArray;
         }
 
+        public List<GyroGroup> GetGyros()
+        {
+
+        }
 /*        public void CounterGravity()
         {
             // Get gravity and mass
