@@ -418,6 +418,7 @@ namespace IngameScript
 
 
         //!Gets block health
+        //Use slim blocks to get the health of blocks.
         double GetMyTerminalBlockHealth(IMyTerminalBlock block)
         {
             IMySlimBlock slimblock = block.CubeGrid.GetCubeBlock(block.Position);
