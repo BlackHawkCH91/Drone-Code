@@ -79,7 +79,6 @@ namespace IngameScript
         Vector3D angularVelocity;
         object[] laserAntPos;
         public int[] ticks = new int[] { 0 };
-        bool showOnce = true;
 
 
         //?Functions ----------------------------------------------------------------------
@@ -769,6 +768,7 @@ namespace IngameScript
                             newLines++;
                         }
                     }
+
 
                     requestInfo("All");
 
