@@ -529,28 +529,32 @@ namespace IngameScript
             }
 
             object[] packetContent = finalMsg[3] as object[];
-
+            finalMsg[0] = long.Parse(finalMsg[0].ToString());
             switch (finalMsg[2].ToString())
             {
                 case "EstCon":
-
+                    Echo("1");
                     //EstCon - [long source, long destination, "EstCon", [gridType, laserAntPos]]
 
                     //Add the IP to the IP list if is doesn't exist
+                    //Echo(test.ToString());
                     if (!(ipList.ContainsKey((long) finalMsg[0])))
                     {
                         ipList.Add((long) finalMsg[0], new object[] { packetContent[0].ToString(), packetContent[1] });
                     }
 
+                    Echo("2");
                     //Will probably change this to a broadcast that sends all drones an updated ip list.
                     if (isBroadcast && (packetContent[0].ToString() == gridType || finalMsg[1].ToString() == "All"))
                     {
+                        Echo("3");
                         //Send unicast back to sender.
                         Echo("Sending uni");
                         sendMessage(true, source, createPacketString(pBId.ToString(), source, "EstCon", new object[] { gridType, laserAntPos }));
                     }
                     else if (!(isBroadcast))
                     {
+                        Echo("4");
                         //If its a uni (got response), send an ipList update to everyone.
                         //object[] updatedIPList = new object[ipList.Count];
                         updatedIpList.Clear();
@@ -577,6 +581,7 @@ namespace IngameScript
                     break;
 
                 case "IpUpdate":
+                    Echo("5");
                     string output = displayThing(packetContent);
 
                     break;
