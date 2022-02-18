@@ -61,6 +61,10 @@ namespace IngameScript
         //[gridType, groupId, worldMatrix, movementVector, health, status, command, lastUpdate]
         public Dictionary<long, drone> droneTable = new Dictionary<long, drone>();
 
+        public Vector3I gridMin;
+        public Vector3I gridMax;
+        public double gridMaxHealth;
+        public double gridHealth;
         bool setup = false;
 
         //Listeners and display for sending and recieving data
@@ -419,13 +423,37 @@ namespace IngameScript
 
         //!Gets block health
         //Use slim blocks to get the health of blocks.
-        double GetMyTerminalBlockHealth(IMyTerminalBlock block)
+        double getBlockHealth(IMySlimBlock block)
         {
-            IMySlimBlock slimblock = block.CubeGrid.GetCubeBlock(block.Position);
-            double MaxIntegrity = slimblock.MaxIntegrity;
-            double BuildIntegrity = slimblock.BuildIntegrity;
-            double CurrentDamage = slimblock.CurrentDamage;
+            double MaxIntegrity = block.MaxIntegrity;
+            double BuildIntegrity = block.BuildIntegrity;
+            double CurrentDamage = block.CurrentDamage;
             return (BuildIntegrity - CurrentDamage) / MaxIntegrity;
+        }
+
+        public IEnumerator<int> getGridHealth()
+        {
+            double tempHealth = 0;
+            for (int x = gridMin.X - 1; x <= gridMax.X + 1; x++)
+            {
+                for (int y = gridMin.Y - 1; y <= gridMax.Y + 1; y++)
+                {
+                    for (int z = gridMin.Z - 1; z <= gridMax.Z + 1; z++)
+                    {
+                        try
+                        {
+                            IMySlimBlock block = Me.CubeGrid.GetCubeBlock(new Vector3I(x, y, z));
+                            tempHealth += getBlockHealth(block);
+                        } catch
+                        {
+
+                        }
+                        yield return ticks[0];
+                    }
+                }
+            }
+
+            gridHealth = tempHealth;
         }
 
 
@@ -668,6 +696,12 @@ namespace IngameScript
 
             pBId = mainProgBlock.EntityId;
 
+            gridMax = Me.CubeGrid.Max;
+            gridMin = Me.CubeGrid.Min;
+
+            TaskScheduler.ResumeCoroutine(TaskScheduler.CreateCoroutine(new Func<IEnumerator<int>>(getGridHealth)));
+            gridMaxHealth = gridHealth;
+
             setup = true;
             Echo("Active");
         }
@@ -786,6 +820,10 @@ namespace IngameScript
                         Echo("drone stuff");
                         LCD[2].WriteText(output);
                     }
+
+
+                    Echo($"{Me.CubeGrid.GridIntegerToWorld(Me.CubeGrid.Max)} | {Me.CubeGrid.GridIntegerToWorld(Me.CubeGrid.Min)}");
+                    Echo($"{gridMaxHealth}");
                 }
 
                 //testing:
