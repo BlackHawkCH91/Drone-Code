@@ -65,7 +65,11 @@ namespace IngameScript
         public Vector3I gridMax;
         public double gridMaxHealth;
         public double gridHealth;
+        public List<IMySlimBlock> blocks = new List<IMySlimBlock>();
         bool setup = false;
+
+        bool blocksCached;
+        bool blockHealthReceived;
 
         //Listeners and display for sending and recieving data
         List<IMyBroadcastListener> listeners = new List<IMyBroadcastListener>();
@@ -422,7 +426,7 @@ namespace IngameScript
 
 
         //!Gets block health
-        //Use slim blocks to get the health of blocks.
+        //Gets the block health by combining grind and damage health
         double getBlockHealth(IMySlimBlock block)
         {
             double MaxIntegrity = block.MaxIntegrity;
@@ -431,29 +435,67 @@ namespace IngameScript
             return (BuildIntegrity - CurrentDamage) / MaxIntegrity;
         }
 
-        public IEnumerator<int> getGridHealth()
+        //Caches block (trades memory for performance)
+        public IEnumerator<int> cacheBlocks()
         {
+            blocksCached = false;
             double tempHealth = 0;
+            int counter = 0;
             for (int x = gridMin.X - 1; x <= gridMax.X + 1; x++)
             {
                 for (int y = gridMin.Y - 1; y <= gridMax.Y + 1; y++)
                 {
                     for (int z = gridMin.Z - 1; z <= gridMax.Z + 1; z++)
                     {
+                        yield return ticks[0];
                         try
                         {
-                            IMySlimBlock block = Me.CubeGrid.GetCubeBlock(new Vector3I(x, y, z));
-                            tempHealth += getBlockHealth(block);
+                            IMySlimBlock item = Me.CubeGrid.GetCubeBlock(new Vector3I(x, y, z));
+                            double temp = item.AccumulatedDamage;
+
+                            /*if (blocks.Contains(item))
+                            {
+                                continue;
+                            }*/
+                                
+                            blocks.Add(item);
                         } catch
                         {
 
                         }
-                        yield return ticks[0];
+
+                        if (counter >= 10)
+                        {
+                            counter = 0;
+                            yield return ticks[0];
+                        }
                     }
                 }
             }
 
+            blocksCached = true;
+            gridMaxHealth = tempHealth;
+        }
+
+        //Gets health of grid using cached blocks.
+        public IEnumerator<int> getGridHealth()
+        {
+            double tempHealth = 0;
+            int counter = 0;
+            foreach (IMySlimBlock block in blocks)
+            {
+                counter++;
+                tempHealth += getBlockHealth(block);
+
+                if (counter >= 50)
+                {
+                    counter = 0;
+                    yield return ticks[0];
+                }
+            }
+
             gridHealth = tempHealth;
+            yield return ticks[0];
         }
 
 
@@ -508,6 +550,7 @@ namespace IngameScript
 
 
         //!Receive data
+        //Convert this to corountines
         public void recieveMessage(int listener)
         {
             Echo("recieving");
@@ -699,8 +742,7 @@ namespace IngameScript
             gridMax = Me.CubeGrid.Max;
             gridMin = Me.CubeGrid.Min;
 
-            TaskScheduler.ResumeCoroutine(TaskScheduler.CreateCoroutine(new Func<IEnumerator<int>>(getGridHealth)));
-            gridMaxHealth = gridHealth;
+            TaskScheduler.ResumeCoroutine(TaskScheduler.CreateCoroutine(new Func<IEnumerator<int>>(cacheBlocks)));
 
             setup = true;
             Echo("Active");
@@ -762,6 +804,7 @@ namespace IngameScript
         //object[] testThing = new object[] { "43242345", "243525", new object[] { "312343", new Vector3(2, 3, 4), 23, new object[] { new Vector3(2, 4, 5), 23, "232" } }, new object[] { "test", new object[] { "brrr", 434.34, new Vector3(3, 54, 1) }, 123 } };
         object[] testThing = new object[] { new Vector3D(2, 3, 4), "hello", 123, true };
 
+        public bool healthThing = true;
         public IEnumerator<int> IEnumMain()
         {
             rc = GridTerminalSystem.GetBlockWithName("rc") as IMyRemoteControl;
@@ -772,6 +815,12 @@ namespace IngameScript
                 angularVelocity = vel.AngularVelocity;
 
                 gridMatrix = Me.CubeGrid.WorldMatrix;
+
+                if (blocksCached)
+                {
+                    TaskScheduler.ResumeCoroutine(TaskScheduler.CreateCoroutine(new Func<IEnumerator<int>>(getGridHealth)));
+                    Echo($"Grid {gridHealth}");
+                }
 
                 if (gridType == "Outpost")
                 {
@@ -823,7 +872,7 @@ namespace IngameScript
 
 
                     Echo($"{Me.CubeGrid.GridIntegerToWorld(Me.CubeGrid.Max)} | {Me.CubeGrid.GridIntegerToWorld(Me.CubeGrid.Min)}");
-                    Echo($"{gridMaxHealth}");
+                    Echo($"{blocks.Count}");
                 }
 
                 //testing:
