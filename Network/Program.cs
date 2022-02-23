@@ -447,9 +447,9 @@ namespace IngameScript
                 {
                     for (int z = gridMin.Z - 1; z <= gridMax.Z + 1; z++)
                     {
-                        yield return ticks[0];
                         try
                         {
+                            counter++;
                             IMySlimBlock item = Me.CubeGrid.GetCubeBlock(new Vector3I(x, y, z));
                             double temp = item.AccumulatedDamage;
 
@@ -464,7 +464,7 @@ namespace IngameScript
 
                         }
 
-                        if (counter >= 10)
+                        if (counter >= 50)
                         {
                             counter = 0;
                             yield return ticks[0];
@@ -480,21 +480,20 @@ namespace IngameScript
         //Gets health of grid using cached blocks.
         public IEnumerator<int> getGridHealth()
         {
-            double tempHealth = 0;
             int counter = 0;
+            gridHealth = 0;
             foreach (IMySlimBlock block in blocks)
             {
                 counter++;
-                tempHealth += getBlockHealth(block);
+                gridHealth += getBlockHealth(block);
 
-                if (counter >= 50)
+                if (counter >= 200)
                 {
                     counter = 0;
                     yield return ticks[0];
                 }
             }
 
-            gridHealth = tempHealth;
             yield return ticks[0];
         }
 
@@ -551,7 +550,7 @@ namespace IngameScript
 
         //!Receive data
         //Convert this to corountines
-        public void recieveMessage(int listener)
+        public IEnumerator<int> receiveMessage(int listener)
         {
             Echo("recieving");
             //Define message and bool to check if its a broadcast or not. Bool may not be needed.
@@ -650,7 +649,7 @@ namespace IngameScript
                     if (isBroadcast)
                     {
                         Echo("sending info");
-                        sendMessage(true, source, createPacketString(pBId.ToString(), source, "Info", new object[] { gridType, 0, gridMatrix, linearVelocity, angularVelocity, 100, "Idle", "Mine" }));
+                        sendMessage(true, source, createPacketString(pBId.ToString(), source, "Info", new object[] { gridType, 0, gridMatrix, linearVelocity, angularVelocity, gridHealth, "Idle", "Mine" }));
                     } else
                     {
                         //This is a lot of boxing/unboxing which might cause performance issues. Def needs to run on a coroutine
@@ -662,6 +661,8 @@ namespace IngameScript
                 default:
                     break;
             }
+
+            yield return ticks[0];
         }
 
 
@@ -720,7 +721,7 @@ namespace IngameScript
             }
 
 
-            //It seems that although unicasts require a tag, the reciever does not need the tag to read the message. It seems the tag is
+            //It seems that although unicasts require a tag, the receiver does not need the tag to read the message. It seems the tag is
             //more for grids that have multiple PBs which is strange as the address is the PBs ID.
             dirListener = IGC.UnicastListener;
 
@@ -865,14 +866,10 @@ namespace IngameScript
                     {
                         drone item = drone.Value;
                         string pos = $"{item.gridMatrix.M41}, {item.gridMatrix.M42}, {item.gridMatrix.M43}";
-                        string output = $"{drone.Key} | {item.gridType} | {pos} | {item.lastUpdate}";
+                        string output = $"{drone.Key} | {item.gridType} | {pos} | {item.lastUpdate} | {item.health}";
                         Echo("drone stuff");
                         LCD[2].WriteText(output);
                     }
-
-
-                    Echo($"{Me.CubeGrid.GridIntegerToWorld(Me.CubeGrid.Max)} | {Me.CubeGrid.GridIntegerToWorld(Me.CubeGrid.Min)}");
-                    Echo($"{blocks.Count}");
                 }
 
                 //testing:
@@ -892,7 +889,7 @@ namespace IngameScript
                 //Check uni cast
                 if (dirListener.HasPendingMessage)
                 {
-                    recieveMessage(0);
+                    TaskScheduler.ResumeCoroutine(TaskScheduler.CreateCoroutine(new Func<int, IEnumerator<int>>(receiveMessage), 0));
                 }
 
                 //Chec all broadcast listeners
@@ -903,9 +900,13 @@ namespace IngameScript
                     if (listeners[i - 1].HasPendingMessage)
                     {
                         displayListener += " true";
-                        recieveMessage(i);
+                        TaskScheduler.ResumeCoroutine(TaskScheduler.CreateCoroutine(new Func<int, IEnumerator<int>>(receiveMessage), i));
                     }
                 }
+
+                Echo($"Grid size: {blocks.Count}");
+                Echo($"Min: {Me.CubeGrid.Min}\nMax: {Me.CubeGrid.Max}");
+                Echo($"Min: {Me.CubeGrid.GridIntegerToWorld(Me.CubeGrid.Min)} | Max: {Me.CubeGrid.GridIntegerToWorld(Me.CubeGrid.Max)}");
 
                 yield return 0;
             }
@@ -958,7 +959,7 @@ Testing:
 
  - Switch EstCon around. Make outpost send EstCon broadcast and see if response from satellite is being sent properly or is being sent to
    backlog
- - Test if backlog is working. Can be tested by making broadcaster range larger than reciever range.
+ - Test if backlog is working. Can be tested by making broadcaster range larger than receiver range.
 
 
 Packet structure - [long source, long destination, string purpose, [content, content, etc]]
