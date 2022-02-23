@@ -65,8 +65,10 @@ namespace IngameScript
         public Vector3I gridMax;
         public double gridMaxHealth;
         public double gridHealth;
-        public List<IMySlimBlock> blocks = new List<IMySlimBlock>();
         bool setup = false;
+
+        //Health stuff
+        public List<IMySlimBlock> blocks = new List<IMySlimBlock>();
 
         bool blocksCached;
         bool blockHealthReceived;
@@ -439,7 +441,6 @@ namespace IngameScript
         public IEnumerator<int> cacheBlocks()
         {
             blocksCached = false;
-            double tempHealth = 0;
             int counter = 0;
             for (int x = gridMin.X - 1; x <= gridMax.X + 1; x++)
             {
@@ -451,13 +452,6 @@ namespace IngameScript
                         {
                             counter++;
                             IMySlimBlock item = Me.CubeGrid.GetCubeBlock(new Vector3I(x, y, z));
-                            double temp = item.AccumulatedDamage;
-
-                            /*if (blocks.Contains(item))
-                            {
-                                continue;
-                            }*/
-                                
                             blocks.Add(item);
                         } catch
                         {
@@ -474,7 +468,6 @@ namespace IngameScript
             }
 
             blocksCached = true;
-            gridMaxHealth = tempHealth;
         }
 
         //Gets health of grid using cached blocks.
