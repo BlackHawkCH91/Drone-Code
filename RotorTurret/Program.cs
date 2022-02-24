@@ -73,4 +73,5 @@ namespace IngameScript
                 yield return 0;
             }
         }
+    }
 }

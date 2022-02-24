@@ -856,7 +856,7 @@ namespace IngameScript
 
                 if (blocksCached)
                 {
-                    TaskScheduler.ResumeCoroutine(TaskScheduler.CreateCoroutine(new Func<IEnumerator<int>>(getGridHealth)));
+                    //TaskScheduler.ResumeCoroutine(TaskScheduler.CreateCoroutine(new Func<IEnumerator<int>>(getGridHealth)));
                     Echo($"Grid {gridHealth}");
                 }
 
