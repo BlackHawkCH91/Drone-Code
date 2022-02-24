@@ -67,8 +67,10 @@ namespace IngameScript
         public double gridHealth;
         bool setup = false;
 
-        //Health stuff
-        public List<IMySlimBlock> blocks = new List<IMySlimBlock>();
+        //!Health stuff
+        List<IMyTerminalBlock> terminalBlocks = new List<IMyTerminalBlock>();
+        public List<BoundingBox> terminalBB = new List<BoundingBox>();
+        public List<Vector3I> armourBlocks = new List<Vector3I>();
 
         bool blocksCached;
         bool blockHealthReceived;
@@ -431,16 +433,29 @@ namespace IngameScript
         //Gets the block health by combining grind and damage health
         double getBlockHealth(IMySlimBlock block)
         {
-            double MaxIntegrity = block.MaxIntegrity;
-            double BuildIntegrity = block.BuildIntegrity;
-            double CurrentDamage = block.CurrentDamage;
-            return (BuildIntegrity - CurrentDamage) / MaxIntegrity;
+            try
+            {
+                double MaxIntegrity = block.MaxIntegrity;
+                double BuildIntegrity = block.BuildIntegrity;
+                double CurrentDamage = block.CurrentDamage;
+                return (BuildIntegrity - CurrentDamage) / MaxIntegrity;
+            }
+            catch
+            {
+                return 0;
+            }
+            
         }
 
         //Caches block (trades memory for performance)
         public IEnumerator<int> cacheBlocks()
         {
             blocksCached = false;
+
+            //Gets bounding box from all terminal blocks.
+            GridTerminalSystem.GetBlocks(terminalBlocks);
+
+            //Loop through all points on grid
             int counter = 0;
             for (int x = gridMin.X - 1; x <= gridMax.X + 1; x++)
             {
@@ -448,14 +463,32 @@ namespace IngameScript
                 {
                     for (int z = gridMin.Z - 1; z <= gridMax.Z + 1; z++)
                     {
-                        try
-                        {
-                            counter++;
-                            IMySlimBlock item = Me.CubeGrid.GetCubeBlock(new Vector3I(x, y, z));
-                            blocks.Add(item);
-                        } catch
-                        {
+                        //Check if point is in any of the terminal blocks
+                        bool nextPoint = false;
+                        Vector3I point = new Vector3I(x, y, z);
 
+                        foreach (IMyTerminalBlock terminal in terminalBlocks)
+                        {
+                            /*if (ContainmentType.Contains == new BoundingBox(terminal.Min, terminal.Max).Contains(new Vector3(x, y, z)))
+                            {
+                                continue;
+                            }*/
+                            if (ContainmentType.Contains == terminal.WorldAABB.Contains(Me.CubeGrid.GridIntegerToWorld(point)))
+                            {
+                                nextPoint = true;
+                                break;
+                            }
+                        }
+
+                        if (nextPoint)
+                        {
+                            continue;
+                        }
+
+                        //If there is an armour block, add it to list.
+                        if (Me.CubeGrid.CubeExists(point))
+                        {
+                            armourBlocks.Add(point);
                         }
 
                         if (counter >= 50)
@@ -474,8 +507,10 @@ namespace IngameScript
         public IEnumerator<int> getGridHealth()
         {
             int counter = 0;
+
+            //Get health of terminal blocks.
             gridHealth = 0;
-            foreach (IMySlimBlock block in blocks)
+            foreach (IMySlimBlock block in terminalBlocks)
             {
                 counter++;
                 gridHealth += getBlockHealth(block);
@@ -484,6 +519,15 @@ namespace IngameScript
                 {
                     counter = 0;
                     yield return ticks[0];
+                }
+            }
+
+            //Get health of armour blocks
+            foreach (Vector3I armourBlock in armourBlocks)
+            {
+                if (Me.CubeGrid.CubeExists(armourBlock))
+                {
+                    gridHealth++;
                 }
             }
 
@@ -897,9 +941,9 @@ namespace IngameScript
                     }
                 }
 
-                Echo($"Grid size: {blocks.Count}");
-                Echo($"Min: {Me.CubeGrid.Min}\nMax: {Me.CubeGrid.Max}");
-                Echo($"Min: {Me.CubeGrid.GridIntegerToWorld(Me.CubeGrid.Min)} | Max: {Me.CubeGrid.GridIntegerToWorld(Me.CubeGrid.Max)}");
+                Echo($"Blocks: {terminalBlocks.Count} | {armourBlocks.Count}");
+                /*Echo($"Min: {Me.CubeGrid.Min}\nMax: {Me.CubeGrid.Max}");
+                Echo($"Min: {Me.CubeGrid.GridIntegerToWorld(Me.CubeGrid.Min)} | Max: {Me.CubeGrid.GridIntegerToWorld(Me.CubeGrid.Max)}");*/
 
                 yield return 0;
             }
