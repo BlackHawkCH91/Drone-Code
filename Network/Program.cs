@@ -469,11 +469,7 @@ namespace IngameScript
 
                         foreach (IMyTerminalBlock terminal in terminalBlocks)
                         {
-                            /*if (ContainmentType.Contains == new BoundingBox(terminal.Min, terminal.Max).Contains(new Vector3(x, y, z)))
-                            {
-                                continue;
-                            }*/
-                            if (ContainmentType.Contains == terminal.WorldAABB.Contains(Me.CubeGrid.GridIntegerToWorld(point)))
+                            if (ContainmentType.Contains == new BoundingBox(terminal.Min, terminal.Max).Contains(new Vector3D(point)))
                             {
                                 nextPoint = true;
                                 break;
