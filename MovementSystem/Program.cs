@@ -67,7 +67,7 @@ namespace IngameScript
         public void Main(string argument, UpdateType updateSource)
         {
 
-            TaskScheduler.StepCoroutines(updateSource);
+            TaskScheduler.StepCoroutines(updateSource, argument);
 
         }
 
