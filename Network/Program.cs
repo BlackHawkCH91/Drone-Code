@@ -69,6 +69,7 @@ namespace IngameScript
 
         //!Health stuff
         List<IMyTerminalBlock> terminalBlocks = new List<IMyTerminalBlock>();
+        List<IMySlimBlock> SlimTerminals = new List<IMySlimBlock>();
         public List<BoundingBox> terminalBB = new List<BoundingBox>();
         public List<Vector3I> armourBlocks = new List<Vector3I>();
 
@@ -451,12 +452,23 @@ namespace IngameScript
         public IEnumerator<int> cacheBlocks()
         {
             blocksCached = false;
-
+            int counter = 0;
             //Gets bounding box from all terminal blocks.
             GridTerminalSystem.GetBlocks(terminalBlocks);
 
+            foreach (IMyTerminalBlock block in terminalBlocks)
+            {
+                SlimTerminals.Add(Me.CubeGrid.GetCubeBlock(block.Position));
+
+                if (counter >= 15)
+                {
+                    counter = 0;
+                    yield return ticks[0];
+                }
+            }
+
             //Loop through all points on grid
-            int counter = 0;
+            counter = 0;
             for (int x = gridMin.X - 1; x <= gridMax.X + 1; x++)
             {
                 for (int y = gridMin.Y - 1; y <= gridMax.Y + 1; y++)
@@ -506,7 +518,7 @@ namespace IngameScript
 
             //Get health of terminal blocks.
             gridHealth = 0;
-            foreach (IMySlimBlock block in terminalBlocks)
+            foreach (IMySlimBlock block in SlimTerminals)
             {
                 counter++;
                 gridHealth += getBlockHealth(block);
@@ -852,7 +864,7 @@ namespace IngameScript
 
                 if (blocksCached)
                 {
-                    //TaskScheduler.ResumeCoroutine(TaskScheduler.CreateCoroutine(new Func<IEnumerator<int>>(getGridHealth)));
+                    TaskScheduler.ResumeCoroutine(TaskScheduler.CreateCoroutine(new Func<IEnumerator<int>>(getGridHealth)));
                     Echo($"Grid {gridHealth}");
                 }
 
