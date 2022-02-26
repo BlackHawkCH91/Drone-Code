@@ -855,7 +855,7 @@ namespace IngameScript
             object[] test = new object[] { "hello", 123 };
 
 
-            TaskScheduler.StepCoroutines(updateSource);
+            TaskScheduler.StepCoroutines(updateSource, argument);
 
         }
 
