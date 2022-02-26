@@ -24,6 +24,17 @@ namespace IngameScript
     {
         public class MovementController
         {
+            private Base6Directions.Axis movementAxis;
+            public Base6Directions.Axis MovementAxis { get { return movementAxis; } }
+
+            private DecayingIntegralPIDController velocityController = new DecayingIntegralPIDController(2, 1, -10, 0.5);
+            private double maxVelDistanceGain;
+            private double maxVelMin;
+
+            public void Run()
+            {
+
+            }
 
         }
     }
