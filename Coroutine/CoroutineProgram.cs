@@ -280,6 +280,8 @@ namespace IngameScript
         public static void ResumeCoroutine(Coroutine coroutine)
         {
             coroutinesToResume.Add(coroutine);
+            // Set update frequency so that step is run and coroutines can actually be resumed next frame
+            Runtime.UpdateFrequency |= UpdateFrequency.Once;
         }
 
         private static void InternalRemoveCoroutine(Coroutine coroutine)
