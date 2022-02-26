@@ -68,13 +68,12 @@ namespace IngameScript
         bool setup = false;
 
         //!Health stuff
-        List<IMyTerminalBlock> terminalBlocks = new List<IMyTerminalBlock>();
-        List<IMySlimBlock> SlimTerminals = new List<IMySlimBlock>();
-        public List<BoundingBox> terminalBB = new List<BoundingBox>();
+        Dictionary<IMySlimBlock, BoundingBox> terminalBlocks = new Dictionary<IMySlimBlock, BoundingBox>();
+        //List<IMySlimBlock> SlimTerminals = new List<IMySlimBlock>();
+        //public List<BoundingBox> terminalBB = new List<BoundingBox>();
         public List<Vector3I> armourBlocks = new List<Vector3I>();
 
         bool blocksCached;
-        bool blockHealthReceived;
 
         //Listeners and display for sending and recieving data
         List<IMyBroadcastListener> listeners = new List<IMyBroadcastListener>();
@@ -451,14 +450,16 @@ namespace IngameScript
         //Caches block (trades memory for performance)
         public IEnumerator<int> cacheBlocks()
         {
+            List<IMyTerminalBlock> tempBlocks = new List<IMyTerminalBlock>();
+
             blocksCached = false;
             int counter = 0;
             //Gets bounding box from all terminal blocks.
-            GridTerminalSystem.GetBlocks(terminalBlocks);
+            GridTerminalSystem.GetBlocks(tempBlocks);
 
-            foreach (IMyTerminalBlock block in terminalBlocks)
+            foreach (IMyTerminalBlock block in tempBlocks)
             {
-                SlimTerminals.Add(Me.CubeGrid.GetCubeBlock(block.Position));
+                terminalBlocks.Add(Me.CubeGrid.GetCubeBlock(block.Position), new BoundingBox(block.Min, block.Max));
 
                 if (counter >= 15)
                 {
@@ -479,9 +480,9 @@ namespace IngameScript
                         bool nextPoint = false;
                         Vector3I point = new Vector3I(x, y, z);
 
-                        foreach (IMyTerminalBlock terminal in terminalBlocks)
+                        foreach (BoundingBox boundingBox in terminalBlocks.Values)
                         {
-                            if (ContainmentType.Contains == new BoundingBox(terminal.Min, terminal.Max).Contains(new Vector3D(point)))
+                            if (ContainmentType.Contains == boundingBox.Contains(new Vector3D(point)))
                             {
                                 nextPoint = true;
                                 break;
@@ -518,7 +519,7 @@ namespace IngameScript
 
             //Get health of terminal blocks.
             gridHealth = 0;
-            foreach (IMySlimBlock block in SlimTerminals)
+            foreach (IMySlimBlock block in terminalBlocks.Keys)
             {
                 counter++;
                 gridHealth += getBlockHealth(block);
