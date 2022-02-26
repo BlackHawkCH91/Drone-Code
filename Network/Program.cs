@@ -241,7 +241,7 @@ namespace IngameScript
                 }
 
                 i++;
-                //TaskScheduler.ResumeCoroutine(TaskScheduler.CreateCoroutine(new Func<IEnumerator<int>>(yieldThing)));
+                //TaskScheduler.SpawnCoroutine(new Func<IEnumerator<int>>(yieldThing)));
             }
 
             final += "]";
@@ -800,7 +800,7 @@ namespace IngameScript
             gridMax = Me.CubeGrid.Max;
             gridMin = Me.CubeGrid.Min;
 
-            TaskScheduler.ResumeCoroutine(TaskScheduler.CreateCoroutine(new Func<IEnumerator<int>>(cacheBlocks)));
+            TaskScheduler.SpawnCoroutine(new Func<IEnumerator<int>>(cacheBlocks));
 
             setup = true;
             Echo("Active");
@@ -815,7 +815,7 @@ namespace IngameScript
         {
             //Runtime.UpdateFrequency = UpdateFrequency.Update100;
             TaskScheduler.EstablishTaskScheduler(Runtime, Echo, true);
-            TaskScheduler.ResumeCoroutine(TaskScheduler.CreateCoroutine(new Func<IEnumerator<int>>(IEnumMain)));
+            TaskScheduler.SpawnCoroutine(new Func<IEnumerator<int>>(IEnumMain));
         }
 
         int newLines = 1;
@@ -876,7 +876,7 @@ namespace IngameScript
 
                 if (blocksCached)
                 {
-                    TaskScheduler.ResumeCoroutine(TaskScheduler.CreateCoroutine(new Func<IEnumerator<int>>(getGridHealth)));
+                    TaskScheduler.SpawnCoroutine(new Func<IEnumerator<int>>(getGridHealth));
                     Echo($"Grid {gridHealth}");
                 }
 
@@ -946,7 +946,7 @@ namespace IngameScript
                 //Check uni cast
                 if (dirListener.HasPendingMessage)
                 {
-                    TaskScheduler.ResumeCoroutine(TaskScheduler.CreateCoroutine(new Func<int, IEnumerator<int>>(receiveMessage), 0));
+                    TaskScheduler.SpawnCoroutine(new Func<int, IEnumerator<int>>(receiveMessage), 0);
                 }
 
                 //Chec all broadcast listeners
@@ -957,7 +957,7 @@ namespace IngameScript
                     if (listeners[i - 1].HasPendingMessage)
                     {
                         displayListener += " true";
-                        TaskScheduler.ResumeCoroutine(TaskScheduler.CreateCoroutine(new Func<int, IEnumerator<int>>(receiveMessage), i));
+                        TaskScheduler.SpawnCoroutine(new Func<int, IEnumerator<int>>(receiveMessage), i);
                     }
                 }
 
