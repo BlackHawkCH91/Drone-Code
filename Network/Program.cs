@@ -101,7 +101,7 @@ namespace IngameScript
 
         //!String-to-data and data-to-string functions hidden here:
 
-        //!Convert MatrixD to string... I'm sorry, but there is no way to loop through properties
+        //Convert MatrixD to string... I'm sorry, but there is no way to loop through properties
         static string matrixToString(MatrixD matrix)
         {
             string strMatrix = "M" + matrix.M11 + "|" + matrix.M12 + "|" + matrix.M13 + "|" + matrix.M14 + "|" +
@@ -112,7 +112,7 @@ namespace IngameScript
             return strMatrix;
         }
 
-        //!Convert string to matrixD
+        //Convert string to matrixD
         static MatrixD stringToMatrix(string strMatrix)
         {
             string temp = strMatrix.Substring(1);
@@ -137,7 +137,7 @@ namespace IngameScript
             return matrix;
         }
 
-        //!Converts a string back into a Vector3
+        //Converts a string back into a Vector3
         static Vector3D StringToVector3(string sVector)
         {
             //Remove curly brackets
@@ -160,7 +160,7 @@ namespace IngameScript
             return position;
         }
 
-        //!Gets positions of [] in strings
+        //Gets positions of [] in strings
         Dictionary<string, List<int>> getBracketPos(string packet)
         {
             //Creates bracket dictionary, adds two keys for { and }
@@ -187,8 +187,7 @@ namespace IngameScript
             return bracketPos;
         }
 
-
-        //!Converts object to string
+        //Converts object to string
         //Probably not worth converting to coroutine
         string objectToString(object[] packet)
         {
@@ -249,8 +248,6 @@ namespace IngameScript
 
             return final;
         }
-        //--------------------------------------------------------------------------------------------
-
 
         //!Converts string back into object
         object[] stringToObject(string packet)
@@ -374,7 +371,6 @@ namespace IngameScript
             return finalPacketArr;
         }
 
-
         //!Debugging only, displays object arr as a string
         static string displayThing(object[] array)
         {
@@ -428,8 +424,8 @@ namespace IngameScript
             return finalPacket;
         }
 
-        //-----------------------------------------------------------------------------
 
+        //-----------------------------------------------------------------------------
 
 
         //!Gets block health
@@ -449,7 +445,6 @@ namespace IngameScript
             }
             
         }
-
         //Caches block (trades memory for performance)
         IEnumerator<int> cacheBlocks()
         {
@@ -526,7 +521,6 @@ namespace IngameScript
 
             blocksCached = true;
         }
-
         //Gets health of grid using cached blocks.
         IEnumerator<int> getGridHealth()
         {
@@ -571,6 +565,9 @@ namespace IngameScript
         }
 
 
+        //-----------------------------------------------------------------------------
+
+
         //!Send packet
         void sendMessage(bool isUni, string destination, ImmutableArray<string> contents)
         {
@@ -596,6 +593,21 @@ namespace IngameScript
             //IGC.SendBroadcastMessage<object[]>(tag, contents, TransmissionDistance.TransmissionDistanceMax);
         }
 
+        //!Creates EstCon packet
+        void establishConnection(string estType)
+        {
+            //B: EstCon - [long source, long destination, "EstCon", [EstType, gridType, laserAntPos]]
+            //Creates an EstCon broadcast packet. EstType tells other grids what grid types it wants. E.g. if estType is Outpost, only outposts will return data.
+            sendMessage(false, estType, createPacketString(pBId.ToString(), estType, "EstCon", new object[] { gridType, laserAntPos }));
+            Echo("Sent EstCon broadcast to grid type: " + estType);
+        }
+
+        //!Broadcast to request info packets
+        void requestInfo(string tag)
+        {
+            sendMessage(false, tag, createPacketString(pBId.ToString(), tag, "Info", new object[] { "placeholder" }));
+            Echo("Broadcasting info request.");
+        }
 
         //!Sends packets in backlog every so often
         void sendBackLog()
@@ -622,7 +634,6 @@ namespace IngameScript
 
 
         //!Receive data
-        //Convert this to corountines
         IEnumerator<int> receiveMessage(int listener)
         {
             Echo("recieving");
@@ -737,33 +748,6 @@ namespace IngameScript
 
             yield return ticks[0];
         }
-
-
-        //!Creates EstCon packet
-        void establishConnection(string estType)
-        {
-            //B: EstCon - [long source, long destination, "EstCon", [EstType, gridType, laserAntPos]]
-            //Creates an EstCon broadcast packet. EstType tells other grids what grid types it wants. E.g. if estType is Outpost, only outposts will return data.
-            sendMessage(false, estType, createPacketString(pBId.ToString(), estType, "EstCon", new object[] { gridType, laserAntPos }));
-            Echo("Sent EstCon broadcast to grid type: " + estType);
-        }
-
-
-        //!Broadcast to request info packets
-        void requestInfo(string tag)
-        {
-            sendMessage(false, tag, createPacketString(pBId.ToString(), tag, "Info", new object[] { "placeholder" }));
-            Echo("Broadcasting info request.");
-        }
-
-        //!Unicast to respond to info request
-        void respondInfo(long ip)
-        {
-            //Info packet format:[source, destination, purpose, [gridType, groupId, worldMatrix, linearVelocity, angularVelocity, health, status, command, lastUpdate]]
-            Echo("Sending info response");
-            sendMessage(true, ip.ToString(), createPacketString(pBId.ToString(), ip.ToString(), "Info", new object[] { gridType, 0, gridMatrix, linearVelocity, angularVelocity, 1, "Idle", "none", DateTime.Now}));
-        }
-
 
 
         //!Initialliser, sets vars and listeners.
