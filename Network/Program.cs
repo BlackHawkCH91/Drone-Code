@@ -52,26 +52,29 @@ namespace IngameScript
     {
         //!VARS
 
-        public Dictionary<long, ImmutableArray<string>> packetBacklog = new Dictionary<long, ImmutableArray<string>>();
-        public Dictionary<long, object[]> ipList = new Dictionary<long, object[]>();
+        Dictionary<long, ImmutableArray<string>> packetBacklog = new Dictionary<long, ImmutableArray<string>>();
+        Dictionary<long, object[]> ipList = new Dictionary<long, object[]>();
         List<object[]> updatedIpList = new List<object[]>();
-        public List<string> tagList = new List<string>();
-        public Dictionary<string, List<int>> bracketPos = new Dictionary<string, List<int>>();
+        List<string> tagList = new List<string>();
+        Dictionary<string, List<int>> bracketPos = new Dictionary<string, List<int>>();
 
         //[gridType, groupId, worldMatrix, movementVector, health, status, command, lastUpdate]
         public Dictionary<long, drone> droneTable = new Dictionary<long, drone>();
 
-        public Vector3I gridMin;
-        public Vector3I gridMax;
-        public double gridMaxHealth;
-        public double gridHealth;
+        //!Health stuff
+        Vector3I gridMin;
+        Vector3I gridMax;
         bool setup = false;
 
-        //!Health stuff
+        double terminalHealth;
+        double armourHealth;
+        double maxTerminalHealth;
+        double maxArmourHealth;
+
+        double gridHealth;
+
         Dictionary<IMySlimBlock, BoundingBox> terminalBlocks = new Dictionary<IMySlimBlock, BoundingBox>();
-        //List<IMySlimBlock> SlimTerminals = new List<IMySlimBlock>();
-        //public List<BoundingBox> terminalBB = new List<BoundingBox>();
-        public List<Vector3I> armourBlocks = new List<Vector3I>();
+        List<Vector3I> armourBlocks = new List<Vector3I>();
 
         bool blocksCached;
 
@@ -81,7 +84,7 @@ namespace IngameScript
         IMyRadioAntenna antenna;
         IMyTerminalBlock mainProgBlock;
         IMyRemoteControl rc;
-        public List<IMyTextPanel> LCD = new List<IMyTextPanel>();
+        List<IMyTextPanel> LCD = new List<IMyTextPanel>();
 
         //!Information used to create a packet that will be sent back to the main base.
         long pBId;
@@ -90,7 +93,7 @@ namespace IngameScript
         Vector3D linearVelocity;
         Vector3D angularVelocity;
         object[] laserAntPos;
-        public int[] ticks = new int[] { 0 };
+        int[] ticks = new int[] { 0 };
 
 
         //?Functions ----------------------------------------------------------------------
@@ -99,7 +102,7 @@ namespace IngameScript
         //!String-to-data and data-to-string functions hidden here:
 
         //!Convert MatrixD to string... I'm sorry, but there is no way to loop through properties
-        public static string matrixToString(MatrixD matrix)
+        static string matrixToString(MatrixD matrix)
         {
             string strMatrix = "M" + matrix.M11 + "|" + matrix.M12 + "|" + matrix.M13 + "|" + matrix.M14 + "|" +
                             matrix.M21 + "|" + matrix.M22 + "|" + matrix.M23 + "|" + matrix.M24 + "|" +
@@ -110,7 +113,7 @@ namespace IngameScript
         }
 
         //!Convert string to matrixD
-        public static MatrixD stringToMatrix(string strMatrix)
+        static MatrixD stringToMatrix(string strMatrix)
         {
             string temp = strMatrix.Substring(1);
 
@@ -135,7 +138,7 @@ namespace IngameScript
         }
 
         //!Converts a string back into a Vector3
-        public static Vector3D StringToVector3(string sVector)
+        static Vector3D StringToVector3(string sVector)
         {
             //Remove curly brackets
             if (sVector.StartsWith("{") && sVector.EndsWith("}"))
@@ -250,7 +253,7 @@ namespace IngameScript
 
 
         //!Converts string back into object
-        public object[] stringToObject(string packet)
+        object[] stringToObject(string packet)
         {
             //Remove start and ending brackets
             packet = packet.Substring(1, packet.Length - 2);
@@ -448,7 +451,7 @@ namespace IngameScript
         }
 
         //Caches block (trades memory for performance)
-        public IEnumerator<int> cacheBlocks()
+        IEnumerator<int> cacheBlocks()
         {
             List<IMyTerminalBlock> tempBlocks = new List<IMyTerminalBlock>();
 
@@ -509,20 +512,24 @@ namespace IngameScript
                 }
             }
 
+            //This needs to change when I finally use the storage var
+            maxTerminalHealth = terminalBlocks.Count;
+            maxArmourHealth = armourBlocks.Count;
+
             blocksCached = true;
         }
 
         //Gets health of grid using cached blocks.
-        public IEnumerator<int> getGridHealth()
+        IEnumerator<int> getGridHealth()
         {
             int counter = 0;
 
             //Get health of terminal blocks.
-            gridHealth = 0;
+            terminalHealth = 0;
             foreach (IMySlimBlock block in terminalBlocks.Keys)
             {
                 counter++;
-                gridHealth += getBlockHealth(block);
+                terminalHealth += getBlockHealth(block);
 
                 if (counter >= 200)
                 {
@@ -531,21 +538,33 @@ namespace IngameScript
                 }
             }
 
+            counter = 0;
+            armourHealth = 0;
             //Get health of armour blocks
             foreach (Vector3I armourBlock in armourBlocks)
             {
+                counter++;
                 if (Me.CubeGrid.CubeExists(armourBlock))
                 {
-                    gridHealth++;
+                    armourHealth++;
+                }
+
+                if (counter >= 200)
+                {
+                    counter = 0;
+                    yield return ticks[0];
                 }
             }
+
+            //Return health of grid with percentage.
+            gridHealth = (armourHealth / maxArmourHealth) * 0.25f + (terminalHealth / maxTerminalHealth) * 0.75f;
 
             yield return ticks[0];
         }
 
 
         //!Send packet
-        public void sendMessage(bool isUni, string destination, ImmutableArray<string> contents)
+        void sendMessage(bool isUni, string destination, ImmutableArray<string> contents)
         {
             //First check if it's a uni or broadcast
             if (isUni)
@@ -571,7 +590,7 @@ namespace IngameScript
 
 
         //!Sends packets in backlog every so often
-        public void sendBackLog()
+        void sendBackLog()
         {
             //Set count to var. This is because the length of dict will change
             int packetCount = packetBacklog.Count;
@@ -596,7 +615,7 @@ namespace IngameScript
 
         //!Receive data
         //Convert this to corountines
-        public IEnumerator<int> receiveMessage(int listener)
+        IEnumerator<int> receiveMessage(int listener)
         {
             Echo("recieving");
             //Define message and bool to check if its a broadcast or not. Bool may not be needed.
@@ -713,7 +732,7 @@ namespace IngameScript
 
 
         //!Creates EstCon packet
-        public void establishConnection(string estType)
+        void establishConnection(string estType)
         {
             //B: EstCon - [long source, long destination, "EstCon", [EstType, gridType, laserAntPos]]
             //Creates an EstCon broadcast packet. EstType tells other grids what grid types it wants. E.g. if estType is Outpost, only outposts will return data.
@@ -723,14 +742,14 @@ namespace IngameScript
 
 
         //!Broadcast to request info packets
-        public void requestInfo(string tag)
+        void requestInfo(string tag)
         {
             sendMessage(false, tag, createPacketString(pBId.ToString(), tag, "Info", new object[] { "placeholder" }));
             Echo("Broadcasting info request.");
         }
 
         //!Unicast to respond to info request
-        public void respondInfo(long ip)
+        void respondInfo(long ip)
         {
             //Info packet format:[source, destination, purpose, [gridType, groupId, worldMatrix, linearVelocity, angularVelocity, health, status, command, lastUpdate]]
             Echo("Sending info response");
@@ -740,7 +759,7 @@ namespace IngameScript
 
 
         //!Initialliser, sets vars and listeners.
-        public void Init()
+        void Init()
         {
             Echo("Retrieving LaserAnt list...");
             //Get all laser antennas and convert to object array
@@ -951,8 +970,6 @@ namespace IngameScript
                 }
 
                 Echo($"Blocks: {terminalBlocks.Count} | {armourBlocks.Count}");
-                /*Echo($"Min: {Me.CubeGrid.Min}\nMax: {Me.CubeGrid.Max}");
-                Echo($"Min: {Me.CubeGrid.GridIntegerToWorld(Me.CubeGrid.Min)} | Max: {Me.CubeGrid.GridIntegerToWorld(Me.CubeGrid.Max)}");*/
 
                 yield return 0;
             }
