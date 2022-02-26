@@ -141,6 +141,10 @@ namespace IngameScript
             }
         }
 
+        // Public get only
+        private static string LastArgument = "";
+        public static string lastArgument { get { return LastArgument; } }
+
         private static IMyGridProgramRuntimeInfo Runtime;
         private static Action<string> Echo;
         private static bool EchoStatus = false;
@@ -164,8 +168,11 @@ namespace IngameScript
             EchoStatus = echoStatus;
         }
 
-        public static void StepCoroutines(UpdateType updateSource)
+        public static void StepCoroutines(UpdateType updateSource, string argument)
         {
+            if(argument != ""){
+                LastArgument = argument;
+            }
 
             // Coroutine will trigger when user presses run or when it triggers itself
             if (updateSource == UpdateType.Once || updateSource == UpdateType.Terminal)
