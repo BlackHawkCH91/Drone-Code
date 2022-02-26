@@ -483,12 +483,20 @@ namespace IngameScript
                         bool nextPoint = false;
                         Vector3I point = new Vector3I(x, y, z);
 
+                        int newCounter = 0;
                         foreach (BoundingBox boundingBox in terminalBlocks.Values)
                         {
+                            newCounter++;
                             if (ContainmentType.Contains == boundingBox.Contains(new Vector3D(point)))
                             {
                                 nextPoint = true;
                                 break;
+                            }
+
+                            if (newCounter >= 20)
+                            {
+                                newCounter = 0;
+                                yield return ticks[0];
                             }
                         }
 
@@ -503,7 +511,7 @@ namespace IngameScript
                             armourBlocks.Add(point);
                         }
 
-                        if (counter >= 50)
+                        if (counter >= 5)
                         {
                             counter = 0;
                             yield return ticks[0];
