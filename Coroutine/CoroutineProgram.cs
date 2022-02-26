@@ -246,6 +246,13 @@ namespace IngameScript
             return Coroutine;
         }
 
+        public static Coroutine SpawnCoroutine(Delegate CoroutineFunc, params object[] args)
+        {
+            Coroutine Coroutine = new Coroutine(CoroutineFunc, args);
+            ResumeCoroutine(Coroutine);
+            return Coroutine;
+        }
+
         private static void InternalPauseCoroutine(Coroutine coroutine)
         {
             activeCoroutines.Remove(coroutine);
