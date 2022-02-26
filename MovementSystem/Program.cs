@@ -42,6 +42,8 @@ namespace IngameScript
         Vector3D destinationVector = new Vector3D(97809.81, -27403.02, 22361.28);
         List<DecayingIntegralPIDController> movementPIDControllers = new List<DecayingIntegralPIDController>();
 
+        Dictionary<double, double> dGainLookUp = new Dictionary<double, double>();
+
         // Rotation Controller vars
         Vector3D rotationDirection = new Vector3D(97809.81, -27403.02, 22361.28);
         Vector3D rotationUp;
