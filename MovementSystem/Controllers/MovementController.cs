@@ -31,6 +31,11 @@ namespace IngameScript
             private double maxVelDistanceGain;
             private double maxVelMin;
 
+            private IEnumerator<int> StepMovement()
+            {
+                yield return 0;
+            }
+
             public void Run()
             {
 
