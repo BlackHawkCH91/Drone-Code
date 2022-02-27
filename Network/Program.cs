@@ -22,7 +22,7 @@ using VRageMath;
 namespace IngameScript
 {
     public class TimeInterval {
-        DateTime intervalTime = DateTime.Now;
+        public DateTime intervalTime = DateTime.Now;
 
         public bool waitUntil(DateTime timeToWait)
         {
@@ -31,9 +31,10 @@ namespace IngameScript
 
         public bool waitInterval(TimeSpan interval)
         {
-            if (DateTime.Now > intervalTime)
+            if (DateTime.Now >= intervalTime)
             {
-                intervalTime.Add(interval);
+                //intervalTime.Add(interval);
+                intervalTime = intervalTime.AddSeconds(5);
                 return true;
             }
             return false;
@@ -628,7 +629,7 @@ namespace IngameScript
         void RequestInfo(string tag)
         {
             SendMessage(false, tag, CreatePacketString(pBId.ToString(), tag, "Info", new object[] { "placeholder" }));
-            Echo("Broadcasting info request.");
+            //Echo("Broadcasting info request.");
         }
 
         //!Sends packets in backlog every so often
@@ -871,6 +872,7 @@ namespace IngameScript
 
         }
 
+        TimeInterval infoTime = new TimeInterval();
 
         public bool healthThing = true;
         public IEnumerator<int> IEnumMain()
@@ -887,7 +889,7 @@ namespace IngameScript
                 if (blocksCached)
                 {
                     TaskScheduler.SpawnCoroutine(new Func<IEnumerator<int>>(GetGridHealth));
-                    Echo($"Grid {gridHealth}");
+                    //Echo($"Grid {gridHealth}");
                 }
 
                 if (gridType == "Outpost")
@@ -920,10 +922,15 @@ namespace IngameScript
                         }
                     }
 
-                    antenna.EnableBroadcasting = true;
-                    yield return 0;
-                    RequestInfo("All");
-                    if (anonCast) { antenna.EnableBroadcasting = false; }
+                    Echo($"infotime: {infoTime.intervalTime} | {DateTime.Now} | {DateTime.Now >= infoTime.intervalTime}");
+                    if (infoTime.waitInterval(new TimeSpan(0, 0, 5)))
+                    {
+                        Echo("Running info");
+                        antenna.EnableBroadcasting = true;
+                        yield return 0;
+                        RequestInfo("All");
+                        if (anonCast) { antenna.EnableBroadcasting = false; }
+                    }
 
                     //[gridType, groupId, worldMatrix, linearVelocity, angularVelocity, health, status, command, lastUpdate]
 
@@ -971,7 +978,7 @@ namespace IngameScript
                     }
                 }
 
-                Echo($"Blocks: {terminalBlocks.Count} | {armourBlocks.Count}");
+                //Echo($"Blocks: {terminalBlocks.Count} | {armourBlocks.Count}");
 
                 yield return 0;
             }
