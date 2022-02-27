@@ -21,6 +21,25 @@ using VRageMath;
 
 namespace IngameScript
 {
+    public class TimeInterval {
+        DateTime intervalTime = DateTime.Now;
+
+        public bool waitUntil(DateTime timeToWait)
+        {
+            return DateTime.Now >= timeToWait;
+        }
+
+        public bool waitInterval(TimeSpan interval)
+        {
+            if (DateTime.Now > intervalTime)
+            {
+                intervalTime.Add(interval);
+                return true;
+            }
+            return false;
+        }
+    }
+
     public struct drone
     {
         //[gridType, groupId, worldMatrix, linearVelocity, angularVelocity, health, status, command, lastUpdate]
