@@ -86,6 +86,8 @@ namespace IngameScript
         IMyRemoteControl rc;
         List<IMyTextPanel> LCD = new List<IMyTextPanel>();
 
+        bool anonCast = false;
+
         //!Information used to create a packet that will be sent back to the main base.
         long pBId;
         string gridType;
@@ -186,6 +188,7 @@ namespace IngameScript
 
             return bracketPos;
         }
+
 
         //Converts object to string
         //Probably not worth converting to coroutine
@@ -568,6 +571,8 @@ namespace IngameScript
         //-----------------------------------------------------------------------------
 
 
+
+
         //!Send packet
         void sendMessage(bool isUni, string destination, ImmutableArray<string> contents)
         {
@@ -589,8 +594,6 @@ namespace IngameScript
                 //Send broadcast
                 IGC.SendBroadcastMessage<ImmutableArray<string>>(destination, contents, TransmissionDistance.TransmissionDistanceMax);
             }
-
-            //IGC.SendBroadcastMessage<object[]>(tag, contents, TransmissionDistance.TransmissionDistanceMax);
         }
 
         //!Creates EstCon packet
@@ -689,7 +692,6 @@ namespace IngameScript
                     //EstCon - [long source, long destination, "EstCon", [gridType, laserAntPos]]
 
                     //Add the IP to the IP list if is doesn't exist
-                    //Echo(test.ToString());
                     if (!(ipList.ContainsKey((long) finalMsg[0])))
                     {
                         ipList.Add((long) finalMsg[0], new object[] { packetContent[0].ToString(), packetContent[1] });
@@ -699,8 +701,10 @@ namespace IngameScript
                     if (isBroadcast && (packetContent[0].ToString() == gridType || finalMsg[1].ToString() == "All"))
                     {
                         //Send unicast back to sender.
-                        Echo("Sending uni");
+                        antenna.EnableBroadcasting = true;
+                        yield return 0;
                         sendMessage(true, source, createPacketString(pBId.ToString(), source, "EstCon", new object[] { gridType, laserAntPos }));
+                        if (anonCast) { antenna.EnableBroadcasting = false; }
                     }
                     else if (!(isBroadcast))
                     {
@@ -733,7 +737,10 @@ namespace IngameScript
                     if (isBroadcast)
                     {
                         Echo("sending info");
+                        antenna.EnableBroadcasting = true;
+                        yield return 0;
                         sendMessage(true, source, createPacketString(pBId.ToString(), source, "Info", new object[] { gridType, 0, gridMatrix, linearVelocity, angularVelocity, gridHealth, "Idle", "Mine" }));
+                        if (anonCast) { antenna.EnableBroadcasting = false; }
                     } else
                     {
                         //This is a lot of boxing/unboxing which might cause performance issues. Def needs to run on a coroutine
@@ -835,21 +842,7 @@ namespace IngameScript
             {
                 Init();
 
-                //String-to-data and data-to-string testing. Only use when adding new data types
-                //
-                /*object[] testObject = new object[] { mainProgBlock.WorldMatrix, mainProgBlock.GetPosition(), "Hello", 123, 123.456, true, false, new object[] { "more", true, false } };
-                string testString = objectToString(testObject);
-
-                object[] testObject2 = stringToObject(testString);
-                string testString2 = displayThing(testObject2);
-
-                LCD[3].WriteText(matrixToString(mainProgBlock.WorldMatrix));
-                LCD[3].WriteText(testString + "\n" + testString2);*/
-
-
                 setup = true;
-                //Remove this and set update frequency in program
-                //Runtime.UpdateFrequency = UpdateFrequency.Update1;
             }
 
             object[] test = new object[] { "hello", 123 };
@@ -859,8 +852,6 @@ namespace IngameScript
 
         }
 
-        //object[] testThing = new object[] { "43242345", "243525", new object[] { "312343", new Vector3(2, 3, 4), 23, new object[] { new Vector3(2, 4, 5), 23, "232" } }, new object[] { "test", new object[] { "brrr", 434.34, new Vector3(3, 54, 1) }, 123 } };
-        object[] testThing = new object[] { new Vector3D(2, 3, 4), "hello", 123, true };
 
         public bool healthThing = true;
         public IEnumerator<int> IEnumMain()
@@ -882,7 +873,6 @@ namespace IngameScript
 
                 if (gridType == "Outpost")
                 {
-                    Echo("Running outpost code.");
                     string displayString = "";
                     foreach (KeyValuePair<long, object[]> item in ipList)
                     {
@@ -911,10 +901,10 @@ namespace IngameScript
                         }
                     }
 
-
+                    antenna.EnableBroadcasting = true;
+                    yield return 0;
                     requestInfo("All");
-
-                    //LCD[2].WriteText(displayString);
+                    if (anonCast) { antenna.EnableBroadcasting = false; }
 
                     //[gridType, groupId, worldMatrix, linearVelocity, angularVelocity, health, status, command, lastUpdate]
 
@@ -924,7 +914,6 @@ namespace IngameScript
                         drone item = drone.Value;
                         string pos = $"{item.gridMatrix.M41}, {item.gridMatrix.M42}, {item.gridMatrix.M43}";
                         string output = $"{drone.Key} | {item.gridType} | {pos} | {item.lastUpdate} | {item.health}";
-                        Echo("drone stuff");
                         LCD[2].WriteText(output);
                     }
                 }
@@ -935,8 +924,10 @@ namespace IngameScript
 
                 if (gridType == "Satellite")
                 {
-                    Echo("Sending EstCon...");
+                    antenna.EnableBroadcasting = true;
+                    yield return 0;
                     //establishConnection("All");
+                    if (anonCast) { antenna.EnableBroadcasting = false; }
                 }
 
                 //Handling messages here. Seems messy and inefficient
@@ -979,11 +970,10 @@ namespace IngameScript
  
 TODO:
 
- - Create an "Info" packet where grids can request info from other grids and those grids will respond with information about them.
  - Create debug screen which shows status of connections between satellites/relays
- - Use corountines when checking listeners. Calling objectToString multiple times can be costly.
  - Find a way to create "anonymous" broadcasts (use laser antenna to broadcast briefly so that the ping barely shows up)
  - Create a universal function that can encode and decode all date into/from a string. This will be stored on the "Storage" variable.
+ - Get backlog packets working
 
 
  - EstCon broadcast will only run every couple seconds.
@@ -1010,17 +1000,8 @@ TODO:
    Flagships may store data on their group if needed.
    
 
-Testing:
-
- - Switch EstCon around. Make outpost send EstCon broadcast and see if response from satellite is being sent properly or is being sent to
-   backlog
- - Test if backlog is working. Can be tested by making broadcaster range larger than receiver range.
-
 
 Packet structure - [long source, long destination, string purpose, [content, content, etc]]
-
-B: EstCon - [long source, long destination, "EstCon", [EstType, gridType, laserAntPos ]]
-U: EstCon - [long source, long destination, "EstCon", [gridType, laserAntPos ]]
 
 Status - idle, working, attached - pBId, etc
 */
