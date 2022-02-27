@@ -23,13 +23,13 @@ namespace IngameScript
     {
         // General use vars
         IMyShipController controller;
-        Vector3D destinationVector = new Vector3D(97809.81, -27403.02, 22361.28);
+        Vector3D destinationVector = new Vector3D(97828.09, -27530.95, 22508.69);
 
         public Program()
         {
             controller = GetMainRemoteControl();
             TaskScheduler.EstablishTaskScheduler(Runtime, Echo, true);
-            MovementController.Establish(GridTerminalSystem, Runtime, controller);
+            MovementController.Establish(GridTerminalSystem, Runtime, Echo, controller);
             MovementController.MoveTo(destinationVector);
         }
 
