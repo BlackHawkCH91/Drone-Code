@@ -91,7 +91,7 @@ namespace IngameScript
         double maxTerminalHealth;
         double maxArmourHealth;
 
-        double gridHealth;
+        double gridHealth = 0;
 
         Dictionary<IMySlimBlock, BoundingBox> terminalBlocks = new Dictionary<IMySlimBlock, BoundingBox>();
         List<Vector3I> armourBlocks = new List<Vector3I>();
@@ -680,9 +680,11 @@ namespace IngameScript
             //Convert to object
             ImmutableArray<string> temp = (ImmutableArray<string>) message.Data;
 
+            Echo("2");
             object[] finalMsg;
             string source = temp[0];
 
+            Echo("3");
             finalMsg = new object[] { source, temp[1], temp[2], StringToObject(temp[3]) };
             //Check if destination is a string or long. This may cause an error if dest is a long. Need to test this.
             if (!(finalMsg[1].ToString().StartsWith("\"")))
@@ -697,6 +699,7 @@ namespace IngameScript
                 finalMsg[1] = dest.Substring(1, dest.Length - 2);
             }
 
+            Echo("4");
             //DEBUG check. Delete later:
 
             if (gridType == "Outpost" && listener == 0)
@@ -704,13 +707,13 @@ namespace IngameScript
                 LCD[0].WriteText(DisplayThing(finalMsg));
             }
 
+            Echo("5");
             object[] packetContent = finalMsg[3] as object[];
             finalMsg[0] = long.Parse(finalMsg[0].ToString());
             switch (finalMsg[2].ToString())
             {
                 case "EstCon":
                     //EstCon - [long source, long destination, "EstCon", [gridType, laserAntPos]]
-
                     //Add the IP to the IP list if is doesn't exist
                     if (!(ipList.ContainsKey((long) finalMsg[0])))
                     {
@@ -750,7 +753,6 @@ namespace IngameScript
                 case "IpUpdate":
                     //?Rewrite IP Update in general
                     string output = DisplayThing(packetContent);
-
                     break;
                 case "Info":
                     //[gridType, groupId, worldMatrix, linearVelocity, angularVelocity, health, status, command, lastUpdate]
