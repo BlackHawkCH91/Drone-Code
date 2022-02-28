@@ -33,6 +33,8 @@ namespace IngameScript
             private static double timeStep;
             private static Vector3D requiredMovement;
             private static IMyShipController shipController;
+            private static MyShipMass shipMass;
+            private static double marginOfError = 0.1;
 
             private class AxisMovementController
             {
@@ -41,7 +43,7 @@ namespace IngameScript
                 private Base6Directions.Axis MovementAxis { get { return movementAxis; } }
                 public Dictionary<Base6Directions.Direction, List<IMyThrust>> thrusters = new Dictionary<Base6Directions.Direction, List<IMyThrust>>();
 
-                private DecayingIntegralPIDController velocityController = new DecayingIntegralPIDController(2, 1, -5, 0.5);
+                private DecayingIntegralPIDController velocityController = new DecayingIntegralPIDController(1, 0, 0, 0);//, 1, -5, 0.5);
                 private double errorVal;
                 private double maxDesiredSpeed;
                 private double accel;
@@ -55,7 +57,6 @@ namespace IngameScript
                     {
                         thrustForceSum += thruster.MaxEffectiveThrust;
                     }
-
                     return thrustForceSum;
                 }
                 private void RecalcError()
@@ -74,17 +75,16 @@ namespace IngameScript
                     {
                         accelDirection = Base6Directions.GetOppositeDirection(baseAxisDirection);
                     }
-                    accel = CalcThrustForce(accelDirection) / shipController.CalculateShipMass().TotalMass;
-                    decel = CalcThrustForce(Base6Directions.GetOppositeDirection(accelDirection)) / shipController.CalculateShipMass().TotalMass;
-                    double maxSpeedDistanceGain = decel / 300;
-                    double minMaxSpeed = decel / 1.5;
+                    accel = CalcThrustForce(accelDirection) / shipMass.TotalMass;
+                    decel = CalcThrustForce(Base6Directions.GetOppositeDirection(accelDirection)) / shipMass.TotalMass;
+                    double maxSpeedDistanceGain = decel / 150;
+                    double minMaxSpeed = decel * 2;
                     maxDesiredSpeed = Math.Min(Math.Abs(maxSpeedDistanceGain * errorVal) + minMaxSpeed, maxSpeed);
 
                     Echo($"accel:{accel}, decel:{decel}");
                 }
                 private void ApplyThrust()
                 {
-                    Echo($"timestep:{timeStep}");
                     // Calc desired velocity
                     double desiredVelocity = velocityController.GetControlValue(errorVal, timeStep);
                     if(Math.Abs(desiredVelocity) >= maxDesiredSpeed)
@@ -93,7 +93,7 @@ namespace IngameScript
                     }
                     double currVelocity = shipController.GetShipVelocities().LinearVelocity.ConvertToLocalDirection(shipController).Dot(Base6Directions.GetVector(baseAxisDirection));
 
-                    Echo($"currVel:{currVelocity.RoundToDp(3)}\ndesiredVel:{desiredVelocity.RoundToDp(3)}\nmaxDesiredspeed:{maxDesiredSpeed.RoundToDp(3)}\nmaxSpeed:{maxSpeed.RoundToDp(3)}");
+                    Echo($"currVel:{currVelocity.RoundToDp(10)}\ndesiredVel:{desiredVelocity.RoundToDp(10)}\nmaxDesiredspeed:{maxDesiredSpeed.RoundToDp(3)}\nmaxSpeed:{maxSpeed.RoundToDp(3)}");
 
                     // Calc thrust to apply and apply thrust
                     double thrustToApply = 0;
@@ -112,33 +112,31 @@ namespace IngameScript
                         thrustToApply = Math.Sign(thrustToApply);
                     }
 
+                    if (Math.Abs(errorVal) <= marginOfError)
+                    {
+                        thrustToApply = 0;
+                    }
                     Echo($"thrustToApply:{thrustToApply.RoundToDp(5)}");
 
                     if (thrustToApply >= 0)
                     {
-                        Echo($"thrustDirection:{baseAxisDirection}");
                         foreach (IMyThrust thruster in thrusters[baseAxisDirection])
                         {
-                            thruster.CustomName = baseAxisDirection.ToString();
                             thruster.ThrustOverridePercentage = (float)Math.Abs(thrustToApply);
                         }
                         foreach (IMyThrust thruster in thrusters[Base6Directions.GetOppositeDirection(baseAxisDirection)])
                         {
-                            thruster.CustomName = Base6Directions.GetOppositeDirection(baseAxisDirection).ToString();
                             thruster.ThrustOverridePercentage = 0;
                         }
                     }
                     else
                     {
-                        Echo($"thrustDirection:{Base6Directions.GetOppositeDirection(baseAxisDirection)}");
                         foreach (IMyThrust thruster in thrusters[Base6Directions.GetOppositeDirection(baseAxisDirection)])
                         {
-                            thruster.CustomName = Base6Directions.GetOppositeDirection(baseAxisDirection).ToString();
                             thruster.ThrustOverridePercentage = (float)Math.Abs(thrustToApply);
                         }
                         foreach (IMyThrust thruster in thrusters[baseAxisDirection])
                         {
-                            thruster.CustomName = baseAxisDirection.ToString();
                             thruster.ThrustOverridePercentage = 0;
                         }
                     }
@@ -182,6 +180,7 @@ namespace IngameScript
             {
                 while (true)
                 {
+                    shipMass = shipController.CalculateShipMass();
                     timeStep = Runtime.TimeSinceLastRun.TotalSeconds;
                     requiredMovement = desiredPosition.ConvertToLocalPosition(shipController);
                     foreach (KeyValuePair<Base6Directions.Axis, AxisMovementController> keyValuePair in movementControllers)
