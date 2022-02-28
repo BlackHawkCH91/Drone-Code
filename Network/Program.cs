@@ -73,6 +73,8 @@ namespace IngameScript
     {
         //!VARS
 
+        bool ree = false;
+
         Dictionary<long, ImmutableArray<string>> packetBacklog = new Dictionary<long, ImmutableArray<string>>();
         Dictionary<long, object[]> ipList = new Dictionary<long, object[]>();
         List<object[]> updatedIpList = new List<object[]>();
@@ -454,6 +456,83 @@ namespace IngameScript
 
         //-----------------------------------------------------------------------------
 
+        //Coroutines might be causing issues with init
+        IEnumerator<int> CacheBlocks()
+        {
+            yield return 0;
+            List<IMyTerminalBlock> tempBlocks = new List<IMyTerminalBlock>();
+
+            blocksCached = false;
+            int counter = 0;
+            //Gets bounding box from all terminal blocks.
+            GridTerminalSystem.GetBlocks(tempBlocks);
+
+            foreach (IMyTerminalBlock block in tempBlocks)
+            {
+                terminalBlocks.Add(Me.CubeGrid.GetCubeBlock(block.Position), new BoundingBox(block.Min, block.Max));
+
+                if (counter >= 15)
+                {
+                    counter = 0;
+                    yield return ticks[0];
+                }
+            }
+
+            //Loop through all points on grid
+            counter = 0;
+            for (int x = gridMin.X - 1; x <= gridMax.X + 1; x++)
+            {
+                for (int y = gridMin.Y - 1; y <= gridMax.Y + 1; y++)
+                {
+                    for (int z = gridMin.Z - 1; z <= gridMax.Z + 1; z++)
+                    {
+                        //Check if point is in any of the terminal blocks
+                        bool nextPoint = false;
+                        Vector3I point = new Vector3I(x, y, z);
+
+                        int newCounter = 0;
+                        foreach (BoundingBox boundingBox in terminalBlocks.Values)
+                        {
+                            newCounter++;
+                            if (ContainmentType.Contains == boundingBox.Contains(new Vector3D(point)))
+                            {
+                                nextPoint = true;
+                                break;
+                            }
+
+                            if (newCounter >= 20)
+                            {
+                                newCounter = 0;
+                                yield return ticks[0];
+                            }
+                        }
+
+                        if (nextPoint)
+                        {
+                            continue;
+                        }
+
+                        //If there is an armour block, add it to list.
+                        if (Me.CubeGrid.CubeExists(point))
+                        {
+                            armourBlocks.Add(point);
+                        }
+
+                        if (counter >= 5)
+                        {
+                            counter = 0;
+                            yield return ticks[0];
+                        }
+                    }
+                }
+            }
+
+            //This needs to change when I finally use the storage var
+            maxTerminalHealth = terminalBlocks.Count;
+            maxArmourHealth = armourBlocks.Count;
+
+            blocksCached = true;
+        }
 
 
         //!Gets block health
@@ -707,6 +786,8 @@ namespace IngameScript
 
             pBId = mainProgBlock.EntityId;
 
+            TaskScheduler.SpawnCoroutine(new Func<IEnumerator<int>>(CacheBlocks));
+
             setup = true;
             Echo("Active");
         }
@@ -739,17 +820,6 @@ namespace IngameScript
             if (!setup)
             {
                 Init();
-
-                //String-to-data and data-to-string testing. Only use when adding new data types
-                //
-                /*object[] testObject = new object[] { mainProgBlock.WorldMatrix, mainProgBlock.GetPosition(), "Hello", 123, 123.456, true, false, new object[] { "more", true, false } };
-                string testString = ObjectToString(testObject);
-
-                object[] testObject2 = StringToObject(testString);
-                string testString2 = DisplayThing(testObject2);
-
-                LCD[3].WriteText(MatrixToString(mainProgBlock.WorldMatrix));
-                LCD[3].WriteText(testString + "\n" + testString2);*/
 
 
                 setup = true;
@@ -837,25 +907,30 @@ namespace IngameScript
                     //EstablishConnection("All");
                 }
 
+                Echo(terminalBlocks.Count.ToString());
+
                 //Handling messages here. Seems messy and inefficient
                 //Checking all listeners on a single frame. If they all have messages, string-to-data will be running
                 //multiple times on a tick. Use coroutines
 
                 //Check uni cast
-                if (dirListener.HasPendingMessage)
+                if (blocksCached)
                 {
-                    ReceiveMessage(0);
-                }
-
-                //Chec all broadcast listeners
-                string displayListener = "";
-                for (int i = 1; i <= listeners.Count; i++)
-                {
-                    displayListener += "Broad" + i + "\n";
-                    if (listeners[i - 1].HasPendingMessage)
+                    if (dirListener.HasPendingMessage)
                     {
-                        displayListener += " true";
-                        ReceiveMessage(i);
+                        ReceiveMessage(0);
+                    }
+
+                    //Chec all broadcast listeners
+                    string displayListener = "";
+                    for (int i = 1; i <= listeners.Count; i++)
+                    {
+                        displayListener += "Broad" + i + "\n";
+                        if (listeners[i - 1].HasPendingMessage)
+                        {
+                            displayListener += " true";
+                            ReceiveMessage(i);
+                        }
                     }
                 }
 
