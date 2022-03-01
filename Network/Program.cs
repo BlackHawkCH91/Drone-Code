@@ -265,7 +265,7 @@ namespace IngameScript
                 }
 
                 i++;
-                //TaskScheduler.ResumeCoroutine(TaskScheduler.CreateCoroutine(new Func<IEnumerator<int>>(yieldThing)));
+                //TaskScheduler.SpawnCoroutine(new Func<IEnumerator<int>>(yieldThing)));
             }
 
             final += "]";
@@ -713,7 +713,7 @@ namespace IngameScript
         {
             //Runtime.UpdateFrequency = UpdateFrequency.Update100;
             TaskScheduler.EstablishTaskScheduler(Runtime, Echo, true);
-            TaskScheduler.ResumeCoroutine(TaskScheduler.CreateCoroutine(new Func<IEnumerator<int>>(IEnumMain)));
+            TaskScheduler.SpawnCoroutine(new Func<IEnumerator<int>>(IEnumMain));
         }
 
         int newLines = 1;
