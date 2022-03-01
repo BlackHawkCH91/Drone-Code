@@ -29,12 +29,11 @@ namespace IngameScript
             private static Action<string> Echo;
             private static Dictionary<Base6Directions.Axis, AxisMovementController> movementControllers = new Dictionary<Base6Directions.Axis, AxisMovementController>();
             private static Vector3D desiredPosition;
-            private static double maxSpeed = 57;
+            private static double maxSpeed = 100;
             private static double timeStep;
             private static Vector3D requiredMovement;
             private static IMyShipController shipController;
             private static MyShipMass shipMass;
-            private static double marginOfError = 0.1;
 
             private class AxisMovementController
             {
@@ -45,6 +44,7 @@ namespace IngameScript
 
                 private DecayingIntegralPIDController velocityController = new DecayingIntegralPIDController(1, 0, 0, 0);//, 1, -5, 0.5);
                 private double errorVal;
+                public double maxAxisSpeed;
                 private double maxDesiredSpeed;
                 private double accel;
                 private double decel;
@@ -79,7 +79,7 @@ namespace IngameScript
                     decel = CalcThrustForce(Base6Directions.GetOppositeDirection(accelDirection)) / shipMass.TotalMass;
                     double maxSpeedDistanceGain = decel / 150;
                     double minMaxSpeed = decel * 2;
-                    maxDesiredSpeed = Math.Min(Math.Abs(maxSpeedDistanceGain * errorVal) + minMaxSpeed, maxSpeed);
+                    maxDesiredSpeed = Math.Min(Math.Abs(maxSpeedDistanceGain * errorVal) + minMaxSpeed, maxAxisSpeed);
 
                     Echo($"accel:{accel}, decel:{decel}");
                 }
@@ -93,31 +93,31 @@ namespace IngameScript
                     }
                     double currVelocity = shipController.GetShipVelocities().LinearVelocity.ConvertToLocalDirection(shipController).Dot(Base6Directions.GetVector(baseAxisDirection));
 
-                    Echo($"currVel:{currVelocity.RoundToDp(10)}\ndesiredVel:{desiredVelocity.RoundToDp(10)}\nmaxDesiredspeed:{maxDesiredSpeed.RoundToDp(3)}\nmaxSpeed:{maxSpeed.RoundToDp(3)}");
+                    Echo($"currVel:{currVelocity.RoundToDp(10)}\ndesiredVel:{desiredVelocity.RoundToDp(10)}\nmaxDesiredspeed:{maxDesiredSpeed.RoundToDp(3)}\nmaxSpeed:{maxAxisSpeed.RoundToDp(3)}");
 
                     // Calc thrust to apply and apply thrust
                     double thrustToApply = 0;
 
                     if(desiredVelocity > currVelocity)
                     {
-                        thrustToApply = (desiredVelocity - currVelocity) / (accel * timeStep);
+                        thrustToApply = (desiredVelocity - currVelocity) / (accel * (timeStep * 2));
                     }
                     else if(desiredVelocity < currVelocity)
                     {
-                        thrustToApply = (desiredVelocity - currVelocity) / (decel * timeStep);
+                        thrustToApply = (desiredVelocity - currVelocity) / (decel * (timeStep * 2));
                     }
 
                     if(Math.Abs(thrustToApply) > 1)
                     {
                         thrustToApply = Math.Sign(thrustToApply);
                     }
-
-                    if (Math.Abs(errorVal) <= marginOfError)
+/*
+                    if (Math.Abs(thrustToApply) <= marginOfError)
                     {
                         thrustToApply = 0;
-                    }
-                    Echo($"thrustToApply:{thrustToApply.RoundToDp(5)}");
+                    }*/
 
+                    Echo($"thrustToApply:{thrustToApply.RoundToDp(5)}");
                     if (thrustToApply >= 0)
                     {
                         foreach (IMyThrust thruster in thrusters[baseAxisDirection])
@@ -180,12 +180,18 @@ namespace IngameScript
             {
                 while (true)
                 {
+                    // Calc non-per axis stuffs
                     shipMass = shipController.CalculateShipMass();
                     timeStep = Runtime.TimeSinceLastRun.TotalSeconds;
                     requiredMovement = desiredPosition.ConvertToLocalPosition(shipController);
+
+                    // Calc per axis stuffs
                     foreach (KeyValuePair<Base6Directions.Axis, AxisMovementController> keyValuePair in movementControllers)
                     {
-                        keyValuePair.Value.StepMovement();
+                        Base6Directions.Axis axis = keyValuePair.Key;
+                        AxisMovementController movementController = keyValuePair.Value;
+                        movementController.maxAxisSpeed = Math.Abs(requiredMovement.Dot(Base6Directions.GetVector(Base6Directions.GetBaseAxisDirection(axis)))) * maxSpeed;
+                        movementController.StepMovement();
                     }
                     yield return 0;
                 }
