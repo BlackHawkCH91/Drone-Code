@@ -682,11 +682,10 @@ namespace IngameScript
             //Convert to object
             ImmutableArray<string> temp = (ImmutableArray<string>)message.Data;
 
-            Echo("2");
+
             object[] finalMsg;
             string source = temp[0];
 
-            Echo("3");
             finalMsg = new object[] { source, temp[1], temp[2], StringToObject(temp[3]) };
             //Check if destination is a string or long. This may cause an error if dest is a long. Need to test this.
             if (!(finalMsg[1].ToString().StartsWith("\"")))
@@ -701,7 +700,6 @@ namespace IngameScript
                 finalMsg[1] = dest.Substring(1, dest.Length - 2);
             }
 
-            Echo("4");
             //DEBUG check. Delete later:
 
             if (gridType == "Outpost" && listener == 0)
@@ -709,7 +707,6 @@ namespace IngameScript
                 LCD[0].WriteText(DisplayThing(finalMsg));
             }
 
-            Echo("5");
             object[] packetContent = finalMsg[3] as object[];
             finalMsg[0] = long.Parse(finalMsg[0].ToString());
             switch (finalMsg[2].ToString())
@@ -968,9 +965,10 @@ namespace IngameScript
                 //multiple times on a tick. Use coroutines
 
                 //Check uni cast
-                Echo(blocksCached.ToString());
+                
                 if (blocksCached)
                 {
+                    Echo("Listening: " + gridHealth.ToString());
                     if (dirListener.HasPendingMessage)
                     {
                         TaskScheduler.SpawnCoroutine(new Func<int, IEnumerator<int>>(ReceiveMessage), 0);
