@@ -122,7 +122,7 @@ namespace IngameScript
         //!String-to-data and data-to-string functions hidden here:
 
         //!Convert MatrixD to string... I'm sorry, but there is no way to loop through properties
-        public static string MatrixToString(MatrixD matrix)
+        static string MatrixToString(MatrixD matrix)
         {
             string strMatrix = "M" + matrix.M11 + "|" + matrix.M12 + "|" + matrix.M13 + "|" + matrix.M14 + "|" +
                             matrix.M21 + "|" + matrix.M22 + "|" + matrix.M23 + "|" + matrix.M24 + "|" +
@@ -133,7 +133,7 @@ namespace IngameScript
         }
 
         //!Convert string to matrixD
-        public static MatrixD StringToMatrix(string strMatrix)
+        static MatrixD StringToMatrix(string strMatrix)
         {
             string temp = strMatrix.Substring(1);
 
@@ -158,7 +158,7 @@ namespace IngameScript
         }
 
         //!Converts a string back into a Vector3
-        public static Vector3D StringToVector3(string sVector)
+        static Vector3D StringToVector3(string sVector)
         {
             //Remove curly brackets
             if (sVector.StartsWith("{") && sVector.EndsWith("}"))
@@ -273,7 +273,7 @@ namespace IngameScript
 
 
         //!Converts string back into object
-        public object[] StringToObject(string packet)
+        object[] StringToObject(string packet)
         {
             //Remove start and ending brackets
             packet = packet.Substring(1, packet.Length - 2);
@@ -397,7 +397,7 @@ namespace IngameScript
 
 
         //!Debugging only, displays object arr as a string
-        static string DisplayThing(object[] array)
+        string DisplayThing(object[] array)
         {
             string output = "";
             for (int i = 0; i < array.Length; i++)
@@ -505,7 +505,7 @@ namespace IngameScript
 
 
         //!Send packet
-        public void SendMessage(bool isUni, string destination, ImmutableArray<string> contents)
+        void SendMessage(bool isUni, string destination, ImmutableArray<string> contents)
         {
             //First check if it's a uni or broadcast
             if (isUni)
@@ -531,7 +531,7 @@ namespace IngameScript
 
 
         //!Sends packets in backlog every so often
-        public void SendBackLog()
+        void SendBackLog()
         {
             //Set count to var. This is because the length of dict will change
             int packetCount = packetBacklog.Count;
@@ -554,7 +554,7 @@ namespace IngameScript
         }
 
         //!Creates EstCon packet
-        public void EstablishConnection(string estType)
+        void EstablishConnection(string estType)
         {
             //B: EstCon - [long source, long destination, "EstCon", [EstType, gridType, laserAntPos]]
             //Creates an EstCon broadcast packet. EstType tells other grids what grid types it wants. E.g. if estType is Outpost, only outposts will return data.
@@ -564,7 +564,7 @@ namespace IngameScript
 
 
         //!Broadcast to request info packets
-        public void RequestInfo(string tag)
+        void RequestInfo(string tag)
         {
             SendMessage(false, tag, CreatePacketString(pBId.ToString(), tag, "Info", new object[] { "placeholder" }));
             Echo("Broadcasting info request.");
@@ -572,7 +572,7 @@ namespace IngameScript
 
 
         //!Receive data
-        public void RecieveMessage(int listener)
+        void RecieveMessage(int listener)
         {
             Echo("recieving");
             //Define message and bool to check if its a broadcast or not. Bool may not be needed.
@@ -690,7 +690,7 @@ namespace IngameScript
 
 
         //!Initialliser, sets vars and listeners.
-        public void Init()
+        void Init()
         {
             Echo("Retrieving LaserAnt list...");
             //Get all laser antennas and convert to object array
