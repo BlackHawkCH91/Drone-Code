@@ -98,8 +98,6 @@ namespace IngameScript
         Dictionary<IMySlimBlock, BoundingBox> terminalBlocks = new Dictionary<IMySlimBlock, BoundingBox>();
         List<Vector3I> armourBlocks = new List<Vector3I>();
 
-        bool blocksCached;
-
         //Listeners and display for sending and recieving data
         List<IMyBroadcastListener> listeners = new List<IMyBroadcastListener>();
         IMyUnicastListener dirListener;
@@ -116,7 +114,6 @@ namespace IngameScript
         Vector3D angularVelocity;
         object[] laserAntPos;
         int[] ticks = new int[] { 0 };
-        bool showOnce = true;
 
 
         //?Functions ----------------------------------------------------------------------
@@ -455,15 +452,55 @@ namespace IngameScript
         //-----------------------------------------------------------------------------
 
 
-
         //!Gets block health
-        double GetMyTerminalBlockHealth(IMyTerminalBlock block)
+        double GetBlockHealth(IMySlimBlock block)
         {
-            IMySlimBlock slimblock = block.CubeGrid.GetCubeBlock(block.Position);
-            double MaxIntegrity = slimblock.MaxIntegrity;
-            double BuildIntegrity = slimblock.BuildIntegrity;
-            double CurrentDamage = slimblock.CurrentDamage;
+            double MaxIntegrity = block.MaxIntegrity;
+            double BuildIntegrity = block.BuildIntegrity;
+            double CurrentDamage = block.CurrentDamage;
             return (BuildIntegrity - CurrentDamage) / MaxIntegrity;
+        }
+
+        IEnumerator<int> GetGridHealth()
+        {
+            int counter = 0;
+
+            //Get health of terminal blocks.
+            terminalHealth = 0;
+            foreach (IMySlimBlock block in terminalBlocks.Keys)
+            {
+                counter++;
+                terminalHealth += GetBlockHealth(block);
+
+                if (counter >= 200)
+                {
+                    counter = 0;
+                    yield return ticks[0];
+                }
+            }
+
+            counter = 0;
+            armourHealth = 0;
+            //Get health of armour blocks
+            foreach (Vector3I armourBlock in armourBlocks)
+            {
+                counter++;
+                if (Me.CubeGrid.CubeExists(armourBlock))
+                {
+                    armourHealth++;
+                }
+
+                if (counter >= 200)
+                {
+                    counter = 0;
+                    yield return ticks[0];
+                }
+            }
+
+            //Return health of grid with percentage.
+            gridHealth = (armourHealth / maxArmourHealth) * 0.25f + (terminalHealth / maxTerminalHealth) * 0.75f;
+
+            yield return ticks[0];
         }
 
 
@@ -514,6 +551,23 @@ namespace IngameScript
                     packetCount--;
                 }
             }
+        }
+
+        //!Creates EstCon packet
+        public void EstablishConnection(string estType)
+        {
+            //B: EstCon - [long source, long destination, "EstCon", [EstType, gridType, laserAntPos]]
+            //Creates an EstCon broadcast packet. EstType tells other grids what grid types it wants. E.g. if estType is Outpost, only outposts will return data.
+            SendMessage(false, estType, CreatePacketString(pBId.ToString(), estType, "EstCon", new object[] { gridType, laserAntPos }));
+            Echo("Sent EstCon broadcast to grid type: " + estType);
+        }
+
+
+        //!Broadcast to request info packets
+        public void RequestInfo(string tag)
+        {
+            SendMessage(false, tag, CreatePacketString(pBId.ToString(), tag, "Info", new object[] { "placeholder" }));
+            Echo("Broadcasting info request.");
         }
 
 
@@ -617,7 +671,7 @@ namespace IngameScript
                     if (isBroadcast)
                     {
                         Echo("sending info");
-                        SendMessage(true, source, CreatePacketString(pBId.ToString(), source, "Info", new object[] { gridType, 0, gridMatrix, linearVelocity, angularVelocity, 100, "Idle", "Mine" }));
+                        SendMessage(true, source, CreatePacketString(pBId.ToString(), source, "Info", new object[] { gridType, 0, gridMatrix, linearVelocity, angularVelocity, gridHealth, "Idle", "Mine" }));
                     }
                     else
                     {
@@ -630,24 +684,6 @@ namespace IngameScript
                 default:
                     break;
             }
-        }
-
-
-        //!Creates EstCon packet
-        public void EstablishConnection(string estType)
-        {
-            //B: EstCon - [long source, long destination, "EstCon", [EstType, gridType, laserAntPos]]
-            //Creates an EstCon broadcast packet. EstType tells other grids what grid types it wants. E.g. if estType is Outpost, only outposts will return data.
-            SendMessage(false, estType, CreatePacketString(pBId.ToString(), estType, "EstCon", new object[] { gridType, laserAntPos }));
-            Echo("Sent EstCon broadcast to grid type: " + estType);
-        }
-
-
-        //!Broadcast to request info packets
-        public void RequestInfo(string tag)
-        {
-            SendMessage(false, tag, CreatePacketString(pBId.ToString(), tag, "Info", new object[] { "placeholder" }));
-            Echo("Broadcasting info request.");
         }
 
 
@@ -766,7 +802,6 @@ namespace IngameScript
             gridMin = Me.CubeGrid.Min;
             List<IMyTerminalBlock> tempBlocks = new List<IMyTerminalBlock>();
 
-            blocksCached = false;
             int counter = 0;
             //Gets bounding box from all terminal blocks.
             GridTerminalSystem.GetBlocks(tempBlocks);
@@ -775,7 +810,7 @@ namespace IngameScript
             {
                 terminalBlocks.Add(Me.CubeGrid.GetCubeBlock(block.Position), new BoundingBox(block.Min, block.Max));
 
-                if (counter >= 15)
+                if (counter >= 75)
                 {
                     counter = 0;
                     yield return ticks[0];
@@ -804,7 +839,7 @@ namespace IngameScript
                                 break;
                             }
 
-                            if (newCounter >= 20)
+                            if (newCounter >= 50)
                             {
                                 newCounter = 0;
                                 yield return ticks[0];
@@ -822,7 +857,7 @@ namespace IngameScript
                             armourBlocks.Add(point);
                         }
 
-                        if (counter >= 5)
+                        if (counter >= 60)
                         {
                             counter = 0;
                             yield return ticks[0];
@@ -835,6 +870,9 @@ namespace IngameScript
             maxTerminalHealth = terminalBlocks.Count;
             maxArmourHealth = armourBlocks.Count;
             rc = GridTerminalSystem.GetBlockWithName("rc") as IMyRemoteControl;
+
+            TaskScheduler.SpawnCoroutine(new Func<IEnumerator<int>>(GetGridHealth));
+            
             while (true)
             {
                 MyShipVelocities vel = rc.GetShipVelocities();
