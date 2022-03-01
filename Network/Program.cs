@@ -115,8 +115,7 @@ namespace IngameScript
         object[] laserAntPos;
         int[] ticks = new int[] { 0 };
 
-        bool anonCast = true;
-
+        int listenerCount = 0;
 
         //?Functions ----------------------------------------------------------------------
 
@@ -124,7 +123,7 @@ namespace IngameScript
         //!String-to-data and data-to-string functions hidden here:
 
         //!Convert MatrixD to string... I'm sorry, but there is no way to loop through properties
-        static string MatrixToString(MatrixD matrix)
+        string MatrixToString(MatrixD matrix)
         {
             string strMatrix = "M" + matrix.M11 + "|" + matrix.M12 + "|" + matrix.M13 + "|" + matrix.M14 + "|" +
                             matrix.M21 + "|" + matrix.M22 + "|" + matrix.M23 + "|" + matrix.M24 + "|" +
@@ -135,7 +134,7 @@ namespace IngameScript
         }
 
         //!Convert string to matrixD
-        static MatrixD StringToMatrix(string strMatrix)
+        MatrixD StringToMatrix(string strMatrix)
         {
             string temp = strMatrix.Substring(1);
 
@@ -160,7 +159,7 @@ namespace IngameScript
         }
 
         //!Converts a string back into a Vector3
-        static Vector3D StringToVector3(string sVector)
+        Vector3D StringToVector3(string sVector)
         {
             //Remove curly brackets
             if (sVector.StartsWith("{") && sVector.EndsWith("}"))
@@ -574,7 +573,7 @@ namespace IngameScript
 
 
         //!Receive data
-        IEnumerator<int> RecieveMessage(int listener)
+        void RecieveMessage(int listener)
         {
             Echo("recieving");
             //Define message and bool to check if its a broadcast or not. Bool may not be needed.
@@ -640,11 +639,7 @@ namespace IngameScript
                     {
                         //Send unicast back to sender.
                         Echo("Sending uni");
-                        antenna.EnableBroadcasting = true;
-                        if (anonCast) { yield return 0; }
-                        yield return 0;
                         SendMessage(true, source, CreatePacketString(pBId.ToString(), source, "EstCon", new object[] { gridType, laserAntPos }));
-                        if (anonCast) { antenna.EnableBroadcasting = false; }
                     }
                     else if (!(isBroadcast))
                     {
@@ -677,11 +672,7 @@ namespace IngameScript
                     if (isBroadcast)
                     {
                         Echo("sending info");
-                        antenna.EnableBroadcasting = true;
-                        if (anonCast) { yield return 0; }
-                        yield return 0;
                         SendMessage(true, source, CreatePacketString(pBId.ToString(), source, "Info", new object[] { gridType, 0, gridMatrix, linearVelocity, angularVelocity, gridHealth, "Idle", "Mine" }));
-                        if (anonCast) { antenna.EnableBroadcasting = false; }
                     }
                     else
                     {
@@ -694,7 +685,6 @@ namespace IngameScript
                 default:
                     break;
             }
-            yield return 0;
         }
 
 
@@ -883,7 +873,7 @@ namespace IngameScript
             rc = GridTerminalSystem.GetBlockWithName("rc") as IMyRemoteControl;
 
             TaskScheduler.SpawnCoroutine(new Func<IEnumerator<int>>(GetGridHealth));
-            
+
             while (true)
             {
                 MyShipVelocities vel = rc.GetShipVelocities();
@@ -923,11 +913,7 @@ namespace IngameScript
                         }
                     }
 
-                    antenna.EnableBroadcasting = true;
-                    if (anonCast) { yield return 0; }
-                    yield return 0;
                     RequestInfo("All");
-                    if (anonCast) { antenna.EnableBroadcasting = false; }
 
                     //LCD[2].WriteText(displayString);
 
@@ -951,11 +937,7 @@ namespace IngameScript
                 if (gridType == "Satellite")
                 {
                     Echo("Sending EstCon...");
-                    antenna.EnableBroadcasting = true;
-                    if (anonCast) { yield return 0; }
-                    yield return 0;
                     EstablishConnection("All");
-                    if (anonCast) { antenna.EnableBroadcasting = false; }
                 }
 
                 //Handling messages here. Seems messy and inefficient
@@ -967,8 +949,7 @@ namespace IngameScript
                 //Check uni cast
                 if (dirListener.HasPendingMessage)
                 {
-                    //RecieveMessage(0);
-                    TaskScheduler.SpawnCoroutine(new Func<int, IEnumerator<int>>(RecieveMessage), 0);
+                    RecieveMessage(0);
                 }
 
                 //Chec all broadcast listeners
@@ -979,8 +960,7 @@ namespace IngameScript
                     if (listeners[i - 1].HasPendingMessage)
                     {
                         displayListener += " true";
-                        //RecieveMessage(i);
-                        TaskScheduler.SpawnCoroutine(new Func<int, IEnumerator<int>>(RecieveMessage), i);
+                        RecieveMessage(i);
                     }
                 }
 
