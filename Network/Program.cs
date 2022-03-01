@@ -575,6 +575,7 @@ namespace IngameScript
         //!Receive data
         void RecieveMessage(int listener)
         {
+            listenerCount++;
             Echo("recieving");
             //Define message and bool to check if its a broadcast or not. Bool may not be needed.
             bool isBroadcast = false;
@@ -685,6 +686,7 @@ namespace IngameScript
                 default:
                     break;
             }
+            listenerCount--;
         }
 
 
@@ -873,6 +875,7 @@ namespace IngameScript
             rc = GridTerminalSystem.GetBlockWithName("rc") as IMyRemoteControl;
 
             TaskScheduler.SpawnCoroutine(new Func<IEnumerator<int>>(GetGridHealth));
+            DateTime testTime = DateTime.Now;
 
             while (true)
             {
@@ -913,7 +916,13 @@ namespace IngameScript
                         }
                     }
 
-                    RequestInfo("All");
+                    if (DateTime.Now >= testTime.AddSeconds(5))
+                    {
+                        testTime = DateTime.Now;
+                        antenna.EnableBroadcasting = true;
+                        yield return 0;
+                        RequestInfo("All");
+                    }
 
                     //LCD[2].WriteText(displayString);
 
@@ -937,7 +946,7 @@ namespace IngameScript
                 if (gridType == "Satellite")
                 {
                     Echo("Sending EstCon...");
-                    EstablishConnection("All");
+                    //EstablishConnection("All");
                 }
 
                 //Handling messages here. Seems messy and inefficient
@@ -949,6 +958,8 @@ namespace IngameScript
                 //Check uni cast
                 if (dirListener.HasPendingMessage)
                 {
+                    antenna.EnableBroadcasting = true;
+                    yield return 0;
                     RecieveMessage(0);
                 }
 
@@ -959,11 +970,14 @@ namespace IngameScript
                     displayListener += "Broad" + i + "\n";
                     if (listeners[i - 1].HasPendingMessage)
                     {
+                        antenna.EnableBroadcasting = true;
+                        yield return 0;
                         displayListener += " true";
                         RecieveMessage(i);
                     }
                 }
 
+                antenna.EnableBroadcasting = false;
                 yield return 0;
             }
         }
