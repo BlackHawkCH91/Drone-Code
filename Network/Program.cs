@@ -762,6 +762,78 @@ namespace IngameScript
 
         public IEnumerator<int> IEnumMain()
         {
+            gridMax = Me.CubeGrid.Max;
+            gridMin = Me.CubeGrid.Min;
+            List<IMyTerminalBlock> tempBlocks = new List<IMyTerminalBlock>();
+
+            blocksCached = false;
+            int counter = 0;
+            //Gets bounding box from all terminal blocks.
+            GridTerminalSystem.GetBlocks(tempBlocks);
+
+            foreach (IMyTerminalBlock block in tempBlocks)
+            {
+                terminalBlocks.Add(Me.CubeGrid.GetCubeBlock(block.Position), new BoundingBox(block.Min, block.Max));
+
+                if (counter >= 15)
+                {
+                    counter = 0;
+                    yield return ticks[0];
+                }
+            }
+
+            //Loop through all points on grid
+            counter = 0;
+            for (int x = gridMin.X - 1; x <= gridMax.X + 1; x++)
+            {
+                for (int y = gridMin.Y - 1; y <= gridMax.Y + 1; y++)
+                {
+                    for (int z = gridMin.Z - 1; z <= gridMax.Z + 1; z++)
+                    {
+                        //Check if point is in any of the terminal blocks
+                        bool nextPoint = false;
+                        Vector3I point = new Vector3I(x, y, z);
+
+                        int newCounter = 0;
+                        foreach (BoundingBox boundingBox in terminalBlocks.Values)
+                        {
+                            newCounter++;
+                            if (ContainmentType.Contains == boundingBox.Contains(new Vector3D(point)))
+                            {
+                                nextPoint = true;
+                                break;
+                            }
+
+                            if (newCounter >= 20)
+                            {
+                                newCounter = 0;
+                                yield return ticks[0];
+                            }
+                        }
+
+                        if (nextPoint)
+                        {
+                            continue;
+                        }
+
+                        //If there is an armour block, add it to list.
+                        if (Me.CubeGrid.CubeExists(point))
+                        {
+                            armourBlocks.Add(point);
+                        }
+
+                        if (counter >= 5)
+                        {
+                            counter = 0;
+                            yield return ticks[0];
+                        }
+                    }
+                }
+            }
+
+            //This needs to change when I finally use the storage var
+            maxTerminalHealth = terminalBlocks.Count;
+            maxArmourHealth = armourBlocks.Count;
             rc = GridTerminalSystem.GetBlockWithName("rc") as IMyRemoteControl;
             while (true)
             {
@@ -832,6 +904,8 @@ namespace IngameScript
                 //Handling messages here. Seems messy and inefficient
                 //Checking all listeners on a single frame. If they all have messages, string-to-data will be running
                 //multiple times on a tick. Use coroutines
+
+                Echo($"{terminalBlocks.Count} | {armourBlocks.Count}");
 
                 //Check uni cast
                 if (dirListener.HasPendingMessage)
