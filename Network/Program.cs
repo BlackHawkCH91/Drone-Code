@@ -115,7 +115,7 @@ namespace IngameScript
         object[] laserAntPos;
         int[] ticks = new int[] { 0 };
 
-        int listenerCount = 0;
+        bool anonCast = false;
 
         //?Functions ----------------------------------------------------------------------
 
@@ -575,7 +575,6 @@ namespace IngameScript
         //!Receive data
         void RecieveMessage(int listener)
         {
-            listenerCount++;
             Echo("recieving");
             //Define message and bool to check if its a broadcast or not. Bool may not be needed.
             bool isBroadcast = false;
@@ -686,7 +685,6 @@ namespace IngameScript
                 default:
                     break;
             }
-            listenerCount--;
         }
 
 
@@ -976,8 +974,8 @@ namespace IngameScript
                         RecieveMessage(i);
                     }
                 }
-
-                antenna.EnableBroadcasting = false;
+                if (anonCast) { antenna.EnableBroadcasting = false; }
+                
                 yield return 0;
             }
         }
