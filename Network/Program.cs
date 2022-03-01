@@ -82,12 +82,7 @@ namespace IngameScript
         //[gridType, groupId, worldMatrix, movementVector, health, status, command, lastUpdate]
         Dictionary<long, drone> droneTable = new Dictionary<long, drone>();
 
-        //!Health stuff
-        Vector3I gridMin;
-        Vector3I gridMax;
-
-        bool setup = false;
-
+        //Max health data will be stored in the Storage variable. The list count is useless if the drone is damaged and the server restarts.
         double terminalHealth;
         double armourHealth;
         double maxTerminalHealth;
@@ -115,7 +110,7 @@ namespace IngameScript
         object[] laserAntPos;
         int[] ticks = new int[] { 0 };
 
-        bool anonCast = false;
+        bool anonCast = true;
 
         //?Functions ----------------------------------------------------------------------
 
@@ -737,7 +732,6 @@ namespace IngameScript
 
             pBId = mainProgBlock.EntityId;
 
-            setup = true;
             Echo("Active");
         }
 
@@ -765,31 +759,6 @@ namespace IngameScript
                 //ipList[Me.EntityId] = new object[] { gridType, laserAntPos };
             }
 
-            //Initialise once
-            if (!setup)
-            {
-                Init();
-
-                //String-to-data and data-to-string testing. Only use when adding new data types
-                //
-                /*object[] testObject = new object[] { mainProgBlock.WorldMatrix, mainProgBlock.GetPosition(), "Hello", 123, 123.456, true, false, new object[] { "more", true, false } };
-                string testString = ObjectToString(testObject);
-
-                object[] testObject2 = StringToObject(testString);
-                string testString2 = DisplayThing(testObject2);
-
-                LCD[3].WriteText(MatrixToString(mainProgBlock.WorldMatrix));
-                LCD[3].WriteText(testString + "\n" + testString2);*/
-
-
-                setup = true;
-                //Remove this and set update frequency in program
-                //Runtime.UpdateFrequency = UpdateFrequency.Update1;
-            }
-
-            object[] test = new object[] { "hello", 123 };
-
-
             TaskScheduler.StepCoroutines(updateSource, argument);
 
         }
@@ -799,8 +768,9 @@ namespace IngameScript
 
         public IEnumerator<int> IEnumMain()
         {
-            gridMax = Me.CubeGrid.Max;
-            gridMin = Me.CubeGrid.Min;
+            //!Grid block caching
+            Vector3I gridMax = Me.CubeGrid.Max;
+            Vector3I gridMin = Me.CubeGrid.Min;
             List<IMyTerminalBlock> tempBlocks = new List<IMyTerminalBlock>();
 
             int counter = 0;
@@ -875,6 +845,9 @@ namespace IngameScript
             TaskScheduler.SpawnCoroutine(new Func<IEnumerator<int>>(GetGridHealth));
             DateTime testTime = DateTime.Now;
 
+            TimeInterval infoInterval = new TimeInterval();
+
+            Init();
             while (true)
             {
                 MyShipVelocities vel = rc.GetShipVelocities();
@@ -914,7 +887,7 @@ namespace IngameScript
                         }
                     }
 
-                    if (DateTime.Now >= testTime.AddSeconds(5))
+                    if (infoInterval.waitInterval(new TimeSpan(0, 0, 5)))
                     {
                         testTime = DateTime.Now;
                         antenna.EnableBroadcasting = true;
@@ -961,7 +934,7 @@ namespace IngameScript
                     RecieveMessage(0);
                 }
 
-                //Chec all broadcast listeners
+                //Check all broadcast listeners
                 string displayListener = "";
                 for (int i = 1; i <= listeners.Count; i++)
                 {
@@ -992,10 +965,7 @@ namespace IngameScript
  
 TODO:
 
- - Create an "Info" packet where grids can request info from other grids and those grids will respond with information about them.
  - Create debug screen which shows status of connections between satellites/relays
- - Use corountines when checking listeners. Calling ObjectToString multiple times can be costly.
- - Find a way to create "anonymous" broadcasts (use laser antenna to broadcast briefly so that the ping barely shows up)
  - Create a universal function that can encode and decode all date into/from a string. This will be stored on the "Storage" variable.
 
 
@@ -1025,8 +995,6 @@ TODO:
 
 Testing:
 
- - Switch EstCon around. Make outpost send EstCon broadcast and see if response from satellite is being sent properly or is being sent to
-   backlog
  - Test if backlog is working. Can be tested by making broadcaster range larger than reciever range.
 
 
