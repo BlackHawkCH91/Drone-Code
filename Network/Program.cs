@@ -810,7 +810,7 @@ namespace IngameScript
                                 break;
                             }
 
-                            if (newCounter >= 50)
+                            if (newCounter >= 20)
                             {
                                 newCounter = 0;
                                 yield return ticks[0];
@@ -843,9 +843,9 @@ namespace IngameScript
             rc = GridTerminalSystem.GetBlockWithName("rc") as IMyRemoteControl;
 
             TaskScheduler.SpawnCoroutine(new Func<IEnumerator<int>>(GetGridHealth));
-            DateTime testTime = DateTime.Now;
 
             TimeInterval infoInterval = new TimeInterval();
+            TimeInterval estInterval = new TimeInterval();
 
             Init();
             while (true)
@@ -889,7 +889,6 @@ namespace IngameScript
 
                     if (infoInterval.waitInterval(new TimeSpan(0, 0, 5)))
                     {
-                        testTime = DateTime.Now;
                         antenna.EnableBroadcasting = true;
                         yield return 0;
                         RequestInfo("All");
@@ -914,7 +913,7 @@ namespace IngameScript
 
                 //Test packet
 
-                if (gridType == "Satellite")
+                if (gridType == "Satellite" && estInterval.waitInterval(new TimeSpan(0, 0, 15)))
                 {
                     Echo("Sending EstCon...");
                     //EstablishConnection("All");
