@@ -99,7 +99,7 @@ namespace IngameScript
         IMyRadioAntenna antenna;
         IMyTerminalBlock mainProgBlock;
         IMyRemoteControl rc;
-        public List<IMyTextPanel> LCD = new List<IMyTextPanel>();
+        List<IMyTextPanel> LCD = new List<IMyTextPanel>();
 
         //!Information used to create a packet that will be sent back to the main base.
         long pBId;
@@ -111,6 +111,9 @@ namespace IngameScript
         int[] ticks = new int[] { 0 };
 
         bool anonCast = true;
+
+        //!3D printing stuff
+        IMyProjector miningProj;
 
         //?Functions ----------------------------------------------------------------------
 
@@ -694,7 +697,6 @@ namespace IngameScript
             GridTerminalSystem.GetBlocksOfType<IMyLaserAntenna>(laserAnts);
 
             //Just keeps getting errors atm
-            //laserAntPos = laserAnts.Select(x => x.GetPosition()).ToArray();
             laserAntPos = new object[laserAnts.Count];
 
             for (int i = 0; i < laserAnts.Count; i++)
@@ -779,12 +781,24 @@ namespace IngameScript
 
             foreach (IMyTerminalBlock block in tempBlocks)
             {
-                terminalBlocks.Add(Me.CubeGrid.GetCubeBlock(block.Position), new BoundingBox(block.Min, block.Max));
-
-                if (counter >= 75)
+                if (Me.CubeGrid.IsSameConstructAs(block.CubeGrid))
                 {
-                    counter = 0;
-                    yield return ticks[0];
+                    counter++;
+
+                    try
+                    {
+                        terminalBlocks.Add(Me.CubeGrid.GetCubeBlock(block.Position), new BoundingBox(block.Min, block.Max));
+                    } catch
+                    {
+
+                    }
+                
+
+                    if (counter >= 75)
+                    {
+                        counter = 0;
+                        yield return ticks[0];
+                    }
                 }
             }
 
@@ -800,7 +814,12 @@ namespace IngameScript
                         bool nextPoint = false;
                         Vector3I point = new Vector3I(x, y, z);
 
-                        int newCounter = 0;
+                        if (!Me.CubeGrid.CubeExists(point))
+                        {
+                            continue;
+                        }
+
+                            int newCounter = 0;
                         foreach (BoundingBox boundingBox in terminalBlocks.Values)
                         {
                             newCounter++;
@@ -823,10 +842,8 @@ namespace IngameScript
                         }
 
                         //If there is an armour block, add it to list.
-                        if (Me.CubeGrid.CubeExists(point))
-                        {
-                            armourBlocks.Add(point);
-                        }
+                        
+                        armourBlocks.Add(point);
 
                         if (counter >= 60)
                         {
@@ -847,9 +864,18 @@ namespace IngameScript
             TimeInterval infoInterval = new TimeInterval();
             TimeInterval estInterval = new TimeInterval();
 
+            string testThing = "";
+
+            if (gridType == "Outpost")
+            {
+                miningProj = GridTerminalSystem.GetBlockWithName("MiningProjector") as IMyProjector;
+                testThing = miningProj.RemainingBlocksPerType.ElementAt(0).Key.ToString();
+            }
+
             Init();
             while (true)
             {
+                Echo(testThing);
                 MyShipVelocities vel = rc.GetShipVelocities();
                 linearVelocity = vel.LinearVelocity;
                 angularVelocity = vel.AngularVelocity;
