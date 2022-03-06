@@ -72,12 +72,17 @@ namespace IngameScript
     partial class Program : MyGridProgram
     {
         //!VARS
-
+        //Network Stuff
         Dictionary<long, ImmutableArray<string>> packetBacklog = new Dictionary<long, ImmutableArray<string>>();
         Dictionary<long, object[]> ipList = new Dictionary<long, object[]>();
         List<object[]> updatedIpList = new List<object[]>();
         List<string> tagList = new List<string>();
         Dictionary<string, List<int>> bracketPos = new Dictionary<string, List<int>>();
+
+        //Components and cubeblocks
+        static Dictionary<string, MyTuple<string, Dictionary<string, double>>> blueprints = new Dictionary<string, MyTuple<string, Dictionary<string, double>>>();
+        static Dictionary<string, Dictionary<string, double>> cubeBlocks = new Dictionary<string, Dictionary<string, double>>();
+
 
         //[gridType, groupId, worldMatrix, movementVector, health, status, command, lastUpdate]
         Dictionary<long, drone> droneTable = new Dictionary<long, drone>();
@@ -450,6 +455,56 @@ namespace IngameScript
 
         //-----------------------------------------------------------------------------
 
+        //! Block information stuff:
+
+        void ReadCompFile(string fileContent)
+        {
+            string[] blueprintContents = fileContent.Split('\n');
+
+            foreach (string blueprint in blueprintContents)
+            {
+                if (String.IsNullOrEmpty(blueprint))
+                {
+                    continue;
+                }
+                string[] items = blueprint.Split(',');
+
+                Dictionary<string, double> temp = new Dictionary<string, double>();
+
+                for (int i = 2; i < items.Length - 1; i += 2)
+                {
+                    temp.Add(items[i], double.Parse(items[i + 1]));
+                }
+
+                blueprints.Add(items[0], MyTuple.Create(items[1], temp));
+            }
+        }
+
+        //Gets dictionary of all cube blocks
+        void ReadCubeFile(string fileContent)
+        {
+            string[] blueprintContents = fileContent.Split('\n');
+
+            foreach (string blueprint in blueprintContents)
+            {
+                if (String.IsNullOrEmpty(blueprint))
+                {
+                    continue;
+                }
+                string[] items = blueprint.Split(',');
+
+                Dictionary<string, double> temp = new Dictionary<string, double>();
+
+                for (int i = 1; i < items.Length - 1; i += 2)
+                {
+                    temp.Add(items[i], double.Parse(items[i + 1]));
+                }
+
+                cubeBlocks.Add(items[0], temp);
+            }
+        }
+
+
 
         //!Gets block health
         double GetBlockHealth(IMySlimBlock block)
@@ -734,6 +789,11 @@ namespace IngameScript
 
             pBId = mainProgBlock.EntityId;
 
+            //!Components and cube blocks
+            string[] customData = Me.CustomData.Split('|');
+            ReadCompFile(customData[0]);
+            ReadCubeFile(customData[1]);
+
             Echo("Active");
         }
 
@@ -875,7 +935,8 @@ namespace IngameScript
             Init();
             while (true)
             {
-                Echo(testThing);
+                Echo(cubeBlocks.ElementAt(0).Key);
+
                 MyShipVelocities vel = rc.GetShipVelocities();
                 linearVelocity = vel.LinearVelocity;
                 angularVelocity = vel.AngularVelocity;

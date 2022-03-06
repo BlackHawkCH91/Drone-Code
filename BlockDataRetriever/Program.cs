@@ -13,6 +13,9 @@ namespace BlockDataRetriever
         static Dictionary<string, Tuple<string, Dictionary<string, double>>> blueprintCrafting = new Dictionary<string, Tuple<string, Dictionary<string, double>>>();
         static Dictionary<string, Dictionary<string, double>> cubeBlocks = new Dictionary<string, Dictionary<string, double>>();
 
+        static Dictionary<string, Dictionary<string, double>> stringToCube = new Dictionary<string, Dictionary<string, double>>();
+        static Dictionary<string, Tuple<string, Dictionary<string, double>>> stringToBlue = new Dictionary<string, Tuple<string, Dictionary<string, double>>>();
+
         public static void GetComponentNames()
         {
             //Filepath and init
@@ -153,6 +156,56 @@ namespace BlockDataRetriever
             }
         }
 
+        //Gets dictionary of components
+        public static void ReadCompFile()
+        {
+            string fileContent = File.ReadAllText(@"D:\SE-PlanetMapping\Earthlike\components.txt");
+            string[] blueprintContents = fileContent.Split("\n");
+
+            foreach (string blueprint in blueprintContents)
+            {
+                if (String.IsNullOrEmpty(blueprint))
+                {
+                    continue;
+                }
+                string[] items = blueprint.Split(",");
+
+                Dictionary<string, double> temp = new Dictionary<string, double>();
+
+                for (int i = 2; i < items.Length - 1; i += 2)
+                {
+                    temp.Add(items[i], double.Parse(items[i + 1]));
+                }
+
+                stringToBlue.Add(items[0], Tuple.Create(items[1], temp));
+            }
+        }
+
+        //Gets dictionary of all cube blocks
+        public static void ReadCubeFile()
+        {
+            string fileContent = File.ReadAllText(@"D:\SE-PlanetMapping\Earthlike\cubeblocks.txt");
+            string[] blueprintContents = fileContent.Split("\n");
+
+            foreach (string blueprint in blueprintContents)
+            {
+                if (String.IsNullOrEmpty(blueprint))
+                {
+                    continue;
+                }
+                string[] items = blueprint.Split(",");
+
+                Dictionary<string, double> temp = new Dictionary<string, double>();
+
+                for (int i = 1; i < items.Length - 1; i += 2)
+                {
+                    temp.Add(items[i], double.Parse(items[i + 1]));
+                }
+
+                stringToCube.Add(items[0], temp);
+            }
+        }
+
         static void Main(string[] args)
         {
             //"D:\SE-PlanetMapping\Earthlike"
@@ -163,10 +216,10 @@ namespace BlockDataRetriever
             {
                 foreach (KeyValuePair<string, Tuple<string, Dictionary<string, double>>> component in blueprintCrafting)
                 {
-                    string writeLine = component.Key + " " + component.Value.Item1 + " ";
+                    string writeLine = component.Key + "," + component.Value.Item1 + ",";
                     foreach (KeyValuePair<string, double> amount in component.Value.Item2)
                     {
-                        writeLine += $"{amount.Key} {amount.Value} ";
+                        writeLine += $"{amount.Key},{amount.Value},";
                     }
                     sw.WriteLine(writeLine);
                 }
@@ -178,14 +231,27 @@ namespace BlockDataRetriever
             {
                 foreach (KeyValuePair<string, Dictionary<string, double>> cubeBlock in cubeBlocks)
                 {
-                    string writeLine = cubeBlock.Key + " ";
+                    string writeLine = cubeBlock.Key + ",";
                     foreach (KeyValuePair<string, double> amount in cubeBlock.Value)
                     {
-                        writeLine += $"{amount.Key} {amount.Value} ";
+                        writeLine += $"{amount.Key},{amount.Value},";
                     }
                     sw.WriteLine(writeLine);
                 }
             }
+
+            using (StreamWriter sw = File.CreateText(@"D:\SE-PlanetMapping\Earthlike\combined.txt"))
+            {
+                string componentFile = File.ReadAllText(@"D:\SE-PlanetMapping\Earthlike\components.txt");
+                string cubeFile = File.ReadAllText(@"D:\SE-PlanetMapping\Earthlike\cubeblocks.txt");
+
+                sw.Write(componentFile + "|" + cubeFile);
+            }
+
+            ReadCompFile();
+            ReadCubeFile();
+            
+
 
             Console.WriteLine("Done");
         }
