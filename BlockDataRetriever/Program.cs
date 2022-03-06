@@ -11,6 +11,7 @@ namespace BlockDataRetriever
     {
         static List<string> componentNames = new List<string>();
         static Dictionary<string, Dictionary<string, double>> blueprintCrafting = new Dictionary<string, Dictionary<string, double>>();
+        static Dictionary<string, Dictionary<string, double>> cubeBlocks = new Dictionary<string, Dictionary<string, double>>();
 
         public static void GetComponentNames()
         {
@@ -75,6 +76,64 @@ namespace BlockDataRetriever
             }
         }
 
+        public static void GetBlockComponents()
+        {
+            string[] cubeBlockPaths = Directory.GetFiles(@"D:\Steam\steamapps\common\SpaceEngineers\Content\Data\CubeBlocks\");
+            bool skipFirst = true;
+            foreach (string path in cubeBlockPaths)
+            {
+                if (skipFirst)
+                {
+                    skipFirst = false;
+                    continue;
+                }
+
+                XmlDocument cbReader = new XmlDocument();
+                cbReader.Load(path);
+
+                //Get blueprints
+                XmlNode root = cbReader.DocumentElement;
+                XmlNodeList XCubeBlocks = root.SelectNodes("descendant::Definition");
+
+                foreach (XmlNode cubeBlock in XCubeBlocks)
+                {
+                    Dictionary<string, double> componentDict = new Dictionary<string, double>();
+
+                    string cubeBlockName = cubeBlock.SelectNodes("descendant::SubtypeId")[0].InnerText;
+
+                    if (String.IsNullOrEmpty(cubeBlockName))
+                    {
+                        continue;
+                    }
+
+                    XmlNode componentsList = cubeBlock.SelectNodes("descendant::Components")[0];
+                    XmlNodeList components = componentsList.SelectNodes("descendant::Component");
+
+                    foreach (XmlNode component in components)
+                    {
+                        string componentName = component.Attributes.GetNamedItem("Subtype").InnerText;
+                        double itemAmount = double.Parse(component.Attributes.GetNamedItem("Count").InnerText);
+
+                        if (componentDict.ContainsKey(componentName))
+                        {
+                            componentDict[componentName] += itemAmount;
+                            continue;
+                        }
+                        componentDict[componentName] = itemAmount;
+                    }
+
+                    try
+                    {
+                        cubeBlocks.Add(cubeBlockName, componentDict);
+                    }
+                    catch (ArgumentException)
+                    {
+                        Console.WriteLine("Duplicate: " + cubeBlockName);
+                    }
+                }
+            }
+        }
+
         static void Main(string[] args)
         {
             //"D:\SE-PlanetMapping\Earthlike"
@@ -94,7 +153,20 @@ namespace BlockDataRetriever
                 }
             }
 
+            GetBlockComponents();
 
+            using (StreamWriter sw = File.CreateText(@"D:\SE-PlanetMapping\Earthlike\cubeblocks.txt"))
+            {
+                foreach (KeyValuePair<string, Dictionary<string, double>> cubeBlock in cubeBlocks)
+                {
+                    string writeLine = cubeBlock.Key + " ";
+                    foreach (KeyValuePair<string, double> amount in cubeBlock.Value)
+                    {
+                        writeLine += $"{amount.Key} {amount.Value} ";
+                    }
+                    sw.WriteLine(writeLine);
+                }
+            }
 
             Console.WriteLine("Done");
         }
