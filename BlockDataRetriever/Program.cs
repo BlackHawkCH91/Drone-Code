@@ -80,6 +80,7 @@ namespace BlockDataRetriever
         {
             string[] cubeBlockPaths = Directory.GetFiles(@"D:\Steam\steamapps\common\SpaceEngineers\Content\Data\CubeBlocks\");
             bool skipFirst = true;
+            XNamespace xsi = "http://www.w3.org/2001/XMLSchema-instance";
             foreach (string path in cubeBlockPaths)
             {
                 if (skipFirst)
@@ -88,7 +89,12 @@ namespace BlockDataRetriever
                     continue;
                 }
 
+                string xmlContent = File.ReadAllText(path);
+                //xmlContent.Replace("xsi:type", "type");
+                //Console.WriteLine(xmlContent);
+
                 XmlDocument cbReader = new XmlDocument();
+                //cbReader.LoadXml(xmlContent);
                 cbReader.Load(path);
 
                 //Get blueprints
@@ -99,7 +105,19 @@ namespace BlockDataRetriever
                 {
                     Dictionary<string, double> componentDict = new Dictionary<string, double>();
 
-                    string cubeBlockName = cubeBlock.SelectNodes("descendant::SubtypeId")[0].InnerText;
+                    string cubeBlockName;
+
+                    if (cubeBlock.Attributes.Count == 0)
+                    {
+                        cubeBlockName = "MyObjectBuilder_CubeBlock/" + cubeBlock.SelectNodes("descendant::SubtypeId")[0].InnerText;
+                    } else
+                    {
+                        //Console.WriteLine(xmlContent);
+                        string definitionAttribute = cubeBlock.Attributes[0].InnerText;
+                        definitionAttribute = definitionAttribute.Replace("Definition", "");
+                        cubeBlockName = definitionAttribute + "/" + cubeBlock.SelectNodes("descendant::SubtypeId")[0].InnerText;
+                    }
+
 
                     if (String.IsNullOrEmpty(cubeBlockName))
                     {
