@@ -10,7 +10,7 @@ namespace BlockDataRetriever
     class Program
     {
         static List<string> componentNames = new List<string>();
-        static Dictionary<string, Dictionary<string, double>> blueprintCrafting = new Dictionary<string, Dictionary<string, double>>();
+        static Dictionary<string, Tuple<string, Dictionary<string, double>>> blueprintCrafting = new Dictionary<string, Tuple<string, Dictionary<string, double>>>();
         static Dictionary<string, Dictionary<string, double>> cubeBlocks = new Dictionary<string, Dictionary<string, double>>();
 
         public static void GetComponentNames()
@@ -45,6 +45,7 @@ namespace BlockDataRetriever
             {
                 Dictionary<string, double> components = new Dictionary<string, double>();
                 string blueprintName = blueprint.SelectNodes("descendant::Id")[0].SelectNodes("descendant::SubtypeId")[0].InnerText;
+                string originalName = "MyObjectBuilder_BlueprintDefinition/" + blueprint.SelectNodes("descendant::Id")[0].SelectNodes("descendant::SubtypeId")[0].InnerText;
 
                 foreach (string name in componentNames)
                 {
@@ -72,7 +73,7 @@ namespace BlockDataRetriever
                     components[itemName] = itemAmount;
                 }
 
-                blueprintCrafting.Add(blueprintName, components);
+                blueprintCrafting.Add(blueprintName, Tuple.Create(originalName, components));
             }
         }
 
@@ -160,10 +161,10 @@ namespace BlockDataRetriever
 
             using (StreamWriter sw = File.CreateText(@"D:\SE-PlanetMapping\Earthlike\components.txt"))
             {
-                foreach (KeyValuePair<string, Dictionary<string, double>> component in blueprintCrafting)
+                foreach (KeyValuePair<string, Tuple<string, Dictionary<string, double>>> component in blueprintCrafting)
                 {
-                    string writeLine = component.Key + " ";
-                    foreach (KeyValuePair<string, double> amount in component.Value)
+                    string writeLine = component.Key + " " + component.Value.Item1 + " ";
+                    foreach (KeyValuePair<string, double> amount in component.Value.Item2)
                     {
                         writeLine += $"{amount.Key} {amount.Value} ";
                     }
