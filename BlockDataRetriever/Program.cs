@@ -16,6 +16,8 @@ namespace BlockDataRetriever
         static Dictionary<string, Dictionary<string, double>> stringToCube = new Dictionary<string, Dictionary<string, double>>();
         static Dictionary<string, Tuple<string, Dictionary<string, double>>> stringToBlue = new Dictionary<string, Tuple<string, Dictionary<string, double>>>();
 
+        static Dictionary<string, string> replaceList = new Dictionary<string, string>();
+
         public static void GetComponentNames()
         {
             //Filepath and init
@@ -85,6 +87,7 @@ namespace BlockDataRetriever
             string[] cubeBlockPaths = Directory.GetFiles(@"D:\Steam\steamapps\common\SpaceEngineers\Content\Data\CubeBlocks\");
             bool skipFirst = true;
             XNamespace xsi = "http://www.w3.org/2001/XMLSchema-instance";
+            int counter = 0;
             foreach (string path in cubeBlockPaths)
             {
                 if (skipFirst)
@@ -142,6 +145,13 @@ namespace BlockDataRetriever
                             continue;
                         }
                         componentDict[componentName] = itemAmount;
+                    }
+
+                    counter++;
+
+                    foreach (KeyValuePair<string, string> replace in replaceList)
+                    {
+                        cubeBlockName = cubeBlockName.Replace(replace.Key, replace.Value);
                     }
 
                     try
@@ -208,6 +218,10 @@ namespace BlockDataRetriever
 
         static void Main(string[] args)
         {
+            replaceList.Add("_ProgrammableBlock", "_MyProgrammableBlock");
+            replaceList.Add("_ReflectorBlock", "_ReflectorLight");
+            replaceList.Add("_PoweredCargoContainer", "_Collector");
+            replaceList.Add("_ShipDrill", "_Drill");
             //"D:\SE-PlanetMapping\Earthlike"
             GetComponentNames();
             GetBlueprints();

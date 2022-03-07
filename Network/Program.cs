@@ -80,8 +80,9 @@ namespace IngameScript
         Dictionary<string, List<int>> bracketPos = new Dictionary<string, List<int>>();
 
         //Components and cubeblocks
-        static Dictionary<string, MyTuple<string, Dictionary<string, double>>> blueprints = new Dictionary<string, MyTuple<string, Dictionary<string, double>>>();
-        static Dictionary<string, Dictionary<string, double>> cubeBlocks = new Dictionary<string, Dictionary<string, double>>();
+        Dictionary<string, MyTuple<MyDefinitionId, Dictionary<string, double>>> blueprints = new Dictionary<string, MyTuple<MyDefinitionId, Dictionary<string, double>>>();
+        Dictionary<MyDefinitionId, Dictionary<string, double>> cubeBlocks = new Dictionary<MyDefinitionId, Dictionary<string, double>>();
+        List<string> errorList = new List<string>();
 
 
         //[gridType, groupId, worldMatrix, movementVector, health, status, command, lastUpdate]
@@ -476,7 +477,14 @@ namespace IngameScript
                     temp.Add(items[i], double.Parse(items[i + 1]));
                 }
 
-                blueprints.Add(items[0], MyTuple.Create(items[1], temp));
+                try
+                {
+                    blueprints.Add(items[0], MyTuple.Create(MyDefinitionId.Parse(items[1]), temp));
+                }
+                catch
+                {
+                    errorList.Add(items[1]);
+                }
             }
         }
 
@@ -500,7 +508,14 @@ namespace IngameScript
                     temp.Add(items[i], double.Parse(items[i + 1]));
                 }
 
-                cubeBlocks.Add(items[0], temp);
+                try
+                {
+                    cubeBlocks.Add(MyDefinitionId.Parse(items[0]), temp);
+                }
+                catch
+                {
+                    errorList.Add(items[0]);
+                }
             }
         }
 
@@ -935,7 +950,10 @@ namespace IngameScript
             Init();
             while (true)
             {
-                Echo(cubeBlocks.ElementAt(0).Key);
+                foreach (string error in errorList)
+                {
+                    Echo(error);
+                }
 
                 MyShipVelocities vel = rc.GetShipVelocities();
                 linearVelocity = vel.LinearVelocity;
