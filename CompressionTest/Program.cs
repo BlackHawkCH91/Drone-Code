@@ -3,6 +3,7 @@ using System.IO;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
+using System.Text.RegularExpressions;
 
 namespace CompressionTest
 {
@@ -101,12 +102,46 @@ namespace CompressionTest
                     } else
                     {
                         repeatSection = String.Concat(Enumerable.Repeat(result[i].ToString(), compressCount));
+                        compressCount = 1;
                         final.Append(repeatSection);
                     }
 
                     //final.Append(repeatSection);
                 }
                 sw.Write(final.ToString());
+            }
+        }
+
+        static void uncompressFile2()
+        {
+            string[] contents = File.ReadAllText(@"D:\SE-PlanetMapping\compressTest.txt").Split('?');
+            string final = "";
+
+            using (StreamWriter sw = File.CreateText(@"D:\SE-PlanetMapping\uncompressTest.txt"))
+            {
+                foreach (string items in contents)
+                {
+                    if (String.IsNullOrEmpty(items))
+                    {
+                        continue;
+                    }
+
+                    string[] item = items.Split('|');
+
+                    final += String.Concat(Enumerable.Repeat(item[1].ToString(), int.Parse(item[0])));
+
+                    if (item.Length > 1)
+                    {
+                        for (int i = 2; i < item.Length; i++)
+                        {
+                            final += item[i];
+                        }
+                    }
+                }
+
+                final = Regex.Replace(final, ".{30}", "$0\n");
+
+                sw.Write(final);
             }
         }
 
@@ -146,6 +181,15 @@ namespace CompressionTest
             compressFile();
             compressFile2();
             uncompressFile();
+            uncompressFile2();
+
+            using (StreamWriter sw = File.CreateText(@"D:\SE-PlanetMapping\comparison.txt"))
+            {
+                string thing = File.ReadAllText(@"D:\SE-PlanetMapping\result2.txt");
+                thing = Regex.Replace(thing, ".{30}", "$0\n");
+
+                sw.Write(thing);
+            }
 
             //string result2 = File.ReadAllText(@"D:\SE-PlanetMapping\result2.txt");
             //Console.WriteLine($"{result.Length} characters to {result2.Length} characters. {result.Length - result2.Length} difference.");
