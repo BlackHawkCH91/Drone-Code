@@ -59,7 +59,7 @@ namespace CompressionTest
         static void compressFile2()
         {
             StringBuilder final = new StringBuilder();
-            int maxAttempt = 30;
+            int maxAttempt = 75;
             string result = File.ReadAllText(@"D:\SE-PlanetMapping\result2.txt");
             string repeatSection = "";
             int compressCount = 1;
@@ -95,15 +95,16 @@ namespace CompressionTest
                         }
                     }
 
-                    if (compressCount > 1)
+                    if (compressCount > 1 && (compressCount.ToString().Length + 2 + repeatSection.Length) < (repeatSection.Length * compressCount))
                     {
-                        final.Append("?" + compressCount + repeatSection.Length + "|");
+                        final.Append("?" + compressCount + "|" + repeatSection + "|");
                     } else
                     {
-                        repeatSection = result[i].ToString();
+                        repeatSection = String.Concat(Enumerable.Repeat(result[i].ToString(), compressCount));
+                        final.Append(repeatSection);
                     }
 
-                    final.Append(repeatSection);
+                    //final.Append(repeatSection);
                 }
                 sw.Write(final.ToString());
             }
