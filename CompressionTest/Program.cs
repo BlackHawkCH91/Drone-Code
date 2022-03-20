@@ -10,7 +10,7 @@ namespace CompressionTest
     class Program
     {
         static Dictionary<string, string> colourKeys = new Dictionary<string, string>();
-        static List<string> availableChars = new List<string>(new string[] { "a", "b", "c", "d", "e", "f", "g", "h", "i", "j", "k", "l", "m", "n", "o", "p", "q", "r", "s", "t", "u", "v", "w", "x", "y", "z", "!", "@", "#", "$", "%", "^", "&", "*", "(", ")", "-", "_", "=", "+", "[", "{", "]", "}", "|", ";", ":", "'", ",", "<", "." });
+        static List<string> availableChars = new List<string>(new string[] { "a", "b", "c", "d", "e", "f", "g", "h", "i", "j", "k", "l", "m", "n", "o", "p", "q", "r", "s", "t", "u", "v", "w", "x", "y", "z", "!", "@", "#", "$", "%", "^", "&", "*", "(", ")", "-", "_", "=", "+", "[", "{", "]", "}", ">", ";", ":", "'", ",", "<", "." });
 
 
         static void compressFile()
@@ -59,6 +59,7 @@ namespace CompressionTest
 
         static void compressFile2()
         {
+            //am3ajb79aa <- issue here
             StringBuilder final = new StringBuilder();
             int maxAttempt = 75;
             string result = File.ReadAllText(@"D:\SE-PlanetMapping\result2.txt");
@@ -101,7 +102,8 @@ namespace CompressionTest
                         final.Append("?" + compressCount + "|" + repeatSection + "|");
                     } else
                     {
-                        repeatSection = String.Concat(Enumerable.Repeat(result[i].ToString(), compressCount));
+                        //repeatSection = String.Concat(Enumerable.Repeat(result[i].ToString(), compressCount));
+                        repeatSection = result[i].ToString();
                         compressCount = 1;
                         final.Append(repeatSection);
                     }
