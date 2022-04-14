@@ -28,15 +28,20 @@ namespace IngameScript
         public Program()
         {
             controller = GetMainRemoteControl();
+            
+            // Establish task scheduler
             TaskScheduler.EstablishTaskScheduler(Runtime, Echo, true);
+            
+            // Establish controllers
             MovementController.Establish(GridTerminalSystem, Runtime, Echo, controller);
+            RotationController.Establish(GridTerminalSystem, Runtime, Echo, controller);
+
+            // Set controller positions
             MovementController.MoveTo(destinationVector);
         }
 
         public void Save()
         {
-
-
 
         }
 

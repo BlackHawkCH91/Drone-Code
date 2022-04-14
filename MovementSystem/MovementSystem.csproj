@@ -39,6 +39,7 @@
   <Import Project="MDK/MDK.paths.props" Condition="exists('MDK/MDK.paths.props')" />
   <ItemGroup>
     <Compile Include="Controllers\MovementController.cs" />
+    <Compile Include="Controllers\RotationController.cs" />
     <Compile Include="GroupObjects\GyroGroup.cs" />
     <Compile Include="GroupObjects\ThrustGroup.cs" />
     <Compile Include="MDK\Bootstrapper.cs" />

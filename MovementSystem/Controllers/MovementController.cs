@@ -61,7 +61,7 @@ namespace IngameScript
                 }
                 private void RecalcError()
                 {
-                    Echo($"{movementAxis}\nerror:{errorVal.RoundToDp(3)}");
+                    //Echo($"{movementAxis}\nerror:{errorVal.RoundToDp(3)}");
                     errorVal = requiredMovement.Dot(Base6Directions.GetVector(baseAxisDirection));
                 }
                 private void RecalcGains()
@@ -81,7 +81,7 @@ namespace IngameScript
                     double minMaxSpeed = decel * 2;
                     maxDesiredSpeed = Math.Min(Math.Abs(maxSpeedDistanceGain * errorVal) + minMaxSpeed, maxAxisSpeed);
 
-                    Echo($"accel:{accel}, decel:{decel}");
+                    //Echo($"accel:{accel}, decel:{decel}");
                 }
                 private void ApplyThrust()
                 {
@@ -93,7 +93,7 @@ namespace IngameScript
                     }
                     double currVelocity = shipController.GetShipVelocities().LinearVelocity.ConvertToLocalDirection(shipController).Dot(Base6Directions.GetVector(baseAxisDirection));
 
-                    Echo($"currVel:{currVelocity.RoundToDp(10)}\ndesiredVel:{desiredVelocity.RoundToDp(10)}\nmaxDesiredspeed:{maxDesiredSpeed.RoundToDp(3)}\nmaxSpeed:{maxAxisSpeed.RoundToDp(3)}");
+                    //Echo($"currVel:{currVelocity.RoundToDp(10)}\ndesiredVel:{desiredVelocity.RoundToDp(10)}\nmaxDesiredspeed:{maxDesiredSpeed.RoundToDp(3)}\nmaxSpeed:{maxAxisSpeed.RoundToDp(3)}");
 
                     // Calc thrust to apply and apply thrust
                     double thrustToApply = 0;
@@ -111,13 +111,8 @@ namespace IngameScript
                     {
                         thrustToApply = Math.Sign(thrustToApply);
                     }
-/*
-                    if (Math.Abs(thrustToApply) <= marginOfError)
-                    {
-                        thrustToApply = 0;
-                    }*/
 
-                    Echo($"thrustToApply:{thrustToApply.RoundToDp(5)}");
+                    //Echo($"thrustToApply:{thrustToApply.RoundToDp(5)}");
                     if (thrustToApply >= 0)
                     {
                         foreach (IMyThrust thruster in thrusters[baseAxisDirection])
