@@ -303,6 +303,61 @@ namespace IngameScript
 
                 return finalPacketArr;
             }
+
+            //!Debugging only, displays object arr as a string
+            public static string DisplayThing(object[] array)
+            {
+                string output = "";
+                for (int i = 0; i < array.Length; i++)
+                {
+                    if (array[i].GetType() == typeof(object[]))
+                    {
+                        output += "[";
+                        output += DisplayThing(array[i] as object[]);
+                        output += "]";
+                    }
+                    else if (array[i].GetType() == typeof(Vector3D))
+                    {
+                        Vector3D temp = (Vector3D)array[i];
+                        output += temp.ToString();
+                    }
+                    else if (array[i].GetType() == typeof(string))
+                    {
+                        output += "\"" + array[i].ToString() + "\"";
+                    }
+                    else if (array[i].GetType() == typeof(MatrixD))
+                    {
+                        output += Network.MatrixToString((MatrixD)array[i]);
+                    }
+                    else
+                    {
+                        output += array[i].ToString();
+                    }
+                    if (i < (array.Length - 1))
+                    {
+                        output += ", ";
+                    }
+                }
+
+                return output;
+            }
+
+            //!Creates a valid packet to send through antennas
+            public static ImmutableArray<string> CreatePacketString(string source, string destination, string purpose, object[] packet)
+            {
+                string tempDest = destination;
+                long temp;
+                if (!(long.TryParse(destination, out temp)))
+                {
+                    tempDest = "\"" + tempDest + "\"";
+                }
+                //string[] fdfdsfinalPacket = "[" + source + "," + tempDest + ",\"" + purpose + "\"," + ObjectToString(packet) + "]";
+                ImmutableArray<string> finalPacket = ImmutableArray.Create(source, tempDest, purpose, Network.ObjectToString(packet));
+                //terminal.broadcast(source, finalPacket);
+                return finalPacket;
+            }
+
+            //-----------------------------------------------------------------------------
         }
     }
 }

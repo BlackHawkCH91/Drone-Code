@@ -120,60 +120,7 @@ namespace IngameScript
         //!3D printing stuff
         IMyProjector miningProj;
 
-        //!Debugging only, displays object arr as a string
-        string DisplayThing(object[] array)
-        {
-            string output = "";
-            for (int i = 0; i < array.Length; i++)
-            {
-                if (array[i].GetType() == typeof(object[]))
-                {
-                    output += "[";
-                    output += DisplayThing(array[i] as object[]);
-                    output += "]";
-                }
-                else if (array[i].GetType() == typeof(Vector3D))
-                {
-                    Vector3D temp = (Vector3D)array[i];
-                    output += temp.ToString();
-                }
-                else if (array[i].GetType() == typeof(string))
-                {
-                    output += "\"" + array[i].ToString() + "\"";
-                }
-                else if (array[i].GetType() == typeof(MatrixD))
-                {
-                    output += Network.MatrixToString((MatrixD)array[i]);
-                }
-                else
-                {
-                    output += array[i].ToString();
-                }
-                if (i < (array.Length - 1))
-                {
-                    output += ", ";
-                }
-            }
-
-            return output;
-        }
-
-        //!Creates a valid packet to send through antennas
-        ImmutableArray<string> CreatePacketString(string source, string destination, string purpose, object[] packet)
-        {
-            string tempDest = destination;
-            long temp;
-            if (!(long.TryParse(destination, out temp)))
-            {
-                tempDest = "\"" + tempDest + "\"";
-            }
-            //string[] fdfdsfinalPacket = "[" + source + "," + tempDest + ",\"" + purpose + "\"," + ObjectToString(packet) + "]";
-            ImmutableArray<string> finalPacket = ImmutableArray.Create(source, tempDest, purpose, Network.ObjectToString(packet));
-            //terminal.broadcast(source, finalPacket);
-            return finalPacket;
-        }
-
-        //-----------------------------------------------------------------------------
+        
 
         //! Block information stuff:
 
@@ -346,7 +293,7 @@ namespace IngameScript
         {
             //B: EstCon - [long source, long destination, "EstCon", [EstType, gridType, laserAntPos]]
             //Creates an EstCon broadcast packet. EstType tells other grids what grid types it wants. E.g. if estType is Outpost, only outposts will return data.
-            SendMessage(false, estType, CreatePacketString(pBId.ToString(), estType, "EstCon", new object[] { gridType, laserAntPos }));
+            SendMessage(false, estType, Network.CreatePacketString(pBId.ToString(), estType, "EstCon", new object[] { gridType, laserAntPos }));
             Echo("Sent EstCon broadcast to grid type: " + estType);
         }
 
@@ -354,7 +301,7 @@ namespace IngameScript
         //!Broadcast to request info packets
         void RequestInfo(string tag)
         {
-            SendMessage(false, tag, CreatePacketString(pBId.ToString(), tag, "Info", new object[] { "placeholder" }));
+            SendMessage(false, tag, Network.CreatePacketString(pBId.ToString(), tag, "Info", new object[] { "placeholder" }));
             Echo("Broadcasting info request.");
         }
 
@@ -404,7 +351,7 @@ namespace IngameScript
 
             if (gridType == "Outpost" && listener == 0)
             {
-                LCD[0].WriteText(DisplayThing(finalMsg));
+                LCD[0].WriteText(Network.DisplayThing(finalMsg));
             }
 
             object[] packetContent = finalMsg[3] as object[];
@@ -426,7 +373,7 @@ namespace IngameScript
                     {
                         //Send unicast back to sender.
                         Echo("Sending uni");
-                        SendMessage(true, source, CreatePacketString(pBId.ToString(), source, "EstCon", new object[] { gridType, laserAntPos }));
+                        SendMessage(true, source, Network.CreatePacketString(pBId.ToString(), source, "EstCon", new object[] { gridType, laserAntPos }));
                     }
                     else if (!(isBroadcast))
                     {
@@ -451,7 +398,7 @@ namespace IngameScript
 
                 case "IpUpdate":
                     //?Rewrite IP Update in general
-                    string output = DisplayThing(packetContent);
+                    string output = Network.DisplayThing(packetContent);
 
                     break;
                 case "Info":
@@ -459,7 +406,7 @@ namespace IngameScript
                     if (isBroadcast)
                     {
                         Echo("sending info");
-                        SendMessage(true, source, CreatePacketString(pBId.ToString(), source, "Info", new object[] { gridType, 0, gridMatrix, linearVelocity, angularVelocity, gridHealth, "Idle", "Mine" }));
+                        SendMessage(true, source, Network.CreatePacketString(pBId.ToString(), source, "Info", new object[] { gridType, 0, gridMatrix, linearVelocity, angularVelocity, gridHealth, "Idle", "Mine" }));
                     }
                     else
                     {
