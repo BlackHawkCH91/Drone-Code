@@ -82,7 +82,7 @@ namespace IngameScript
         //Components and cubeblocks
         static Dictionary<string, MyTuple<MyDefinitionId, Dictionary<string, double>>> blueprints = new Dictionary<string, MyTuple<MyDefinitionId, Dictionary<string, double>>>();
         static Dictionary<string, Dictionary<string, double>> cubeBlocks = new Dictionary<string, Dictionary<string, double>>();
-        List<string> errorList = new List<string>();
+        static List<string> errorList = new List<string>();
 
 
         //[gridType, groupId, worldMatrix, movementVector, health, status, command, lastUpdate]
@@ -119,72 +119,6 @@ namespace IngameScript
 
         //!3D printing stuff
         static IMyProjector miningProj;
-
-        
-
-        //! Block information stuff:
-
-        void ReadCompFile(string fileContent)
-        {
-            string[] blueprintContents = fileContent.Split('\n');
-
-            foreach (string blueprint in blueprintContents)
-            {
-                if (String.IsNullOrEmpty(blueprint))
-                {
-                    continue;
-                }
-                string[] items = blueprint.Split(',');
-
-                Dictionary<string, double> temp = new Dictionary<string, double>();
-
-                for (int i = 2; i < items.Length - 1; i += 2)
-                {
-                    temp.Add(items[i], double.Parse(items[i + 1]));
-                }
-
-                try
-                {
-                    blueprints.Add(items[0], MyTuple.Create(MyDefinitionId.Parse(items[1]), temp));
-                }
-                catch
-                {
-                    errorList.Add(items[1]);
-                }
-            }
-        }
-
-        //Gets dictionary of all cube blocks
-        void ReadCubeFile(string fileContent)
-        {
-            string[] blueprintContents = fileContent.Split('\n');
-
-            foreach (string blueprint in blueprintContents)
-            {
-                if (String.IsNullOrEmpty(blueprint))
-                {
-                    continue;
-                }
-                string[] items = blueprint.Split(',');
-
-                Dictionary<string, double> temp = new Dictionary<string, double>();
-
-                for (int i = 1; i < items.Length - 1; i += 2)
-                {
-                    temp.Add(items[i], double.Parse(items[i + 1]));
-                }
-
-                try
-                {
-                    cubeBlocks.Add(items[0], temp);
-                }
-                catch
-                {
-                    errorList.Add(items[0]);
-                }
-            }
-        }
-
 
 
         //!Gets block health
@@ -472,8 +406,8 @@ namespace IngameScript
 
             //!Components and cube blocks
             string[] customData = Me.CustomData.Split('|');
-            ReadCompFile(customData[0]);
-            ReadCubeFile(customData[1]);
+            Network.ReadCompFile(customData[0]);
+            Network.ReadCubeFile(customData[1]);
 
             Echo("Active");
         }

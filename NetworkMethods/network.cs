@@ -359,7 +359,67 @@ namespace IngameScript
 
             //-----------------------------------------------------------------------------
 
+            //! Block information stuff:
+            public static void ReadCompFile(string fileContent)
+            {
+                string[] blueprintContents = fileContent.Split('\n');
 
+                foreach (string blueprint in blueprintContents)
+                {
+                    if (String.IsNullOrEmpty(blueprint))
+                    {
+                        continue;
+                    }
+                    string[] items = blueprint.Split(',');
+
+                    Dictionary<string, double> temp = new Dictionary<string, double>();
+
+                    for (int i = 2; i < items.Length - 1; i += 2)
+                    {
+                        temp.Add(items[i], double.Parse(items[i + 1]));
+                    }
+
+                    try
+                    {
+                        blueprints.Add(items[0], MyTuple.Create(MyDefinitionId.Parse(items[1]), temp));
+                    }
+                    catch
+                    {
+                        errorList.Add(items[1]);
+                    }
+                }
+            }
+
+            //Gets dictionary of all cube blocks
+            public static void ReadCubeFile(string fileContent)
+            {
+                string[] blueprintContents = fileContent.Split('\n');
+
+                foreach (string blueprint in blueprintContents)
+                {
+                    if (String.IsNullOrEmpty(blueprint))
+                    {
+                        continue;
+                    }
+                    string[] items = blueprint.Split(',');
+
+                    Dictionary<string, double> temp = new Dictionary<string, double>();
+
+                    for (int i = 1; i < items.Length - 1; i += 2)
+                    {
+                        temp.Add(items[i], double.Parse(items[i + 1]));
+                    }
+
+                    try
+                    {
+                        cubeBlocks.Add(items[0], temp);
+                    }
+                    catch
+                    {
+                        errorList.Add(items[0]);
+                    }
+                }
+            }
 
             //!Function to automatically print ships
             public static void PrintShip()
