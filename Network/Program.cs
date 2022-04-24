@@ -77,7 +77,7 @@ namespace IngameScript
         Dictionary<long, object[]> ipList = new Dictionary<long, object[]>();
         List<object[]> updatedIpList = new List<object[]>();
         List<string> tagList = new List<string>();
-        Dictionary<string, List<int>> bracketPos = new Dictionary<string, List<int>>();
+        
 
         //Components and cubeblocks
         Dictionary<string, MyTuple<MyDefinitionId, Dictionary<string, double>>> blueprints = new Dictionary<string, MyTuple<MyDefinitionId, Dictionary<string, double>>>();
@@ -120,97 +120,6 @@ namespace IngameScript
         //!3D printing stuff
         IMyProjector miningProj;
 
-        //?Functions ----------------------------------------------------------------------
-
-
-        //!String-to-data and data-to-string functions hidden here:
-
-        //!Convert MatrixD to string... I'm sorry, but there is no way to loop through properties
-        string MatrixToString(MatrixD matrix)
-        {
-            string strMatrix = "M" + matrix.M11 + "|" + matrix.M12 + "|" + matrix.M13 + "|" + matrix.M14 + "|" +
-                            matrix.M21 + "|" + matrix.M22 + "|" + matrix.M23 + "|" + matrix.M24 + "|" +
-                            matrix.M31 + "|" + matrix.M32 + "|" + matrix.M33 + "|" + matrix.M34 + "|" +
-                            matrix.M41 + "|" + matrix.M42 + "|" + matrix.M43 + "|" + matrix.M44;
-
-            return strMatrix;
-        }
-
-        //!Convert string to matrixD
-        MatrixD StringToMatrix(string strMatrix)
-        {
-            string temp = strMatrix.Substring(1);
-
-            //Get all matrix cells
-            string[] strNum = temp.Split('|');
-
-            //Create array and convert to double
-            double[] num = new double[16];
-
-            for (int i = 0; i < 16; i++)
-            {
-                num[i] = double.Parse(strNum[i]);
-            }
-
-            //Painfully insert each value
-            MatrixD matrix = new MatrixD(num[0], num[1], num[2], num[3],
-                                num[4], num[5], num[6], num[7],
-                                num[8], num[9], num[10], num[11],
-                                num[12], num[13], num[14], num[15]);
-
-            return matrix;
-        }
-
-        //!Converts a string back into a Vector3
-        Vector3D StringToVector3(string sVector)
-        {
-            //Remove curly brackets
-            if (sVector.StartsWith("{") && sVector.EndsWith("}"))
-            {
-                sVector = sVector.Substring(1, sVector.Length - 2);
-            }
-
-
-            //Split the string where there is whitespace (commas are not used for some reason)
-            string[] sArray = sVector.Split(' ');
-
-            //Parse the values into floats and create a Vector3
-            Vector3D position = new Vector3D(
-                double.Parse(sArray[0].Substring(2, sArray[0].Length - 2)),
-                double.Parse(sArray[1].Substring(2, sArray[1].Length - 2)),
-                double.Parse(sArray[2].Substring(2, sArray[2].Length - 2))
-            );
-
-            return position;
-        }
-
-        //!Gets positions of [] in strings
-        Dictionary<string, List<int>> GetBracketPos(string packet)
-        {
-            //Creates bracket dictionary, adds two keys for { and }
-
-            bracketPos.Clear();
-
-            bracketPos.Add("[", new List<int>());
-            bracketPos.Add("]", new List<int>());
-
-            //Loop through string, checking for brackets
-            for (int i = 0; i < packet.Length; i++)
-            {
-                //Add bracket pos to its respective dictionary
-                if (packet[i] == '[')
-                {
-                    bracketPos["["].Add(i);
-                }
-                else if (packet[i] == ']')
-                {
-                    bracketPos["]"].Add(i);
-                }
-            }
-
-            return bracketPos;
-        }
-
 
         //!Converts object to string
         //Probably not worth converting to coroutine
@@ -250,7 +159,7 @@ namespace IngameScript
                             break;
 
                         case "VRageMath.MatrixD":
-                            final += MatrixToString((MatrixD)item);
+                            final += Network.MatrixToString((MatrixD)item);
                             break;
 
                         default:
@@ -284,7 +193,7 @@ namespace IngameScript
 
             //Dictionaries to store bracket pos and linked brackets
             Dictionary<int, int> linked = new Dictionary<int, int>();
-            Dictionary<string, List<int>> bracketPos = GetBracketPos(packet);
+            Dictionary<string, List<int>> bracketPos = Network.GetBracketPos(packet);
 
             //Find linked brackets
             foreach (int closePos in bracketPos["]"])
@@ -362,7 +271,7 @@ namespace IngameScript
                     //Order: Vector3, String, Double, Int, Subobject
                     if (item[0] == '{' || item[0] == 'X')
                     {
-                        finalPacketArr[i] = StringToVector3(item);
+                        finalPacketArr[i] = Network.StringToVector3(item);
                     }
                     else if (item[0] == '"')
                     {
@@ -374,7 +283,7 @@ namespace IngameScript
                     }
                     else if (item[0] == 'M') // Another new thing
                     {
-                        finalPacketArr[i] = StringToMatrix(item);
+                        finalPacketArr[i] = Network.StringToMatrix(item);
                     }
                     else if (item[0] == 'D')
                     {
@@ -423,7 +332,7 @@ namespace IngameScript
                 }
                 else if (array[i].GetType() == typeof(MatrixD))
                 {
-                    output += MatrixToString((MatrixD)array[i]);
+                    output += Network.MatrixToString((MatrixD)array[i]);
                 }
                 else
                 {
