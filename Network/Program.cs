@@ -89,8 +89,6 @@ namespace IngameScript
         Dictionary<long, drone> droneTable = new Dictionary<long, drone>();
 
         //Max health data will be stored in the Storage variable. The list count is useless if the drone is damaged and the server restarts.
-        double terminalHealth;
-        double armourHealth;
         double maxTerminalHealth;
         double maxArmourHealth;
 
@@ -536,7 +534,7 @@ namespace IngameScript
             int counter = 0;
 
             //Get health of terminal blocks.
-            terminalHealth = 0;
+            double terminalHealth = 0;
             foreach (IMySlimBlock block in terminalBlocks.Keys)
             {
                 counter++;
@@ -550,7 +548,7 @@ namespace IngameScript
             }
 
             counter = 0;
-            armourHealth = 0;
+            double armourHealth = 0;
             //Get health of armour blocks
             foreach (Vector3I armourBlock in armourBlocks)
             {
@@ -951,37 +949,15 @@ namespace IngameScript
 
             Init();
 
-            Dictionary<MyDefinitionId, int> compNeeded = new Dictionary<MyDefinitionId, int>();
-            //Loop through remaining blocks
-            for (int i = 0; i < miningProj.RemainingBlocksPerType.Count; i++)
-            {
-                //Can probably simplify this, loop thorugh components needed per block
-                foreach (KeyValuePair<string, double> comp in cubeBlocks[miningProj.RemainingBlocksPerType.ElementAt(i).Key.ToString()])
-                {
-                    //If it is in the list, add number, else assign value.
-                    if (compNeeded.ContainsKey(blueprints[comp.Key].Item1))
-                    {
-                        compNeeded[blueprints[comp.Key].Item1] += Convert.ToInt32(comp.Value) * miningProj.RemainingBlocksPerType.ElementAt(i).Value;
-                    } else
-                    {
-                        compNeeded[blueprints[comp.Key].Item1] = Convert.ToInt32(comp.Value) * miningProj.RemainingBlocksPerType.ElementAt(i).Value;
-                    }
-                }
-            }
-
-            foreach (KeyValuePair<MyDefinitionId, int> comps in compNeeded)
-            {
-                assembler.AddQueueItem(comps.Key, MyFixedPoint.DeserializeString(comps.Value.ToString()));
-            }
-
+            tempPrintFunc();
 
             while (true)
             {
                 Echo(miningProj.RemainingBlocksPerType.Count.ToString());
-                foreach (KeyValuePair<MyDefinitionId, int> thing in compNeeded)
+                /*foreach (KeyValuePair<MyDefinitionId, int> thing in compNeeded)
                 {
                     Echo(thing.Key.ToString() + " " + thing.Value.ToString());
-                }
+                }*/
 
                 MyShipVelocities vel = rc.GetShipVelocities();
                 linearVelocity = vel.LinearVelocity;
@@ -1061,6 +1037,7 @@ namespace IngameScript
                 //Check uni cast
                 if (dirListener.HasPendingMessage)
                 {
+                    //string test = dirListener.AcceptMessage().ToString();
                     antenna.EnableBroadcasting = true;
                     yield return 0;
                     RecieveMessage(0);
@@ -1082,6 +1059,33 @@ namespace IngameScript
                 if (anonCast) { antenna.EnableBroadcasting = false; }
                 
                 yield return 0;
+            }
+        }
+
+        public void tempPrintFunc()
+        {
+            Dictionary<MyDefinitionId, int> compNeeded = new Dictionary<MyDefinitionId, int>();
+            //Loop through remaining blocks
+            for (int i = 0; i < miningProj.RemainingBlocksPerType.Count; i++)
+            {
+                //Can probably simplify this, loop thorugh components needed per block
+                foreach (KeyValuePair<string, double> comp in cubeBlocks[miningProj.RemainingBlocksPerType.ElementAt(i).Key.ToString()])
+                {
+                    //If it is in the list, add number, else assign value.
+                    if (compNeeded.ContainsKey(blueprints[comp.Key].Item1))
+                    {
+                        compNeeded[blueprints[comp.Key].Item1] += Convert.ToInt32(comp.Value) * miningProj.RemainingBlocksPerType.ElementAt(i).Value;
+                    }
+                    else
+                    {
+                        compNeeded[blueprints[comp.Key].Item1] = Convert.ToInt32(comp.Value) * miningProj.RemainingBlocksPerType.ElementAt(i).Value;
+                    }
+                }
+            }
+
+            foreach (KeyValuePair<MyDefinitionId, int> comps in compNeeded)
+            {
+                assembler.AddQueueItem(comps.Key, MyFixedPoint.DeserializeString(comps.Value.ToString()));
             }
         }
 

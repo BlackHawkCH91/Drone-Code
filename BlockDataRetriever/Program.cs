@@ -19,8 +19,9 @@ namespace BlockDataRetriever
 
         public static void GetComponentNames()
         {
+            
             //Filepath and init
-            string componentsPath = @"D:\Steam\steamapps\common\SpaceEngineers\Content\Data\Components.sbc";
+            string componentsPath = @"C:\Program Files (x86)\Steam\steamapps\common\SpaceEngineers\Content\Data\Components.sbc";
             XmlDocument compReader = new XmlDocument();
             compReader.Load(componentsPath);
 
@@ -36,7 +37,7 @@ namespace BlockDataRetriever
         public static void GetBlueprints()
         {
             //Filepath and init
-            string blueprintsPath = @"D:\Steam\steamapps\common\SpaceEngineers\Content\Data\Blueprints.sbc";
+            string blueprintsPath = @"C:\Program Files (x86)\Steam\steamapps\common\SpaceEngineers\Content\Data\Blueprints.sbc";
             XmlDocument bpReader = new XmlDocument();
             bpReader.Load(blueprintsPath);
 
@@ -83,7 +84,7 @@ namespace BlockDataRetriever
 
         public static void GetBlockComponents()
         {
-            string[] cubeBlockPaths = Directory.GetFiles(@"D:\Steam\steamapps\common\SpaceEngineers\Content\Data\CubeBlocks\");
+            string[] cubeBlockPaths = Directory.GetFiles(@"C:\Program Files (x86)\Steam\steamapps\common\SpaceEngineers\Content\Data\CubeBlocks\");
             bool skipFirst = true;
             XNamespace xsi = "http://www.w3.org/2001/XMLSchema-instance";
             int counter = 0;
@@ -165,7 +166,7 @@ namespace BlockDataRetriever
         //Gets dictionary of components
         public static void ReadCompFile()
         {
-            string fileContent = File.ReadAllText(@"D:\SE-PlanetMapping\Earthlike\components.txt");
+            string fileContent = File.ReadAllText(@"C:\SE-PlanetMapping\Earthlike\components.txt");
             string[] blueprintContents = fileContent.Split("\n");
 
             foreach (string blueprint in blueprintContents)
@@ -190,7 +191,7 @@ namespace BlockDataRetriever
         //Gets dictionary of all cube blocks
         public static void ReadCubeFile()
         {
-            string fileContent = File.ReadAllText(@"D:\SE-PlanetMapping\Earthlike\cubeblocks.txt");
+            string fileContent = File.ReadAllText(@"C:\SE-PlanetMapping\Earthlike\cubeblocks.txt");
             string[] blueprintContents = fileContent.Split("\n");
 
             foreach (string blueprint in blueprintContents)
@@ -218,7 +219,7 @@ namespace BlockDataRetriever
             GetComponentNames();
             GetBlueprints();
 
-            using (StreamWriter sw = File.CreateText(@"D:\SE-PlanetMapping\Earthlike\components.txt"))
+            using (StreamWriter sw = File.CreateText(@"C:\Users\chook\OneDrive\Documents\Space engineers testing\Components\components.txt"))
             {
                 foreach (KeyValuePair<string, Tuple<string, Dictionary<string, double>>> component in blueprintCrafting)
                 {
@@ -232,8 +233,8 @@ namespace BlockDataRetriever
             }
 
             GetBlockComponents();
-
-            using (StreamWriter sw = File.CreateText(@"D:\SE-PlanetMapping\Earthlike\cubeblocks.txt"))
+            
+            using (StreamWriter sw = File.CreateText(@"C:\Users\chook\OneDrive\Documents\Space engineers testing\Components\cubeblocks.txt"))
             {
                 foreach (KeyValuePair<string, Dictionary<string, double>> cubeBlock in cubeBlocks)
                 {
@@ -246,16 +247,16 @@ namespace BlockDataRetriever
                 }
             }
 
-            using (StreamWriter sw = File.CreateText(@"D:\SE-PlanetMapping\Earthlike\combined.txt"))
+            using (StreamWriter sw = File.CreateText(@"C:\Users\chook\OneDrive\Documents\Space engineers testing\Components\combined.txt"))
             {
-                string componentFile = File.ReadAllText(@"D:\SE-PlanetMapping\Earthlike\components.txt");
-                string cubeFile = File.ReadAllText(@"D:\SE-PlanetMapping\Earthlike\cubeblocks.txt");
+                string componentFile = File.ReadAllText(@"C:\Users\chook\OneDrive\Documents\Space engineers testing\Components\components.txt");
+                string cubeFile = File.ReadAllText(@"C:\Users\chook\OneDrive\Documents\Space engineers testing\Components\cubeblocks.txt");
 
                 sw.Write(componentFile + "|" + cubeFile);
             }
 
-            ReadCompFile();
-            ReadCubeFile();
+            //ReadCompFile();
+            //ReadCubeFile();
             
 
 
