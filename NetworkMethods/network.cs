@@ -358,6 +358,36 @@ namespace IngameScript
             }
 
             //-----------------------------------------------------------------------------
+
+
+
+            //!Function to automatically print ships
+            public static void PrintShip()
+            {
+                Dictionary<MyDefinitionId, int> compNeeded = new Dictionary<MyDefinitionId, int>();
+                //Loop through remaining blocks
+                for (int i = 0; i < miningProj.RemainingBlocksPerType.Count; i++)
+                {
+                    //Can probably simplify this, loop thorugh components needed per block
+                    foreach (KeyValuePair<string, double> comp in cubeBlocks[miningProj.RemainingBlocksPerType.ElementAt(i).Key.ToString()])
+                    {
+                        //If it is in the list, add number, else assign value.
+                        if (compNeeded.ContainsKey(blueprints[comp.Key].Item1))
+                        {
+                            compNeeded[blueprints[comp.Key].Item1] += Convert.ToInt32(comp.Value) * miningProj.RemainingBlocksPerType.ElementAt(i).Value;
+                        }
+                        else
+                        {
+                            compNeeded[blueprints[comp.Key].Item1] = Convert.ToInt32(comp.Value) * miningProj.RemainingBlocksPerType.ElementAt(i).Value;
+                        }
+                    }
+                }
+
+                foreach (KeyValuePair<MyDefinitionId, int> comps in compNeeded)
+                {
+                    assembler.AddQueueItem(comps.Key, MyFixedPoint.DeserializeString(comps.Value.ToString()));
+                }
+            }
         }
     }
 }
