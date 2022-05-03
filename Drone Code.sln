@@ -35,6 +35,8 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "CompressionTest", "Compress
 EndProject
 Project("{D954291E-2A0B-460D-934E-DC6B0785DB48}") = "NetworkMethods", "NetworkMethods\NetworkMethods.shproj", "{61EBA249-19F3-48B6-A25B-A4CEE90168BA}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "TestATGM", "TestATGM\TestATGM.csproj", "{51C427F9-5DFB-46E9-9B3B-9E71BCE59ECE}"
+EndProject
 Global
 	GlobalSection(SharedMSBuildProjectFiles) = preSolution
 		Coroutine\Coroutine.projitems*{059caf3a-f0c7-4284-a14c-fc0f11e82b15}*SharedItemsImports = 4
@@ -43,6 +45,8 @@ Global
 		Coroutine\Coroutine.projitems*{4fea1d8d-11cc-4d65-993b-821aad1e7ed6}*SharedItemsImports = 4
 		PIDControllers\PIDControllers.projitems*{4fea1d8d-11cc-4d65-993b-821aad1e7ed6}*SharedItemsImports = 4
 		Vector3DExtensions\Vector3DExtensions.projitems*{4fea1d8d-11cc-4d65-993b-821aad1e7ed6}*SharedItemsImports = 4
+		Coroutine\Coroutine.projitems*{51c427f9-5dfb-46e9-9b3b-9e71bce59ece}*SharedItemsImports = 4
+		Vector3DExtensions\Vector3DExtensions.projitems*{51c427f9-5dfb-46e9-9b3b-9e71bce59ece}*SharedItemsImports = 4
 		Coroutine\Coroutine.projitems*{5c570a9b-d800-4f23-84d5-538b412a0e60}*SharedItemsImports = 4
 		PIDControllers\PIDControllers.projitems*{617bd208-4dbb-46d9-8416-4384c052740b}*SharedItemsImports = 13
 		NetworkMethods\NetworkMethods.projitems*{61eba249-19f3-48b6-a25b-a4cee90168ba}*SharedItemsImports = 13
@@ -134,6 +138,13 @@ Global
 		{E186690B-733D-4E74-9F6D-3CF3ADF92C05}.Release|Any CPU.Build.0 = Release|Any CPU
 		{E186690B-733D-4E74-9F6D-3CF3ADF92C05}.Release|x64.ActiveCfg = Release|Any CPU
 		{E186690B-733D-4E74-9F6D-3CF3ADF92C05}.Release|x64.Build.0 = Release|Any CPU
+		{51C427F9-5DFB-46E9-9B3B-9E71BCE59ECE}.Debug|Any CPU.ActiveCfg = Debug|x64
+		{51C427F9-5DFB-46E9-9B3B-9E71BCE59ECE}.Debug|x64.ActiveCfg = Debug|x64
+		{51C427F9-5DFB-46E9-9B3B-9E71BCE59ECE}.Debug|x64.Build.0 = Debug|x64
+		{51C427F9-5DFB-46E9-9B3B-9E71BCE59ECE}.Release|Any CPU.ActiveCfg = Debug|x64
+		{51C427F9-5DFB-46E9-9B3B-9E71BCE59ECE}.Release|Any CPU.Build.0 = Debug|x64
+		{51C427F9-5DFB-46E9-9B3B-9E71BCE59ECE}.Release|x64.ActiveCfg = Debug|x64
+		{51C427F9-5DFB-46E9-9B3B-9E71BCE59ECE}.Release|x64.Build.0 = Debug|x64
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
@@ -148,6 +159,7 @@ Global
 		{F934029B-B511-4AF7-A26A-3E5AB7E50EBB} = {92BAC0A1-993A-40F9-9BF5-9AAAAEEF5433}
 		{E186690B-733D-4E74-9F6D-3CF3ADF92C05} = {92BAC0A1-993A-40F9-9BF5-9AAAAEEF5433}
 		{61EBA249-19F3-48B6-A25B-A4CEE90168BA} = {611643A1-843E-4B4C-9F30-A47A8786B1A4}
+		{51C427F9-5DFB-46E9-9B3B-9E71BCE59ECE} = {92BAC0A1-993A-40F9-9BF5-9AAAAEEF5433}
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution
 		SolutionGuid = {C4CF8A6F-F7EF-4814-93B5-C21F41C3EE0B}
