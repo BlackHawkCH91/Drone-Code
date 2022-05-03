@@ -153,9 +153,9 @@ namespace IngameScript
             {
                 if (gridType == "missile")
                 {
-                    double p = 0.0009;
-                    double i = 0.00;
-                    double d = 0.00;
+                    double p = 0.03;
+                    double i = 0.0001;
+                    double d = 0.03;
                     
                     double timestep = Runtime.TimeSinceLastRun.TotalSeconds;
 
