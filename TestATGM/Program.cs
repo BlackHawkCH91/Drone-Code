@@ -99,6 +99,7 @@ namespace IngameScript
             //Vars
             List<IMyThrust> fwdThrust = new List<IMyThrust>();
             List<IMyShipMergeBlock> merge = new List<IMyShipMergeBlock>();
+            List<IMyTextPanel> lcds = new List<IMyTextPanel>();
 
             IMyRemoteControl rc = null;
             IMyGyro gyro = null;
@@ -110,43 +111,65 @@ namespace IngameScript
             if (gridType == "missile")
             {
                 //Get necessary blocks
+                
+
                 fwdThrust.Add(GridTerminalSystem.GetBlockWithName("fwd") as IMyThrust);
                 fwdThrust.Add(GridTerminalSystem.GetBlockWithName("fwd2") as IMyThrust);
                 rc = GridTerminalSystem.GetBlockWithName("rc") as IMyRemoteControl;
                 gyro = GridTerminalSystem.GetBlockWithName("gyro") as IMyGyro;
                 GridTerminalSystem.GetBlocksOfType<IMyShipMergeBlock>(merge);
 
-                listener = IGC.RegisterBroadcastListener("atgm");
-
                 yield return 0;
 
                 merge[0].Enabled = false;
                 yield return 0;
 
-                //Set thrust to max
+                listener = IGC.RegisterBroadcastListener("atgm");
+                //Set thrust to maxs
                 foreach (IMyThrust thruster in fwdThrust)
                 {
                     thruster.ThrustOverridePercentage = 1;
                 }
                 rc.DampenersOverride = true;
+                gyro.GyroOverride = true;
+
+                yield return 10;
             }
             else
             {
                 camera = GridTerminalSystem.GetBlockWithName("Camera") as IMyCameraBlock;
+                GridTerminalSystem.GetBlocksOfType<IMyTextPanel>(lcds);
             }
+
+            Vector3D lastError = 0;
 
             while (true)
             {
                 if (gridType == "missile")
                 {
-                    MatrixD msg;
+                    double p = 0;
+                    double i = 0;
+                    double d = 0;
+                    
+                    double timestep = Runtime.TimeSinceLastRun.TotalSeconds;
+
                     if (listener.HasPendingMessage)
                     {
-                        msg = StringToMatrix(listener.AcceptMessage().ToString());
+                        try
+                        {
+                            MatrixD msg = StringToMatrix(listener.AcceptMessage().Data.ToString());
 
-                        Vector3D position = ConvertToLocalPosition(Me.CubeGrid.GetPosition(), msg);
-                        gyro.Pitch = (float) -position.Y / 2;
-                        gyro.Yaw = (float) -position.X / 2;
+                            Echo("2");
+                            Vector3D position = ConvertToLocalPosition(Me.CubeGrid.GetPosition(), msg);
+                            Echo(position.ToString());
+                            gyro.Pitch = (float) (position.Y * p + (lastError.Y + position.Y * timestep) * i + ((position.Y - lastError.Y) / timestep) * d);
+                            Echo("4");
+                            gyro.Yaw = -(float) position.X / 50;
+                            lastError = position;
+                        } catch
+                        {
+                            Echo("reee");
+                        }
                     }
                 }
                 else
