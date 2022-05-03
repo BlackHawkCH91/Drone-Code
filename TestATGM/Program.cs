@@ -153,9 +153,9 @@ namespace IngameScript
             {
                 if (gridType == "missile")
                 {
-                    double p = 0.03;
+                    double p = 0.05;
                     double i = 0.0001;
-                    double d = 0.03;
+                    double d = 0.05;
                     
                     double timestep = Runtime.TimeSinceLastRun.TotalSeconds;
 
@@ -167,7 +167,8 @@ namespace IngameScript
 
                             Echo("2");
                             Vector3D position = ConvertToLocalPosition(Me.CubeGrid.GetPosition(), msg);
-                            Echo(position.ToString());
+                            //Echo(position.ToString());
+                            position = new Vector3D(position.X - 3, position.Y + 3.5, position.Z);
                             gyro.Pitch = (float) (position.Y * p + (lastError.Y + position.Y * timestep) * i + ((position.Y - lastError.Y) / timestep) * d);
                             Echo("4");
                             gyro.Yaw = (float) -(position.X * p + (lastError.X + position.X * timestep) * i + ((position.X - lastError.X) / timestep) * d);
