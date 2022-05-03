@@ -100,6 +100,7 @@ namespace IngameScript
             List<IMyThrust> fwdThrust = new List<IMyThrust>();
             List<IMyShipMergeBlock> merge = new List<IMyShipMergeBlock>();
             List<IMyTextPanel> lcds = new List<IMyTextPanel>();
+            List<IMyWarhead> warheads = new List<IMyWarhead>();
 
             IMyRemoteControl rc = null;
             IMyGyro gyro = null;
@@ -118,6 +119,7 @@ namespace IngameScript
                 rc = GridTerminalSystem.GetBlockWithName("rc") as IMyRemoteControl;
                 gyro = GridTerminalSystem.GetBlockWithName("gyro") as IMyGyro;
                 GridTerminalSystem.GetBlocksOfType<IMyShipMergeBlock>(merge);
+                GridTerminalSystem.GetBlocksOfType<IMyWarhead>(warheads);
 
                 yield return 0;
 
@@ -134,6 +136,10 @@ namespace IngameScript
                 gyro.GyroOverride = true;
 
                 yield return 10;
+                foreach (IMyWarhead warhead in warheads)
+                {
+                    warhead.IsArmed = true;
+                }
             }
             else
             {
@@ -141,15 +147,15 @@ namespace IngameScript
                 GridTerminalSystem.GetBlocksOfType<IMyTextPanel>(lcds);
             }
 
-            Vector3D lastError = 0;
+            Vector3D lastError = new Vector3D(0, 0, 0);
 
             while (true)
             {
                 if (gridType == "missile")
                 {
-                    double p = 0;
-                    double i = 0;
-                    double d = 0;
+                    double p = 0.0009;
+                    double i = 0.00;
+                    double d = 0.00;
                     
                     double timestep = Runtime.TimeSinceLastRun.TotalSeconds;
 
@@ -164,7 +170,7 @@ namespace IngameScript
                             Echo(position.ToString());
                             gyro.Pitch = (float) (position.Y * p + (lastError.Y + position.Y * timestep) * i + ((position.Y - lastError.Y) / timestep) * d);
                             Echo("4");
-                            gyro.Yaw = -(float) position.X / 50;
+                            gyro.Yaw = (float) -(position.X * p + (lastError.X + position.X * timestep) * i + ((position.X - lastError.X) / timestep) * d);
                             lastError = position;
                         } catch
                         {
