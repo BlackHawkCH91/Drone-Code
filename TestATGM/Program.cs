@@ -97,91 +97,121 @@ namespace IngameScript
         IEnumerator<int> IEnumMain()
         {
             //Vars
+            List<IMyThrust> thrusters = new List<IMyThrust>();
             List<IMyThrust> fwdThrust = new List<IMyThrust>();
             List<IMyShipMergeBlock> merge = new List<IMyShipMergeBlock>();
             List<IMyTextPanel> lcds = new List<IMyTextPanel>();
             List<IMyWarhead> warheads = new List<IMyWarhead>();
 
+            IMyDecoy fire = GridTerminalSystem.GetBlockWithName("Decoy") as IMyDecoy;
             IMyRemoteControl rc = null;
             IMyGyro gyro = null;
             IMyCameraBlock camera = null;
             IMyBroadcastListener listener = null;
 
+            bool runOnce = true;
+            bool fireATGM = false;
 
-
-            if (gridType == "missile")
-            {
-                //Get necessary blocks
-                
-
-                fwdThrust.Add(GridTerminalSystem.GetBlockWithName("fwd") as IMyThrust);
-                fwdThrust.Add(GridTerminalSystem.GetBlockWithName("fwd2") as IMyThrust);
-                rc = GridTerminalSystem.GetBlockWithName("rc") as IMyRemoteControl;
-                gyro = GridTerminalSystem.GetBlockWithName("gyro") as IMyGyro;
-                GridTerminalSystem.GetBlocksOfType<IMyShipMergeBlock>(merge);
-                GridTerminalSystem.GetBlocksOfType<IMyWarhead>(warheads);
-
-                yield return 0;
-
-                merge[0].Enabled = false;
-                yield return 0;
-
-                listener = IGC.RegisterBroadcastListener("atgm");
-                //Set thrust to maxs
-                foreach (IMyThrust thruster in fwdThrust)
-                {
-                    thruster.ThrustOverridePercentage = 1;
-                }
-                rc.DampenersOverride = true;
-                gyro.GyroOverride = true;
-
-                yield return 10;
-                foreach (IMyWarhead warhead in warheads)
-                {
-                    warhead.IsArmed = true;
-                }
-            }
-            else
-            {
-                camera = GridTerminalSystem.GetBlockWithName("Camera") as IMyCameraBlock;
-                GridTerminalSystem.GetBlocksOfType<IMyTextPanel>(lcds);
-            }
 
             Vector3D lastError = new Vector3D(0, 0, 0);
 
             while (true)
             {
-                if (gridType == "missile")
+                try
                 {
-                    double p = 0.05;
-                    double i = 0.0001;
-                    double d = 0.05;
-                    
-                    double timestep = Runtime.TimeSinceLastRun.TotalSeconds;
+                    fireATGM = fire.Enabled;
+                }
+                catch
+                {
 
-                    if (listener.HasPendingMessage)
+                }
+
+                if (fireATGM)
+                {
+                    if (runOnce)
                     {
-                        try
+                        if (gridType == "missile")
                         {
-                            MatrixD msg = StringToMatrix(listener.AcceptMessage().Data.ToString());
+                            //Get necessary blocks
 
-                            Echo("2");
-                            Vector3D position = ConvertToLocalPosition(Me.CubeGrid.GetPosition(), msg);
-                            //Echo(position.ToString());
-                            position = new Vector3D(position.X - 3, position.Y + 3.5, position.Z);
-                            gyro.Pitch = (float) (position.Y * p + (lastError.Y + position.Y * timestep) * i + ((position.Y - lastError.Y) / timestep) * d);
-                            Echo("4");
-                            gyro.Yaw = (float) -(position.X * p + (lastError.X + position.X * timestep) * i + ((position.X - lastError.X) / timestep) * d);
-                            lastError = position;
-                        } catch
+
+                            fwdThrust.Add(GridTerminalSystem.GetBlockWithName("fwd") as IMyThrust);
+                            fwdThrust.Add(GridTerminalSystem.GetBlockWithName("fwd2") as IMyThrust);
+                            rc = GridTerminalSystem.GetBlockWithName("rc") as IMyRemoteControl;
+                            gyro = GridTerminalSystem.GetBlockWithName("gyro") as IMyGyro;
+                            GridTerminalSystem.GetBlocksOfType<IMyShipMergeBlock>(merge);
+                            GridTerminalSystem.GetBlocksOfType<IMyWarhead>(warheads);
+                            GridTerminalSystem.GetBlocksOfType<IMyThrust>(thrusters);
+
+                            yield return 0;
+
+                            merge[0].Enabled = false;
+                            yield return 0;
+
+                            listener = IGC.RegisterBroadcastListener("atgm");
+                            //Set thrust to maxs
+                            foreach (IMyThrust thruster in thrusters)
+                            {
+                                thruster.Enabled = true;
+                            }
+                            gyro.Enabled = true;
+                            yield return 0;
+
+                            foreach (IMyThrust thruster in fwdThrust)
+                            {
+                                thruster.ThrustOverridePercentage = 1;
+                            }
+                            rc.DampenersOverride = true;
+                            gyro.GyroOverride = true;
+
+                            yield return 10;
+                            foreach (IMyWarhead warhead in warheads)
+                            {
+                                warhead.IsArmed = true;
+                            }
+                        }
+                        else
                         {
-                            Echo("reee");
+                            camera = GridTerminalSystem.GetBlockWithName("Camera") as IMyCameraBlock;
+                            GridTerminalSystem.GetBlocksOfType<IMyTextPanel>(lcds);
+                        }
+                        runOnce = false;
+                    }
+
+                    if (gridType == "missile")
+                    {
+                        double p = 0.03;
+                        double i = 0.0003;
+                        double d = 0.03;
+                    
+                        double timestep = Runtime.TimeSinceLastRun.TotalSeconds;
+
+                        if (listener.HasPendingMessage)
+                        {
+                            try
+                            {
+                                MatrixD msg = StringToMatrix(listener.AcceptMessage().Data.ToString());
+
+                                Echo("2");
+                                Vector3D position = ConvertToLocalPosition(Me.CubeGrid.GetPosition(), msg);
+                                //Echo(position.ToString());
+                                position = new Vector3D(position.X - 1, position.Y, position.Z);
+                                gyro.Pitch = (float) (position.Y * p + (lastError.Y + position.Y * timestep) * i + ((position.Y - lastError.Y) / timestep) * d);
+                                Echo("4");
+                                gyro.Yaw = (float) -(position.X * p + (lastError.X + position.X * timestep) * i + ((position.X - lastError.X) / timestep) * d);
+                                lastError = position;
+                            } catch
+                            {
+                                Echo("reee");
+                            }
                         }
                     }
-                }
-                else
-                {
-                    IGC.SendBroadcastMessage("atgm", MatrixToString(camera.WorldMatrix));
+                    else
+                    {
+                        IGC.SendBroadcastMessage("atgm", MatrixToString(camera.WorldMatrix));
+                    }
+
+                    yield return 0;
                 }
 
                 yield return 0;

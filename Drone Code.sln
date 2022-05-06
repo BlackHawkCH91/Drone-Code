@@ -37,11 +37,15 @@ Project("{D954291E-2A0B-460D-934E-DC6B0785DB48}") = "NetworkMethods", "NetworkMe
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "TestATGM", "TestATGM\TestATGM.csproj", "{51C427F9-5DFB-46E9-9B3B-9E71BCE59ECE}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ICBM", "ICBM\ICBM.csproj", "{33262CE1-6D65-43DE-B2F3-9A5542E538C7}"
+EndProject
 Global
 	GlobalSection(SharedMSBuildProjectFiles) = preSolution
 		Coroutine\Coroutine.projitems*{059caf3a-f0c7-4284-a14c-fc0f11e82b15}*SharedItemsImports = 4
 		NetworkMethods\NetworkMethods.projitems*{059caf3a-f0c7-4284-a14c-fc0f11e82b15}*SharedItemsImports = 4
 		Vector3DExtensions\Vector3DExtensions.projitems*{059caf3a-f0c7-4284-a14c-fc0f11e82b15}*SharedItemsImports = 4
+		Coroutine\Coroutine.projitems*{33262ce1-6d65-43de-b2f3-9a5542e538c7}*SharedItemsImports = 4
+		Vector3DExtensions\Vector3DExtensions.projitems*{33262ce1-6d65-43de-b2f3-9a5542e538c7}*SharedItemsImports = 4
 		Coroutine\Coroutine.projitems*{4fea1d8d-11cc-4d65-993b-821aad1e7ed6}*SharedItemsImports = 4
 		PIDControllers\PIDControllers.projitems*{4fea1d8d-11cc-4d65-993b-821aad1e7ed6}*SharedItemsImports = 4
 		Vector3DExtensions\Vector3DExtensions.projitems*{4fea1d8d-11cc-4d65-993b-821aad1e7ed6}*SharedItemsImports = 4
@@ -145,6 +149,13 @@ Global
 		{51C427F9-5DFB-46E9-9B3B-9E71BCE59ECE}.Release|Any CPU.Build.0 = Debug|x64
 		{51C427F9-5DFB-46E9-9B3B-9E71BCE59ECE}.Release|x64.ActiveCfg = Debug|x64
 		{51C427F9-5DFB-46E9-9B3B-9E71BCE59ECE}.Release|x64.Build.0 = Debug|x64
+		{33262CE1-6D65-43DE-B2F3-9A5542E538C7}.Debug|Any CPU.ActiveCfg = Debug|x64
+		{33262CE1-6D65-43DE-B2F3-9A5542E538C7}.Debug|x64.ActiveCfg = Debug|x64
+		{33262CE1-6D65-43DE-B2F3-9A5542E538C7}.Debug|x64.Build.0 = Debug|x64
+		{33262CE1-6D65-43DE-B2F3-9A5542E538C7}.Release|Any CPU.ActiveCfg = Debug|x64
+		{33262CE1-6D65-43DE-B2F3-9A5542E538C7}.Release|Any CPU.Build.0 = Debug|x64
+		{33262CE1-6D65-43DE-B2F3-9A5542E538C7}.Release|x64.ActiveCfg = Debug|x64
+		{33262CE1-6D65-43DE-B2F3-9A5542E538C7}.Release|x64.Build.0 = Debug|x64
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
