@@ -146,41 +146,29 @@ namespace IngameScript
             while (state == 1)
             {
                 Vector3D altitudePos = Vector3DExtensions.ConvertToLocalPosition(Vector3D.Normalize(rc.GetPosition() - planetPosition) * 61500, rc);
-                altitudePos.Z += 500;
                 Vector3D altitudeDirection = -Vector3D.Normalize(Vector3DExtensions.ConvertToLocalPosition(altitudePos - rc.GetPosition(), rc));
+
                 Vector3D targetDirection = Vector3D.Normalize(Vector3DExtensions.ConvertToLocalPosition(targetPostion, rc));
                 Vector3D planetDirection = Vector3D.Normalize(Vector3DExtensions.ConvertToLocalPosition(planetPosition, rc));
 
+                double altLimit = altitudeDirection.LengthSquared() / 250000;
+
+                //altLimit = altLimit > 0.8 ? 0.8 : altLimit;
+                //altLimit = altLimit < -0.8 ? -0.8 : altLimit;
+
+                altitudeDirection.Y = altitudeDirection.Y > 0.8 ? 0.8 : altitudeDirection.Y;
+                altitudeDirection.Y = altitudeDirection.Y < -0.8 ? -0.8 : altitudeDirection.Y;
+
+
                 double timestep = Runtime.TimeSinceLastRun.TotalSeconds;
-
-                Echo(altitudePos.ToString());
-                Echo(altitudeDirection.ToString());
-
-                if (altitudeDirection.Y > 0.7)
-                {
-                    altitudeDirection.Y = 0.7;
-                } else if (altitudeDirection.Y < -0.7)
-                {
-                    altitudeDirection.Y = -0.7;
-                }
 
                 foreach (IMyGyro gyro in gyros)
                 {
 
-                    gyro.Pitch = (float)pitch.PID(altitudeDirection.Z, timestep);
+                    gyro.Pitch = (float)pitch.PID(altitudeDirection.Y, timestep);
                     gyro.Yaw = (float)yaw.PID(targetDirection.X, timestep);
-                    gyro.Roll = (float)roll.PID(planetDirection.X, timestep);
+                    //gyro.Roll = (float)roll.PID(planetDirection.X, timestep);
 
-                    /*if (targetDirection)
-                    {
-
-                    }*/
-                    
-
-                    /*if (yaw.lastError < )
-                    {
-
-                    }*/
                 }
 
                 yield return 0;
