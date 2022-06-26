@@ -24,9 +24,11 @@ namespace IngameScript
     {
         public string arg;
         public int orbitAltitude = 63000;
+        double toDeg = 180 / Math.PI;
 
         //Basic PID controller
-        public class PIDController {
+        public class PIDController
+        {
             public double p;
             public double i;
             public double d;
@@ -49,7 +51,7 @@ namespace IngameScript
                 d = _d;
             }
         }
-        
+
         //Setup corountines
         public Program()
         {
@@ -69,6 +71,28 @@ namespace IngameScript
 
             TaskScheduler.StepCoroutines(updateSource, argument);
 
+        }
+
+        public double Clamp(double a, double b, double c)
+        {
+            //If value is less than min
+            if (a < b)
+            {
+                return b;
+            }
+            //value greater than max
+            if (a > c)
+            {
+                return c;
+            }
+            return a;
+        }
+
+        public double AngleBetweenVectors(Vector3D a, Vector3D b)
+        {
+            Vector3D vectorDiff = b - a;
+            double dotProd = Vector3D.Dot(a, b);
+            return Math.Acos(dotProd / (a.Length() * b.Length())) * toDeg;
         }
 
         IEnumerator<int> IEnumMain()
@@ -104,9 +128,9 @@ namespace IngameScript
 
             int state = 1;
 
-            PIDController pitch = new PIDController(100, 0, 200);
-            PIDController yaw = new PIDController(100, 0, 200);
-            PIDController roll = new PIDController(100, 0, 100);
+            PIDController pitch = new PIDController(5, 0, 1);
+            PIDController yaw = new PIDController(5, 0, 1);
+            PIDController roll = new PIDController(5, 0, 1);
 
 
             //Launch
@@ -128,7 +152,7 @@ namespace IngameScript
                 {
                     gyro.Pitch = (float)pitch.PID(verticalDirection.Y, timestep);
                     gyro.Yaw = (float)yaw.PID(verticalDirection.X, timestep);
-                    gyro.Roll = (float) roll.PID(targetDirection.X, timestep);
+                    gyro.Roll = (float)roll.PID(targetDirection.X, timestep);
                 }
 
 
@@ -138,37 +162,39 @@ namespace IngameScript
             //state++;
             //(rc.GetPosition() - planetPosition).LengthSquared() >= 1089000000 && 
 
-            pitch = new PIDController(1, 0, 1);
-            yaw = new PIDController(10, 0, 10);
-            roll = new PIDController(100, 0, 100);
+            pitch = new PIDController(0.05, 0, 0.01);
+            yaw = new PIDController(0.1, 0, 0.02);
+            roll = new PIDController(5, 0, 1);
 
             //Orbit
             while (state == 1)
             {
                 Vector3D altitudePos = Vector3DExtensions.ConvertToLocalPosition(Vector3D.Normalize(rc.GetPosition() - planetPosition) * 61500, rc);
-                Vector3D altitudeDirection = -Vector3D.Normalize(Vector3DExtensions.ConvertToLocalPosition(altitudePos - rc.GetPosition(), rc));
-
+                //altitudePos.Z += 500;
                 Vector3D targetDirection = Vector3D.Normalize(Vector3DExtensions.ConvertToLocalPosition(targetPostion, rc));
+                Vector3D altitudeDirection = -Vector3D.Normalize(Vector3DExtensions.ConvertToLocalPosition(altitudePos - rc.GetPosition(), rc));
                 Vector3D planetDirection = Vector3D.Normalize(Vector3DExtensions.ConvertToLocalPosition(planetPosition, rc));
 
-                double altLimit = altitudeDirection.LengthSquared() / 250000;
 
-                //altLimit = altLimit > 0.8 ? 0.8 : altLimit;
-                //altLimit = altLimit < -0.8 ? -0.8 : altLimit;
+                double pitchAngle = AngleBetweenVectors(new Vector3D(0, 0, 1), Vector3DExtensions.ConvertToLocalPosition(Vector3D.Normalize(rc.GetPosition() - planetPosition), rc));
 
-                altitudeDirection.Y = altitudeDirection.Y > 0.8 ? 0.8 : altitudeDirection.Y;
-                altitudeDirection.Y = altitudeDirection.Y < -0.8 ? -0.8 : altitudeDirection.Y;
+                double altError = Clamp(altitudePos.Length(), -300, 300) / 300;
+                double angle = -(60 * altError) + 90;
 
+                Echo(pitchAngle.ToString());
+                Echo(angle.ToString());
+
+                //Echo($"Pos: {Vector3D.Normalize(rc.GetPosition() - planetPosition) * 61500}\n");
+                //Echo(altitudeDirection.ToString());
+                //Echo(targetDirection.ToString());
+                //Echo(planetDirection.ToString());
 
                 double timestep = Runtime.TimeSinceLastRun.TotalSeconds;
-
                 foreach (IMyGyro gyro in gyros)
                 {
-
-                    gyro.Pitch = (float)pitch.PID(altitudeDirection.Y, timestep);
+                    gyro.Pitch = (float)pitch.PID(pitchAngle - angle, timestep);
                     gyro.Yaw = (float)yaw.PID(targetDirection.X, timestep);
-                    //gyro.Roll = (float)roll.PID(planetDirection.X, timestep);
-
+                    gyro.Roll = (float)roll.PID(planetDirection.X, timestep);
                 }
 
                 yield return 0;
