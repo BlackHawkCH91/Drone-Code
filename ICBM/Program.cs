@@ -23,7 +23,7 @@ namespace IngameScript
     partial class Program : MyGridProgram
     {
         public string arg;
-        public int orbitAltitude = 63000;
+        //public int orbitAltitude = 63000;
         double toDeg = 180 / Math.PI;
 
         //Basic PID controller
@@ -97,6 +97,7 @@ namespace IngameScript
 
         IEnumerator<int> IEnumMain()
         {
+            double orbitAltitude = 68000;
             //Get necessary components
             //List<IMyThrust> fwdThrust = new List<IMyThrust>();
             IMyThrust fwdThrust = GridTerminalSystem.GetBlockWithName("fwd") as IMyThrust;
@@ -119,9 +120,10 @@ namespace IngameScript
 
             //Test1: 51031.15, -30501.37, 13645.47
             //Test2: 53355.63, -26745.46, 12692.21
+            //GPS:BlackHawkCH91 #1:51706.22:-18929.43:24834.6:#FF75C9F1:
 
             //Vector3D targetPostion = new Vector3D(53355.63, -26745.46, 12692.21);
-            Vector3D targetPostion = new Vector3D(51031.15, -30501.37, 13645.47);
+            Vector3D targetPostion = new Vector3D(51706.22, -18929.43, 24834.6);
             Vector3D planetPosition = new Vector3D(.5, .5, .5);
 
             //Vector3D targetPostion = new Vector3D(53420.24, -26688.61, 12551.08);
@@ -134,7 +136,7 @@ namespace IngameScript
 
 
             //Launch
-            while ((rc.GetPosition() - planetPosition).LengthSquared() < 3782250000 && state == 0)
+            while ((rc.GetPosition() - planetPosition).LengthSquared() < Math.Pow(orbitAltitude - 700, 2) && state == 0)
             {
                 Vector3D PlanetToICBM = planetPosition - rc.GetPosition();
 
@@ -155,13 +157,14 @@ namespace IngameScript
                     gyro.Roll = (float)roll.PID(targetDirection.X, timestep);
                 }
 
-                double minAlt = Math.Pow(61500, 2);
+                //double minAlt = Math.Pow(orbitAltitude, 2);
                 Echo(PlanetToICBM.Length().ToString());
+                Echo(orbitAltitude.ToString());
 
-                if (PlanetToICBM.Length() > 61500)
+                /*if (PlanetToICBM.Length() > orbitAltitude)
                 {
                     state++;
-                }
+                }*/
 
 
                 yield return 0;
@@ -186,13 +189,13 @@ namespace IngameScript
 
                 double pitchAngle = AngleBetweenVectors(new Vector3D(0, 0, 1), Vector3DExtensions.ConvertToLocalPosition(Vector3D.Normalize(rc.GetPosition() - planetPosition), rc));
 
-                double altError = Clamp(61500 - (rc.GetPosition() - planetPosition).Length(), -300, 300) / 300;
+                double altError = Clamp(orbitAltitude - (rc.GetPosition() - planetPosition).Length(), -300, 300) / 300;
                 double angle = -(60 * altError) + 90;
 
                 //Echo(pitchAngle.ToString());
                 Echo(altError.ToString());
                 Echo(angle.ToString());
-                Echo((61500 - (rc.GetPosition() - planetPosition).Length()).ToString());
+                Echo((orbitAltitude - (rc.GetPosition() - planetPosition).Length()).ToString());
 
                 //Echo($"Pos: {Vector3D.Normalize(rc.GetPosition() - planetPosition) * 61500}\n");
                 //Echo(altitudeDirection.ToString());
@@ -207,7 +210,7 @@ namespace IngameScript
                     gyro.Roll = (float)roll.PID(planetDirection.X, timestep);
                 }
 
-                if ((Vector3D.Normalize(targetPostion) * 61500 - rc.GetPosition()).LengthSquared() < 250000)
+                if ((Vector3D.Normalize(targetPostion) * orbitAltitude - rc.GetPosition()).LengthSquared() < 1000000)
                 {
                     break;
                 }
@@ -216,13 +219,15 @@ namespace IngameScript
             }
 
             //Alignment
-            pitch = new PIDController(5, 0, 1);
-            yaw = new PIDController(5, 0, 1);
+            pitch = new PIDController(0.05, 0, 0.01);
+            yaw = new PIDController(0.05, 0, 0.01);
 
 
             while (true)
             {
-                Vector3D alignedPos = Vector3DExtensions.ConvertToLocalPosition(Vector3D.Normalize(targetPostion) * (rc.GetPosition() - planetPosition).Length(), rc) * 0.05;
+                Vector3D alignedPos = Vector3DExtensions.ConvertToLocalPosition(Vector3D.Normalize(targetPostion) * ((rc.GetPosition() - planetPosition) - 200).Length(), rc) * 0.35;
+                double angleDiff = AngleBetweenVectors(new Vector3D(0, 0, 1), alignedPos);
+
                 Echo(alignedPos.ToString());
 
                 double timestep = Runtime.TimeSinceLastRun.TotalSeconds;
