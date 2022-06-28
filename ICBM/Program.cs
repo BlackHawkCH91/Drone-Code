@@ -108,6 +108,13 @@ namespace IngameScript
             GridTerminalSystem.GetBlocksOfType<IMyGyro>(gyros);
             GridTerminalSystem.GetBlocksOfType<IMyThrust>(thrusters);
 
+            List<IMyShipMergeBlock> mergeBlocks = new List<IMyShipMergeBlock>();
+            List<IMyWarhead> warheads = new List<IMyWarhead>();
+            GridTerminalSystem.GetBlocksOfType<IMyShipMergeBlock>(mergeBlocks);
+            GridTerminalSystem.GetBlocksOfType<IMyWarhead>(warheads);
+
+
+
             //Enable override
             foreach (IMyGyro gyro in gyros)
             {
@@ -123,7 +130,8 @@ namespace IngameScript
             //GPS:BlackHawkCH91 #1:51706.22:-18929.43:24834.6:#FF75C9F1:
 
             //Vector3D targetPostion = new Vector3D(53355.63, -26745.46, 12692.21);
-            Vector3D targetPostion = new Vector3D(51706.22, -18929.43, 24834.6);
+            //Vector3D targetPostion = new Vector3D(51706.22, -18929.43, 24834.6);
+            Vector3D targetPostion = new Vector3D(51031.15, -30501.37, 13645.47);
             Vector3D planetPosition = new Vector3D(.5, .5, .5);
 
             //Vector3D targetPostion = new Vector3D(53420.24, -26688.61, 12551.08);
@@ -158,13 +166,8 @@ namespace IngameScript
                 }
 
                 //double minAlt = Math.Pow(orbitAltitude, 2);
-                Echo(PlanetToICBM.Length().ToString());
-                Echo(orbitAltitude.ToString());
-
-                /*if (PlanetToICBM.Length() > orbitAltitude)
-                {
-                    state++;
-                }*/
+                //Echo(PlanetToICBM.Length().ToString());
+                //Echo(orbitAltitude.ToString());
 
 
                 yield return 0;
@@ -222,7 +225,8 @@ namespace IngameScript
             pitch = new PIDController(0.05, 0, 0.01);
             yaw = new PIDController(0.05, 0, 0.01);
 
-
+            int j = 0;
+            int i = warheads.Count - 1;
             while (true)
             {
                 Vector3D alignedPos = Vector3DExtensions.ConvertToLocalPosition(Vector3D.Normalize(targetPostion) * ((rc.GetPosition() - planetPosition) - 200).Length(), rc) * 0.35;
@@ -235,8 +239,24 @@ namespace IngameScript
                 {
                     gyro.Pitch = (float)pitch.PID(alignedPos.Y, timestep);
                     gyro.Yaw = (float)yaw.PID(alignedPos.X, timestep);
-                    //gyro.Roll = (float)roll.PID(planetDirection.X, timestep);
+                    if ((rc.GetPosition() - targetPostion).LengthSquared() < 6250000)
+                    {
+                        gyro.Roll = 25;
+                    }
                 }
+
+
+
+                if ((rc.GetPosition() - targetPostion).LengthSquared() < 6250000 && j <= 0 && i >= 0)
+                {
+                    warheads[i].IsArmed = true;
+                    yield return 0;
+                    mergeBlocks[i * 2].Enabled = false;
+                    i--;
+                    j = 7;
+                }
+
+                j--;
 
                 yield return 0;
             }
