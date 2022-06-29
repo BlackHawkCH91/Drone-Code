@@ -108,11 +108,30 @@ namespace IngameScript
             GridTerminalSystem.GetBlocksOfType<IMyGyro>(gyros);
             GridTerminalSystem.GetBlocksOfType<IMyThrust>(thrusters);
 
-            List<IMyShipMergeBlock> mergeBlocks = new List<IMyShipMergeBlock>();
+            //List<IMyShipMergeBlock> mergeBlocks = new List<IMyShipMergeBlock>();
+            //GridTerminalSystem.GetBlocksOfType<IMyShipMergeBlock>(mergeBlocks);
             List<IMyWarhead> warheads = new List<IMyWarhead>();
-            GridTerminalSystem.GetBlocksOfType<IMyShipMergeBlock>(mergeBlocks);
             GridTerminalSystem.GetBlocksOfType<IMyWarhead>(warheads);
+            //List<IMyBlockGroup> mergeBlocks = new List<IMyBlockGroup>();
+            List<List<IMyShipMergeBlock>> mergeBlocks = new List<List<IMyShipMergeBlock>>();
 
+            int group = 1;
+            int list = 0;
+            while (true)
+            {
+                try
+                {
+                    IMyBlockGroup mergeGroup = GridTerminalSystem.GetBlockGroupWithName(group.ToString());
+                    mergeBlocks.Add(new List<IMyShipMergeBlock>());
+                    mergeGroup.GetBlocksOfType<IMyShipMergeBlock>(mergeBlocks[list]);
+                    list++;
+                    group++;
+                }
+                catch
+                {
+                    break;
+                }
+            }
 
 
             //Enable override
@@ -180,6 +199,9 @@ namespace IngameScript
             yaw = new PIDController(0.1, 0, 0.02);
             roll = new PIDController(5, 0, 1);
 
+            bool armed = false;
+            int i = mergeBlocks.Count - 1;
+
             //Orbit
             while (true)
             {
@@ -225,8 +247,9 @@ namespace IngameScript
             pitch = new PIDController(0.05, 0, 0.01);
             yaw = new PIDController(0.05, 0, 0.01);
 
-            int j = 0;
-            int i = warheads.Count - 1;
+            int mergeI = mergeBlocks.Count - 2;
+            int mergeJ = mergeBlocks[mergeI].Count - 1;
+
             while (true)
             {
                 Vector3D alignedPos = Vector3DExtensions.ConvertToLocalPosition(Vector3D.Normalize(targetPostion) * ((rc.GetPosition() - planetPosition) - 200).Length(), rc) * 0.35;
@@ -241,22 +264,31 @@ namespace IngameScript
                     gyro.Yaw = (float)yaw.PID(alignedPos.X, timestep);
                     if ((rc.GetPosition() - targetPostion).LengthSquared() < 6250000)
                     {
-                        gyro.Roll = 25;
+                        gyro.Roll = 10;
                     }
                 }
 
-
-
-                if ((rc.GetPosition() - targetPostion).LengthSquared() < 6250000 && j <= 0 && i >= 0)
+                if ((rc.GetPosition() - targetPostion).LengthSquared() < 6250000)
                 {
-                    warheads[i].IsArmed = true;
-                    yield return 0;
-                    mergeBlocks[i * 2].Enabled = false;
-                    i--;
-                    j = 7;
-                }
+                    if (!armed)
+                    {
+                        foreach (IMyWarhead warhead in warheads)
+                        {
+                            warhead.IsArmed = true;
+                        }
+                    }
+                    armed = true;
+                    //Echo(mergeBlocks[5].Count.ToString());
+                    //Echo($"{mergeI}, {mergeJ}");
+                    mergeBlocks[mergeI][mergeJ].Enabled = false;
 
-                j--;
+                    mergeJ--;
+                    if (mergeJ < 0)
+                    {
+                        mergeI--;
+                        mergeJ = mergeBlocks[mergeI].Count - 1;
+                    }
+                }
 
                 yield return 0;
             }
