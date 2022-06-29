@@ -100,7 +100,10 @@ namespace IngameScript
             double orbitAltitude = 68000;
             //Get necessary components
             //List<IMyThrust> fwdThrust = new List<IMyThrust>();
-            IMyThrust fwdThrust = GridTerminalSystem.GetBlockWithName("fwd") as IMyThrust;
+            IMyThrust fwd1 = GridTerminalSystem.GetBlockWithName("fwd1") as IMyThrust;
+            IMyThrust fwd2 = GridTerminalSystem.GetBlockWithName("fwd2") as IMyThrust;
+            IMyThrust fwd3 = GridTerminalSystem.GetBlockWithName("fwd3") as IMyThrust;
+            IMyThrust fwd4 = GridTerminalSystem.GetBlockWithName("fwd4") as IMyThrust;
             List<IMyThrust> thrusters = new List<IMyThrust>();
             List<IMyGyro> gyros = new List<IMyGyro>();
 
@@ -113,7 +116,7 @@ namespace IngameScript
             List<IMyWarhead> warheads = new List<IMyWarhead>();
             GridTerminalSystem.GetBlocksOfType<IMyWarhead>(warheads);
             //List<IMyBlockGroup> mergeBlocks = new List<IMyBlockGroup>();
-            List<List<IMyShipMergeBlock>> mergeBlocks = new List<List<IMyShipMergeBlock>>();
+            List<List<IMyMechanicalConnectionBlock>> mergeBlocks = new List<List<IMyMechanicalConnectionBlock>>();
 
             int group = 1;
             int list = 0;
@@ -122,8 +125,8 @@ namespace IngameScript
                 try
                 {
                     IMyBlockGroup mergeGroup = GridTerminalSystem.GetBlockGroupWithName(group.ToString());
-                    mergeBlocks.Add(new List<IMyShipMergeBlock>());
-                    mergeGroup.GetBlocksOfType<IMyShipMergeBlock>(mergeBlocks[list]);
+                    mergeBlocks.Add(new List<IMyMechanicalConnectionBlock>());
+                    mergeGroup.GetBlocksOfType<IMyMechanicalConnectionBlock>(mergeBlocks[list]);
                     list++;
                     group++;
                 }
@@ -142,7 +145,10 @@ namespace IngameScript
 
             yield return 0;
 
-            fwdThrust.ThrustOverridePercentage = 1;
+            fwd1.ThrustOverridePercentage = 1;
+            fwd2.ThrustOverridePercentage = 1;
+            fwd3.ThrustOverridePercentage = 1;
+            fwd4.ThrustOverridePercentage = 1;
 
             //Test1: 51031.15, -30501.37, 13645.47
             //Test2: 53355.63, -26745.46, 12692.21
@@ -157,8 +163,8 @@ namespace IngameScript
 
             int state = 0;
 
-            PIDController pitch = new PIDController(5, 0, 1);
-            PIDController yaw = new PIDController(5, 0, 1);
+            PIDController pitch = new PIDController(50, 0, 10);
+            PIDController yaw = new PIDController(50, 0, 10);
             PIDController roll = new PIDController(5, 0, 1);
 
 
@@ -280,7 +286,7 @@ namespace IngameScript
                     armed = true;
                     //Echo(mergeBlocks[5].Count.ToString());
                     //Echo($"{mergeI}, {mergeJ}");
-                    mergeBlocks[mergeI][mergeJ].Enabled = false;
+                    mergeBlocks[mergeI][mergeJ].Detach();
 
                     mergeJ--;
                     if (mergeJ < 0)
