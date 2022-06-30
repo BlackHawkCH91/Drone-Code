@@ -256,6 +256,9 @@ namespace IngameScript
             int mergeI = mergeBlocks.Count - 2;
             int mergeJ = mergeBlocks[mergeI].Count - 1;
 
+            int timeRelease = 5;
+            int gyroRoll = 30;
+
             while (true)
             {
                 Vector3D alignedPos = Vector3DExtensions.ConvertToLocalPosition(Vector3D.Normalize(targetPostion) * ((rc.GetPosition() - planetPosition) - 200).Length(), rc) * 0.35;
@@ -270,11 +273,12 @@ namespace IngameScript
                     gyro.Yaw = (float)yaw.PID(alignedPos.X, timestep);
                     if ((rc.GetPosition() - targetPostion).LengthSquared() < 6250000)
                     {
-                        gyro.Roll = 10;
+                        gyro.Roll = gyroRoll;
                     }
                 }
 
-                if ((rc.GetPosition() - targetPostion).LengthSquared() < 6250000)
+                timeRelease--;
+                if ((rc.GetPosition() - targetPostion).LengthSquared() < 6250000 && timeRelease <= 0)
                 {
                     if (!armed)
                     {
@@ -294,6 +298,8 @@ namespace IngameScript
                         mergeI--;
                         mergeJ = mergeBlocks[mergeI].Count - 1;
                     }
+                    //gyroRoll += 2;
+                    timeRelease = 25;
                 }
 
                 yield return 0;
