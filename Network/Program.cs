@@ -115,7 +115,7 @@ namespace IngameScript
         object[] laserAntPos;
         int[] ticks = new int[] { 0 };
 
-        bool anonCast = true;
+        bool anonCast = false;
 
         //!3D printing stuff
         static IMyProjector miningProj;
@@ -443,7 +443,7 @@ namespace IngameScript
         //object[] testThing = new object[] { "43242345", "243525", new object[] { "312343", new Vector3(2, 3, 4), 23, new object[] { new Vector3(2, 4, 5), 23, "232" } }, new object[] { "test", new object[] { "brrr", 434.34, new Vector3(3, 54, 1) }, 123 } };
         object[] testThing = new object[] { new Vector3D(2, 3, 4), "hello", 123, true };
 
-        public IEnumerator<int> IEnumMain()
+        IEnumerator<int> HealthFunc()
         {
             //!Grid block caching
             Vector3I gridMax = Me.CubeGrid.Max;
@@ -463,11 +463,12 @@ namespace IngameScript
                     try
                     {
                         terminalBlocks.Add(Me.CubeGrid.GetCubeBlock(block.Position), new BoundingBox(block.Min, block.Max));
-                    } catch
+                    }
+                    catch
                     {
 
                     }
-                
+
 
                     if (counter >= 75)
                     {
@@ -494,7 +495,7 @@ namespace IngameScript
                             continue;
                         }
 
-                            int newCounter = 0;
+                        int newCounter = 0;
                         foreach (BoundingBox boundingBox in terminalBlocks.Values)
                         {
                             newCounter++;
@@ -517,7 +518,7 @@ namespace IngameScript
                         }
 
                         //If there is an armour block, add it to list.
-                        
+
                         armourBlocks.Add(point);
 
                         if (counter >= 60)
@@ -536,9 +537,6 @@ namespace IngameScript
 
             TaskScheduler.SpawnCoroutine(new Func<IEnumerator<int>>(GetGridHealth));
 
-            TimeInterval infoInterval = new TimeInterval();
-            TimeInterval estInterval = new TimeInterval();
-
             string testThing = "";
 
             if (gridType == "Outpost")
@@ -548,9 +546,18 @@ namespace IngameScript
                 assembler = GridTerminalSystem.GetBlockWithName("Assembler") as IMyAssembler;
             }
 
-            Init();
 
             Network.PrintShip();
+        }
+
+        public IEnumerator<int> IEnumMain()
+        {
+            
+
+            TimeInterval infoInterval = new TimeInterval();
+            TimeInterval estInterval = new TimeInterval();
+
+            Init();
 
             while (true)
             {
