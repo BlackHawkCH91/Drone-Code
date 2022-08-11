@@ -367,3 +367,4 @@ MDK.paths.props
 
 # Backup files - prevents bulk and overfilling on repository
 *_Backup_*
+/CustomDataReaderTest
