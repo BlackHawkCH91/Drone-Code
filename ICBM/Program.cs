@@ -153,10 +153,12 @@ namespace IngameScript
             //Test1: 51031.15, -30501.37, 13645.47
             //Test2: 53355.63, -26745.46, 12692.21
             //GPS:BlackHawkCH91 #1:51706.22:-18929.43:24834.6:#FF75C9F1:
+            //GPS:Enemy base:61132.69:306.46:76.75:#FF75C9F1:
 
             //Vector3D targetPostion = new Vector3D(53355.63, -26745.46, 12692.21);
             //Vector3D targetPostion = new Vector3D(51706.22, -18929.43, 24834.6);
-            Vector3D targetPostion = new Vector3D(51031.15, -30501.37, 13645.47);
+            //Vector3D targetPostion = new Vector3D(51031.15, -30501.37, 13645.47);
+            Vector3D targetPostion = new Vector3D(61132.69, 306.46, 76.75);
             Vector3D planetPosition = new Vector3D(.5, .5, .5);
 
             //Vector3D targetPostion = new Vector3D(53420.24, -26688.61, 12551.08);
