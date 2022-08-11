@@ -33,7 +33,7 @@ namespace IngameScript
             TaskScheduler.EstablishTaskScheduler(Runtime, Echo, true);
             
             // Establish controllers
-            MovementController.Establish(GridTerminalSystem, Runtime, Echo, controller);
+            //MovementController.Establish(GridTerminalSystem, Runtime, Echo, controller);
             RotationController.Establish(GridTerminalSystem, Runtime, Echo, controller);
 
             // Set controller positions
