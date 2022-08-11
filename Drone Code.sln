@@ -25,6 +25,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "coroutineTests", "coroutine
 EndProject
 Project("{D954291E-2A0B-460D-934E-DC6B0785DB48}") = "PIDControllers", "PIDControllers\PIDControllers.shproj", "{617BD208-4DBB-46D9-8416-4384C052740B}"
 EndProject
+Project("{D954291E-2A0B-460D-934E-DC6B0785DB48}") = "DoubleExtensions", "DoubleExtensions\DoubleExtensions.shproj", "{B62BD133-A29E-4BB7-B06B-8CE8A2343DDE}"
+EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "RotorTurret", "RotorTurret\RotorTurret.csproj", "{F934029B-B511-4AF7-A26A-3E5AB7E50EBB}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "StartUp", "StartUp\StartUp.csproj", "{1F7C49EB-36C4-4791-BF54-1372F844A9E6}"
@@ -47,6 +49,7 @@ Global
 		Coroutine\Coroutine.projitems*{33262ce1-6d65-43de-b2f3-9a5542e538c7}*SharedItemsImports = 4
 		Vector3DExtensions\Vector3DExtensions.projitems*{33262ce1-6d65-43de-b2f3-9a5542e538c7}*SharedItemsImports = 4
 		Coroutine\Coroutine.projitems*{4fea1d8d-11cc-4d65-993b-821aad1e7ed6}*SharedItemsImports = 4
+		DoubleExtensions\DoubleExtensions.projitems*{4fea1d8d-11cc-4d65-993b-821aad1e7ed6}*SharedItemsImports = 4
 		PIDControllers\PIDControllers.projitems*{4fea1d8d-11cc-4d65-993b-821aad1e7ed6}*SharedItemsImports = 4
 		Vector3DExtensions\Vector3DExtensions.projitems*{4fea1d8d-11cc-4d65-993b-821aad1e7ed6}*SharedItemsImports = 4
 		Coroutine\Coroutine.projitems*{51c427f9-5dfb-46e9-9b3b-9e71bce59ece}*SharedItemsImports = 4
@@ -55,6 +58,7 @@ Global
 		PIDControllers\PIDControllers.projitems*{617bd208-4dbb-46d9-8416-4384c052740b}*SharedItemsImports = 13
 		NetworkMethods\NetworkMethods.projitems*{61eba249-19f3-48b6-a25b-a4cee90168ba}*SharedItemsImports = 13
 		Coroutine\Coroutine.projitems*{807e7f93-033e-4d6d-a4bb-20385f3f3b1f}*SharedItemsImports = 13
+		DoubleExtensions\DoubleExtensions.projitems*{b62bd133-a29e-4bb7-b06b-8ce8a2343dde}*SharedItemsImports = 13
 		Coroutine\Coroutine.projitems*{d7769a5c-4e12-41ff-bf4d-9edf0ff53d53}*SharedItemsImports = 4
 		Vector3DExtensions\Vector3DExtensions.projitems*{d7769a5c-4e12-41ff-bf4d-9edf0ff53d53}*SharedItemsImports = 4
 		Vector3DExtensions\Vector3DExtensions.projitems*{df63a6bf-0ce7-4a83-9475-2c405c25bd0f}*SharedItemsImports = 13
@@ -167,6 +171,7 @@ Global
 		{01018321-A64D-4044-9364-FC8BBE552D0A} = {92BAC0A1-993A-40F9-9BF5-9AAAAEEF5433}
 		{5C570A9B-D800-4F23-84D5-538B412A0E60} = {92BAC0A1-993A-40F9-9BF5-9AAAAEEF5433}
 		{617BD208-4DBB-46D9-8416-4384C052740B} = {611643A1-843E-4B4C-9F30-A47A8786B1A4}
+		{B62BD133-A29E-4BB7-B06B-8CE8A2343DDE} = {611643A1-843E-4B4C-9F30-A47A8786B1A4}
 		{F934029B-B511-4AF7-A26A-3E5AB7E50EBB} = {92BAC0A1-993A-40F9-9BF5-9AAAAEEF5433}
 		{E186690B-733D-4E74-9F6D-3CF3ADF92C05} = {92BAC0A1-993A-40F9-9BF5-9AAAAEEF5433}
 		{61EBA249-19F3-48B6-A25B-A4CEE90168BA} = {611643A1-843E-4B4C-9F30-A47A8786B1A4}
