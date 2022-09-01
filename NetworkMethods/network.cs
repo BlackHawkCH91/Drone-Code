@@ -24,6 +24,13 @@ namespace IngameScript
     {
         public class Network
         {
+            //Components and cubeblocks
+            static Dictionary<string, MyTuple<MyDefinitionId, Dictionary<string, double>>> blueprints = new Dictionary<string, MyTuple<MyDefinitionId, Dictionary<string, double>>>();
+            static Dictionary<string, Dictionary<string, double>> cubeBlocks = new Dictionary<string, Dictionary<string, double>>();
+            static List<string> errorList = new List<string>();
+            static IMyProjector miningProj;
+            static IMyAssembler assembler;
+
             static Dictionary<string, List<int>> bracketPos = new Dictionary<string, List<int>>();
             //?Functions ----------------------------------------------------------------------
 
