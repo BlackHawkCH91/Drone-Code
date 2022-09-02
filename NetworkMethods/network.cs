@@ -255,10 +255,6 @@ namespace IngameScript
 
                 }
 
-                //
-                //Creating two arrays here. Is it possible to use just one?
-                //
-
                 //Convert the string into an object array
                 object[] packetArr = packet.Split(',');
                 object[] finalPacketArr = new object[packetArr.Length];
@@ -282,7 +278,7 @@ namespace IngameScript
                         }
                         else if (item.StartsWith("T") || item.StartsWith("F")) //New thing. Needs testing
                         {
-                            finalPacketArr[i] = item.StartsWith("T"); //
+                            finalPacketArr[i] = item.StartsWith("T");
                         }
                         else if (item[0] == 'M') // Another new thing
                         {

@@ -73,29 +73,102 @@ namespace IngameScript
     {
         //Blocks
         List<IMyLaserAntenna> laserAnts;
+        List<IMyRadioAntenna> antennas;
+        List<IMyTextPanel> textPanels;
+        IMyRemoteControl remoteControl;
 
+        //Networking vars
         string[] tags = new[] { "all" };
+        bool anonCasts = false;
+        Dictionary<long, List<Vector3D>> addresses = new Dictionary<long, List<Vector3D>>();
+        Queue<MyTuple<string, string, object[]>> PacketBacklog = new Queue<MyTuple<string, string, object[]>>();
+        
         string gridType;
+
+        //Debug vars
+        bool debug = true;
 
 
         void Init()
         {
             GridTerminalSystem.GetBlocksOfType<IMyLaserAntenna>(laserAnts);
+            GridTerminalSystem.GetBlocksOfType<IMyRadioAntenna>(antennas);
+
+            remoteControl = GridTerminalSystem.GetBlockWithName("rc") as IMyRemoteControl;
         }
 
-        void SendMessage(string destination, string purpose, object[] content, bool castType)
+        void SetAntennas(bool status)
         {
-            string packet = $"[{Me.CubeGrid.EntityId}, {destination}]";
-            if (castType)
+            foreach (IMyRadioAntenna ant in antennas)
             {
-                IGC.SendBroadcastMessage(destination, );
+                ant.Enabled = status;
             }
         }
 
-        void EstCon(string tag)
+        IEnumerator<int> SendMessage(string destination, string purpose, object[] content, bool anon)
         {
+            //Enable antennas, wait for a tick
+            if (anon) { SetAntennas(true); yield return 0; }
 
+            //Generate Packet
+            ImmutableArray<string> packet = new ImmutableArray<string>() { Me.CubeGrid.EntityId.ToString(), destination, purpose, Network.ObjectToString(content)};
+            long address;
+
+            if (long.TryParse(destination, out address))
+            {
+                //Check if endpoint is reachable
+                if (IGC.IsEndpointReachable(address))
+                {
+                    IGC.SendUnicastMessage(address, destination, packet);
+                } else 
+                {
+                    //Queue packet if address is not reachable
+                    PacketBacklog.Enqueue(new MyTuple<string, string, object[]>(destination, purpose, content)); 
+                }
+            } else
+            {
+                IGC.SendBroadcastMessage(destination, packet);
+            }
+
+            //Disable once done
+            if (anon) { SetAntennas(false); }
         }
+
+        void EstCon(string destination)
+        {
+            //Gets all laser antenna positions
+            object[] antennaPos = new object[laserAnts.Count];
+            for (int i = 0; i < antennaPos.Length; i++)
+            {
+                antennaPos[i] = Vector3DExtensions.ConvertToLocalPosition(laserAnts[i].GetPosition(), remoteControl);
+            }
+
+            TaskScheduler.SpawnCoroutine(new Func<string, string, object[], bool, IEnumerator<int>>(SendMessage), destination, "EstCon", antennaPos, anonCasts);
+        }
+
+        void ReceiveMessage(ImmutableArray<string> packet)
+        {
+            //Get all info from packet
+            long source = long.Parse(packet[0]);
+            string destination = packet[1];
+            string purpose = packet[2];
+            object[] content = Network.StringToObject(packet[3]);
+
+            switch (purpose)
+            {
+                case "EstCon":
+                    addresses.Add(source, content.Cast<Vector3D>().ToList());
+                    long temp;
+
+                    if (!long.TryParse(destination, out temp))
+                    {
+                        EstCon(source.ToString());
+                    }
+
+                    break;
+            }
+        }
+
 
         //!Initialise some variables here
         public Program()
@@ -120,8 +193,46 @@ namespace IngameScript
 
         public IEnumerator<int> IEnumMain()
         {
+            //Initialise listeners
+            List<IMyBroadcastListener> broadcastListeners = new List<IMyBroadcastListener>();
+            IMyUnicastListener unicastListener = IGC.UnicastListener;
 
-            yield return 0;
+            foreach (string tag in tags)
+            {
+                broadcastListeners.Add(IGC.RegisterBroadcastListener(tag));
+            }
+
+
+            while (true)
+            {
+                if (gridType == "Output")
+                {
+
+                }
+
+
+                //Listeners
+
+                yield return 0;
+
+                //Loop through broadcast listeners
+                foreach (IMyBroadcastListener broadcastListener in broadcastListeners)
+                {
+                    //If there's a message, convert to string array and run ReceiveMessage
+                    if (broadcastListener.HasPendingMessage)
+                    {                        
+                        ReceiveMessage((ImmutableArray<string>) broadcastListener.AcceptMessage().Data);
+                    }
+                }
+
+                //If there's a message, convert to string array and run ReceiveMessage
+                if (unicastListener.HasPendingMessage)
+                {
+                    ReceiveMessage((ImmutableArray<string>) unicastListener.AcceptMessage().Data);
+                }
+
+                yield return 0;
+            }
         }
 
         
