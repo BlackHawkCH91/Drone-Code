@@ -69,12 +69,50 @@ namespace IngameScript
         }
     }
 
+    public static class Debug
+    {
+        static Dictionary<int, List<string>> debugMessages = new Dictionary<int, List<string>>();
+        public static List<IMyTextPanel> textPanels;
+        static bool debug = true;
+
+        public static void AddLog(int screen, string message)
+        {
+            if (debug)
+            {
+                //Add message
+                debugMessages[screen].Add(message);
+
+                //Remove first message in list
+                if (debugMessages[screen].Count > 17)
+                {
+                    debugMessages[screen].RemoveAt(0);
+                }
+            }
+        }
+
+        public static void display()
+        {
+            //Loop through dictionary, display all messages
+            foreach (KeyValuePair<int, List<string>> message in debugMessages)
+            {
+                string output = "";
+
+                foreach (string item in message.Value)
+                {
+                    output += item + "\n";
+                }
+
+                textPanels[message.Key].WriteText(output);
+            }
+        }
+    }
+
     partial class Program : MyGridProgram
     {
         //Blocks
         List<IMyLaserAntenna> laserAnts;
         List<IMyRadioAntenna> antennas;
-        List<IMyTextPanel> textPanels;
+        
         IMyRemoteControl remoteControl;
 
         //Networking vars
@@ -86,16 +124,7 @@ namespace IngameScript
         string gridType;
 
         //Debug vars
-        bool debug = true;
 
-
-        void Init()
-        {
-            GridTerminalSystem.GetBlocksOfType<IMyLaserAntenna>(laserAnts);
-            GridTerminalSystem.GetBlocksOfType<IMyRadioAntenna>(antennas);
-
-            remoteControl = GridTerminalSystem.GetBlockWithName("rc") as IMyRemoteControl;
-        }
 
         void SetAntennas(bool status)
         {
@@ -103,12 +132,23 @@ namespace IngameScript
             {
                 ant.Enabled = status;
             }
+            Debug.AddLog(1, $"Setting antennas: {status}");
         }
 
         IEnumerator<int> SendMessage(string destination, string purpose, object[] content, bool anon)
         {
+            bool enabled = false;
+            foreach (IMyRadioAntenna antenna in antennas)
+            {
+                try
+                {
+                    enabled = antenna.Enabled;
+
+                    if (enabled) { break; }
+                }
+                catch { }
+            }
             //Enable antennas, wait for a tick
-            if (anon) { SetAntennas(true); yield return 0; }
 
             //Generate Packet
             ImmutableArray<string> packet = new ImmutableArray<string>() { Me.CubeGrid.EntityId.ToString(), destination, purpose, Network.ObjectToString(content)};
@@ -116,17 +156,30 @@ namespace IngameScript
 
             if (long.TryParse(destination, out address))
             {
-                //Check if endpoint is reachable
+                //Check if endpoint is reachable using laser ants
                 if (IGC.IsEndpointReachable(address))
                 {
                     IGC.SendUnicastMessage(address, destination, packet);
                 } else 
                 {
-                    //Queue packet if address is not reachable
-                    PacketBacklog.Enqueue(new MyTuple<string, string, object[]>(destination, purpose, content)); 
+                    SetAntennas(true);
+                    yield return 0;
+
+                    if (IGC.IsEndpointReachable(address))
+                    {
+                        IGC.SendUnicastMessage(address, destination, packet);
+                    } else
+                    {
+                        //Queue packet if address is not reachable
+                        PacketBacklog.Enqueue(new MyTuple<string, string, object[]>(destination, purpose, content)); 
+                    }
+
                 }
             } else
             {
+                SetAntennas(true);
+                yield return 0;
+
                 IGC.SendBroadcastMessage(destination, packet);
             }
 
@@ -169,6 +222,14 @@ namespace IngameScript
             }
         }
 
+        void Init()
+        {
+            GridTerminalSystem.GetBlocksOfType<IMyLaserAntenna>(laserAnts);
+            GridTerminalSystem.GetBlocksOfType<IMyRadioAntenna>(antennas);
+            GridTerminalSystem.GetBlocksOfType<IMyTextPanel>(Debug.textPanels);
+
+            remoteControl = GridTerminalSystem.GetBlockWithName("rc") as IMyRemoteControl;
+        }
 
         //!Initialise some variables here
         public Program()
@@ -231,6 +292,7 @@ namespace IngameScript
                     ReceiveMessage((ImmutableArray<string>) unicastListener.AcceptMessage().Data);
                 }
 
+                Debug.display();
                 yield return 0;
             }
         }
