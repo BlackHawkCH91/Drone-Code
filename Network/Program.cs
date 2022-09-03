@@ -72,13 +72,18 @@ namespace IngameScript
     public static class Debug
     {
         static Dictionary<int, List<string>> debugMessages = new Dictionary<int, List<string>>();
-        public static List<IMyTextPanel> textPanels;
+        public static List<IMyTextPanel> textPanels = new List<IMyTextPanel>();
         static bool debug = true;
+        public static int counter = 1;
 
         public static void AddLog(int screen, string message)
         {
             if (debug)
             {
+                if (!debugMessages.ContainsKey(screen))
+                {
+                    debugMessages.Add(screen, new List<string>());
+                }
                 //Add message
                 debugMessages[screen].Add(message);
 
@@ -99,7 +104,7 @@ namespace IngameScript
 
                 foreach (string item in message.Value)
                 {
-                    output += item + "\n";
+                    output += counter.ToString() + ": " + item + "\n";
                 }
 
                 textPanels[message.Key].WriteText(output);
@@ -110,8 +115,8 @@ namespace IngameScript
     partial class Program : MyGridProgram
     {
         //Blocks
-        List<IMyLaserAntenna> laserAnts;
-        List<IMyRadioAntenna> antennas;
+        List<IMyLaserAntenna> laserAnts = new List<IMyLaserAntenna>();
+        List<IMyRadioAntenna> antennas = new List<IMyRadioAntenna>();
         
         IMyRemoteControl remoteControl;
 
@@ -132,57 +137,59 @@ namespace IngameScript
             {
                 ant.Enabled = status;
             }
-            Debug.AddLog(1, $"Setting antennas: {status}");
+            Debug.AddLog(0, $"Setting antennas: {status}");
         }
 
         IEnumerator<int> SendMessage(string destination, string purpose, object[] content, bool anon)
         {
-            bool enabled = false;
-            foreach (IMyRadioAntenna antenna in antennas)
-            {
-                try
-                {
-                    enabled = antenna.Enabled;
-
-                    if (enabled) { break; }
-                }
-                catch { }
-            }
-            //Enable antennas, wait for a tick
-
+            Echo($"1 {Me.CubeGrid.EntityId} {destination} {purpose}");
             //Generate Packet
-            ImmutableArray<string> packet = new ImmutableArray<string>() { Me.CubeGrid.EntityId.ToString(), destination, purpose, Network.ObjectToString(content)};
+            ImmutableArray<string> packet = ImmutableArray.Create(new string[] { Me.CubeGrid.EntityId.ToString(), destination, purpose, Network.ObjectToString(content) });
+                //new ImmutableArray<string>() { Me.CubeGrid.EntityId.ToString(), destination, purpose, Network.ObjectToString(content)};
             long address;
 
+            Echo("2");
             if (long.TryParse(destination, out address))
             {
+                Echo("3");
                 //Check if endpoint is reachable using laser ants
                 if (IGC.IsEndpointReachable(address))
                 {
+                    Echo("4");
                     IGC.SendUnicastMessage(address, destination, packet);
+                    Debug.AddLog(0, $"Sending packet: {destination}, {purpose}, {content}");
                 } else 
                 {
+                    Echo("5");
                     SetAntennas(true);
                     yield return 0;
 
                     if (IGC.IsEndpointReachable(address))
                     {
+                        Echo("6");
                         IGC.SendUnicastMessage(address, destination, packet);
+                        Debug.AddLog(0, $"Sending packet: {destination}, {purpose}, {content}");
                     } else
                     {
+                        Echo("7");
                         //Queue packet if address is not reachable
-                        PacketBacklog.Enqueue(new MyTuple<string, string, object[]>(destination, purpose, content)); 
+                        PacketBacklog.Enqueue(new MyTuple<string, string, object[]>(destination, purpose, content));
+                        Debug.AddLog(0, $"Destination unreachable: {destination}, {purpose}, {content}");
                     }
 
                 }
             } else
             {
+                Echo("8");
                 SetAntennas(true);
                 yield return 0;
 
                 IGC.SendBroadcastMessage(destination, packet);
+                Debug.AddLog(0, $"{Debug.counter} Broadcasting packet: {destination}, {purpose}");
+                Echo("9");
             }
 
+            Echo("9");
             //Disable once done
             if (anon) { SetAntennas(false); }
         }
@@ -207,17 +214,23 @@ namespace IngameScript
             string purpose = packet[2];
             object[] content = Network.StringToObject(packet[3]);
 
+            Debug.AddLog(1, $"Received packet from {source}: {purpose}, {content}");
+
             switch (purpose)
             {
                 case "EstCon":
-                    addresses.Add(source, content.Cast<Vector3D>().ToList());
-                    long temp;
 
-                    if (!long.TryParse(destination, out temp))
+                    //If the IP already exists, don't bother processing.
+                    if (!addresses.ContainsKey(source))
                     {
-                        EstCon(source.ToString());
-                    }
+                        addresses.Add(source, content.Cast<Vector3D>().ToList());
+                        long temp;
 
+                        if (!long.TryParse(destination, out temp))
+                        {
+                            EstCon(source.ToString());
+                        }
+                    }
                     break;
             }
         }
@@ -263,12 +276,19 @@ namespace IngameScript
                 broadcastListeners.Add(IGC.RegisterBroadcastListener(tag));
             }
 
+            //Intervals
+            TimeInterval EstConInterval = new TimeInterval();
+
 
             while (true)
             {
-                if (gridType == "Output")
+                if (gridType == "Outpost")
                 {
-
+                    if (EstConInterval.waitInterval(TimeSpan.FromSeconds(5)))
+                    {
+                        EstCon("all");
+                        Debug.counter++;
+                    }
                 }
 
 
