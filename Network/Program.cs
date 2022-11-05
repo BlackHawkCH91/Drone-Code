@@ -74,7 +74,6 @@ namespace IngameScript
         static Dictionary<int, List<string>> debugMessages = new Dictionary<int, List<string>>();
         public static List<IMyTextPanel> textPanels = new List<IMyTextPanel>();
         static bool debug = true;
-        public static int counter = 1;
 
         public static void AddLog(int screen, string message)
         {
@@ -95,7 +94,7 @@ namespace IngameScript
             }
         }
 
-        public static void display()
+        public static void Display()
         {
             //Loop through dictionary, display all messages
             foreach (KeyValuePair<int, List<string>> message in debugMessages)
@@ -104,7 +103,7 @@ namespace IngameScript
 
                 foreach (string item in message.Value)
                 {
-                    output += counter.ToString() + ": " + item + "\n";
+                    output += item + "\n";
                 }
 
                 textPanels[message.Key].WriteText(output);
@@ -121,8 +120,8 @@ namespace IngameScript
         IMyRemoteControl remoteControl;
 
         //Networking vars
-        string[] tags = new[] { "all" };
-        bool anonCasts = false;
+        List<string> tags = new List<string>() { "all" };
+        bool anonCasts = true;
         Dictionary<long, List<Vector3D>> addresses = new Dictionary<long, List<Vector3D>>();
         Queue<MyTuple<string, string, object[]>> PacketBacklog = new Queue<MyTuple<string, string, object[]>>();
         
@@ -135,7 +134,7 @@ namespace IngameScript
         {
             foreach (IMyRadioAntenna ant in antennas)
             {
-                ant.Enabled = status;
+                ant.EnableBroadcasting = status;
             }
             Debug.AddLog(0, $"Setting antennas: {status}");
         }
@@ -145,7 +144,7 @@ namespace IngameScript
             Echo($"1 {Me.CubeGrid.EntityId} {destination} {purpose}");
             //Generate Packet
             ImmutableArray<string> packet = ImmutableArray.Create(new string[] { Me.CubeGrid.EntityId.ToString(), destination, purpose, Network.ObjectToString(content) });
-                //new ImmutableArray<string>() { Me.CubeGrid.EntityId.ToString(), destination, purpose, Network.ObjectToString(content)};
+            //new ImmutableArray<string>() { Me.CubeGrid.EntityId.ToString(), destination, purpose, Network.ObjectToString(content)};
             long address;
 
             Echo("2");
@@ -163,6 +162,8 @@ namespace IngameScript
                     Echo("5");
                     SetAntennas(true);
                     yield return 0;
+
+                    IGC.SendBroadcastMessage("all" , packet);
 
                     if (IGC.IsEndpointReachable(address))
                     {
@@ -182,16 +183,16 @@ namespace IngameScript
             {
                 Echo("8");
                 SetAntennas(true);
-                yield return 0;
+                yield return 1;
 
                 IGC.SendBroadcastMessage(destination, packet);
-                Debug.AddLog(0, $"{Debug.counter} Broadcasting packet: {destination}, {purpose}");
+                Debug.AddLog(0, $"Broadcasting packet: {destination}, {purpose}");
                 Echo("9");
             }
 
             Echo("9");
             //Disable once done
-            if (anon) { SetAntennas(false); }
+            if (anon) { yield return 0; SetAntennas(false); }
         }
 
         void EstCon(string destination)
@@ -219,7 +220,6 @@ namespace IngameScript
             switch (purpose)
             {
                 case "EstCon":
-
                     //If the IP already exists, don't bother processing.
                     if (!addresses.ContainsKey(source))
                     {
@@ -242,6 +242,9 @@ namespace IngameScript
             GridTerminalSystem.GetBlocksOfType<IMyTextPanel>(Debug.textPanels);
 
             remoteControl = GridTerminalSystem.GetBlockWithName("rc") as IMyRemoteControl;
+
+            //Tags:
+            tags.Add(Me.CubeGrid.EntityId.ToString() + "r");
         }
 
         //!Initialise some variables here
@@ -287,7 +290,6 @@ namespace IngameScript
                     if (EstConInterval.waitInterval(TimeSpan.FromSeconds(5)))
                     {
                         EstCon("all");
-                        Debug.counter++;
                     }
                 }
 
@@ -312,7 +314,7 @@ namespace IngameScript
                     ReceiveMessage((ImmutableArray<string>) unicastListener.AcceptMessage().Data);
                 }
 
-                Debug.display();
+                Debug.Display();
                 yield return 0;
             }
         }
