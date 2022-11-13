@@ -36,6 +36,8 @@ namespace IngameScript
             static Vector3D vel;
             static Vector3D accel;
 
+            public static Action<string> Echo;
+
             public static void SetVariables(Vector3D _pos, Vector3D _vel, Vector3D _accel, double speed)
             {
                 pos = _pos;
@@ -82,23 +84,27 @@ namespace IngameScript
             {
                 double[] roots;
 
-
+                //Echo("1");
                 if (a == 0)
                 {
-                    if (c == 0)
+                    if (d == 0)
                     {
+                        //Echo("2");
                         return pos;
                     }
 
+                    //Echo(e.ToString());
                     roots = SolveQuadratic();
                 }
                 else
                 {
+                    //Echo("3");
                     roots = SolveQuartic();
                 }
 
                 float t = -1;
 
+                //Echo("4");
                 foreach (double x in roots)
                 {
                     if (x > 0 && (x < t || t < 0))
@@ -112,6 +118,7 @@ namespace IngameScript
                     return null;
                 }
 
+                //Echo("5");
                 return pos + t * vel + (t / 2) * accel;
             }
         }
@@ -329,6 +336,7 @@ namespace IngameScript
 
         public Program()
         {
+            Polynomial.Echo = Echo;
             radar = GridTerminalSystem.GetBlockWithName("radar") as IMyTurretControlBlock;
             TaskScheduler.EstablishTaskScheduler(Runtime, Echo, true);
             TaskScheduler.SpawnCoroutine(new Func<IEnumerator<int>>(IEnumMain));
@@ -351,25 +359,37 @@ namespace IngameScript
 
         public IEnumerator<int> IEnumMain()
         {
+            int count = 0;
             while (true)
             {
                 MyDetectedEntityInfo enemy = radar.GetTargetedEntity();
+                Vector3D localPos = Vector3DExtensions.ConvertToLocalPosition(enemy.Position, radar.WorldMatrix);
+
                 if (enemy.Position != Vector3D.Zero && (enemy.TimeStamp - targetVel1.Item1) > 100)
                 {
                     targetVel2 = targetVel1;
-                    targetVel1 = new MyTuple<double, Vector3D>(enemy.TimeStamp, enemy.Velocity);
+                    targetVel1 = new MyTuple<double, Vector3D>(enemy.TimeStamp, Vector3DExtensions.ConvertToLocalDirection(enemy.Velocity, radar.WorldMatrix));
 
                     targetAcceleration = (targetVel1.Item2 - targetVel2.Item2) / ((double)(targetVel1.Item1 - targetVel2.Item1) / 1000);
 
-                    Polynomial.SetVariables(enemy.Position, enemy.Velocity, targetAcceleration, 100);
+                    Polynomial.SetVariables(localPos, targetVel1.Item2, targetAcceleration, 100);
                     interceptPoint = Polynomial.GetInterceptPoint();
 
                     if (interceptPoint == null) interceptPoint = Vector3D.Zero;
+                }
+                count++;
+                if (count > 60)
+                {
+                    //break;
                 }
 
                 Echo($"Pos: {enemy.Position}");
                 Echo($"Vel: {targetVel1.Item2}");
                 Echo($"Acc: {targetAcceleration}");
+                Echo($"pos: {localPos}");
+                Echo($"vel: {targetVel1.Item2}");
+                Echo($"acc: {targetAcceleration}");
+                Echo($"Int: {interceptPoint}");
                 yield return 0;
             }
         }
