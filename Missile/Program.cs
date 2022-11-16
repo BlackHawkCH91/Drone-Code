@@ -22,6 +22,7 @@ namespace IngameScript
 {
     partial class Program : MyGridProgram
     {
+
         public static class Polynomial
         {
             static double a;
@@ -331,8 +332,6 @@ namespace IngameScript
         }
         IMyTurretControlBlock radar;
 
-
-
         public Program()
         {
             Polynomial.Echo = Echo;
@@ -356,7 +355,7 @@ namespace IngameScript
         Vector3D targetAcceleration = Vector3D.Zero;
         Vector3D? interceptPoint = Vector3D.Zero;
 
-        public IEnumerator<int> IEnumMain()
+        IEnumerator<int> IEnumMain()
         {
             int count = 0;
             while (true)
@@ -382,7 +381,7 @@ namespace IngameScript
                     //break;
                 }
 
-                Echo($"pos: {(Vector3I) localPos}");
+                Echo($"pos: {(Vector3I)localPos}");
                 Echo($"vel: {(Vector3I)targetVel1.Item2}");
                 Echo($"acc: {(Vector3I)targetAcceleration}");
                 Echo($"Int: {(Vector3I)interceptPoint}");
