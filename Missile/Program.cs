@@ -331,6 +331,15 @@ namespace IngameScript
             }
         }
         IMyTurretControlBlock radar;
+        IMyBroadcastListener listener;
+        IMyRemoteControl rc;
+        List<IMyGyro> gyros = new List<IMyGyro>();
+
+        public MatrixD GetLocalMatrix(MatrixD reference, MatrixD matrix)
+        {
+            double[] referenceValues = new double[] { matrix.M11, matrix.M12, matrix.M13, matrix.M21, matrix.M22, matrix.M23, matrix.M31, matrix.M32, matrix.M33 };
+
+        }
 
         public Program()
         {
@@ -338,6 +347,9 @@ namespace IngameScript
             radar = GridTerminalSystem.GetBlockWithName("radar") as IMyTurretControlBlock;
             TaskScheduler.EstablishTaskScheduler(Runtime, Echo, true);
             TaskScheduler.SpawnCoroutine(new Func<IEnumerator<int>>(IEnumMain));
+
+            rc = (IMyRemoteControl)GridTerminalSystem.GetBlockWithName("rc");
+            GridTerminalSystem.GetBlocksOfType(gyros);
         }
 
         public void Save()
@@ -357,20 +369,26 @@ namespace IngameScript
 
         IEnumerator<int> IEnumMain()
         {
+            listener = IGC.RegisterBroadcastListener("target");
             int count = 0;
             while (true)
             {
                 MyDetectedEntityInfo enemy = radar.GetTargetedEntity();
                 Vector3D localPos = Vector3DExtensions.ConvertToLocalPosition(enemy.Position, radar.WorldMatrix);
 
+                if (listener.HasPendingMessage && enemy.Position == Vector3D.Zero)
+                {
+
+                }
+
                 if (enemy.Position != Vector3D.Zero && (enemy.TimeStamp - targetVel1.Item1) > 100)
                 {
                     targetVel2 = targetVel1;
-                    targetVel1 = new MyTuple<double, Vector3D>(enemy.TimeStamp, Vector3DExtensions.ConvertToLocalDirection(enemy.Velocity, radar.WorldMatrix));
+                    targetVel1 = new MyTuple<double, Vector3D>(enemy.TimeStamp, enemy.Velocity);
 
-                    targetAcceleration = (targetVel1.Item2 - targetVel2.Item2) / ((double)(targetVel1.Item1 - targetVel2.Item1) / 1000);
+                    targetAcceleration = Vector3DExtensions.ConvertToLocalDirection((targetVel1.Item2 - targetVel2.Item2) / ((double)(targetVel1.Item1 - targetVel2.Item1) / 1000), radar.WorldMatrix);
 
-                    Polynomial.SetVariables(localPos, targetVel1.Item2, targetAcceleration, 100);
+                    Polynomial.SetVariables(localPos, Vector3DExtensions.ConvertToLocalDirection(targetVel1.Item2, radar.WorldMatrix), targetAcceleration, 100);
                     interceptPoint = Polynomial.GetInterceptPoint();
 
                     if (interceptPoint == null) interceptPoint = Vector3D.Zero;

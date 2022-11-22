@@ -354,7 +354,6 @@ namespace IngameScript
         MyTuple<double, Vector3D> targetVel1 = new MyTuple<double, Vector3D>(0, Vector3D.Zero);
         MyTuple<double, Vector3D> targetVel2 = new MyTuple<double, Vector3D>(0, Vector3D.Zero);
         Vector3D targetAcceleration = Vector3D.Zero;
-        Vector3D? interceptPoint = Vector3D.Zero;
 
         public IEnumerator<int> IEnumMain()
         {
@@ -362,19 +361,18 @@ namespace IngameScript
             while (true)
             {
                 MyDetectedEntityInfo enemy = radar.GetTargetedEntity();
-                Vector3D localPos = Vector3DExtensions.ConvertToLocalPosition(enemy.Position, radar.WorldMatrix);
+                //Vector3D localPos = Vector3DExtensions.ConvertToLocalPosition(enemy.Position, radar.WorldMatrix);
 
                 if (enemy.Position != Vector3D.Zero && (enemy.TimeStamp - targetVel1.Item1) > 100)
                 {
                     targetVel2 = targetVel1;
-                    targetVel1 = new MyTuple<double, Vector3D>(enemy.TimeStamp, Vector3DExtensions.ConvertToLocalDirection(enemy.Velocity, radar.WorldMatrix));
+                    targetVel1 = new MyTuple<double, Vector3D>(enemy.TimeStamp,enemy.Velocity);
 
                     targetAcceleration = (targetVel1.Item2 - targetVel2.Item2) / ((double)(targetVel1.Item1 - targetVel2.Item1) / 1000);
 
-                    Polynomial.SetVariables(localPos, targetVel1.Item2, targetAcceleration, 100);
-                    interceptPoint = Polynomial.GetInterceptPoint();
+                    ImmutableArray<Vector3D> targetInfo = ImmutableArray.Create(new Vector3D[] { enemy.Position, enemy.Velocity, targetAcceleration });
+                    IGC.SendBroadcastMessage("target", targetInfo);
 
-                    if (interceptPoint == null) interceptPoint = Vector3D.Zero;
                 }
                 count++;
                 if (count > 60)
@@ -382,10 +380,10 @@ namespace IngameScript
                     //break;
                 }
 
-                Echo($"pos: {(Vector3I) localPos}");
+                Echo($"pos: {(Vector3I)enemy.Position}");
                 Echo($"vel: {(Vector3I)targetVel1.Item2}");
                 Echo($"acc: {(Vector3I)targetAcceleration}");
-                Echo($"Int: {(Vector3I)interceptPoint}");
+                //Echo($"Int: {(Vector3I)interceptPoint}");
                 yield return 0;
             }
         }
