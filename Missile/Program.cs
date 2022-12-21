@@ -23,6 +23,33 @@ namespace IngameScript
     partial class Program : MyGridProgram
     {
 
+        public class PIDController
+        {
+            public double p;
+            public double i;
+            public double d;
+            public double lastError = 0;
+            public double lastErrorInt = 0;
+            public Action<string> Echo;
+
+            public double PID(double error, double timestep)
+            {
+                lastErrorInt += error * timestep;
+                double result = (error * p) + ((error - lastError) / timestep * d);
+                lastError = error;
+
+
+                return result;
+            }
+
+            public PIDController(double _p, double _i, double _d)
+            {
+                p = _p;
+                i = _i;
+                d = _d;
+            }
+        }
+
         public static class Polynomial
         {
             static double a;
@@ -81,7 +108,7 @@ namespace IngameScript
                 return new double[] { (-b - sqrt) / (2 * a), (-b + sqrt) / (2 * a) };
             }
 
-            public static Vector3D? GetInterceptPoint()
+            public static Vector3D GetInterceptPoint()
             {
                 double[] roots;
 
@@ -116,7 +143,7 @@ namespace IngameScript
 
                 if (t < 0)
                 {
-                    return null;
+                    return Vector3D.Zero;
                 }
 
                 //Echo("5");
@@ -335,12 +362,6 @@ namespace IngameScript
         IMyRemoteControl rc;
         List<IMyGyro> gyros = new List<IMyGyro>();
 
-        public MatrixD GetLocalMatrix(MatrixD reference, MatrixD matrix)
-        {
-            double[] referenceValues = new double[] { matrix.M11, matrix.M12, matrix.M13, matrix.M21, matrix.M22, matrix.M23, matrix.M31, matrix.M32, matrix.M33 };
-
-        }
-
         public Program()
         {
             Polynomial.Echo = Echo;
@@ -349,7 +370,7 @@ namespace IngameScript
             TaskScheduler.SpawnCoroutine(new Func<IEnumerator<int>>(IEnumMain));
 
             rc = (IMyRemoteControl)GridTerminalSystem.GetBlockWithName("rc");
-            GridTerminalSystem.GetBlocksOfType(gyros);
+            GridTerminalSystem.GetBlocksOfType<IMyGyro>(gyros);
         }
 
         public void Save()
@@ -365,20 +386,32 @@ namespace IngameScript
         MyTuple<double, Vector3D> targetVel1 = new MyTuple<double, Vector3D>(0, Vector3D.Zero);
         MyTuple<double, Vector3D> targetVel2 = new MyTuple<double, Vector3D>(0, Vector3D.Zero);
         Vector3D targetAcceleration = Vector3D.Zero;
-        Vector3D? interceptPoint = Vector3D.Zero;
+        Vector3D finalTargetVel = Vector3D.Zero;
+        Vector3D interceptPoint = Vector3D.Zero;
+        Vector3D localPos = Vector3D.Zero;
 
         IEnumerator<int> IEnumMain()
         {
+            Vector3D testPoint = new Vector3D(53418.35, -26840.46, 12298.07);
             listener = IGC.RegisterBroadcastListener("target");
             int count = 0;
+            PIDController pitch = new PIDController(1, 0, 10);
+            PIDController yaw = new PIDController(10, 0, 10);
+            pitch.Echo = Echo;
+            yaw.Echo = Echo;
             while (true)
             {
                 MyDetectedEntityInfo enemy = radar.GetTargetedEntity();
-                Vector3D localPos = Vector3DExtensions.ConvertToLocalPosition(enemy.Position, radar.WorldMatrix);
+
 
                 if (listener.HasPendingMessage && enemy.Position == Vector3D.Zero)
                 {
+                    targetVel2 = targetVel1;
+                    ImmutableArray<Vector3D> data = (ImmutableArray<Vector3D>)listener.AcceptMessage().Data;
 
+                    localPos = Vector3DExtensions.ConvertToLocalPosition(data[0], rc);
+                    finalTargetVel = Vector3DExtensions.ConvertToLocalDirection(data[1], rc);
+                    targetAcceleration = Vector3DExtensions.ConvertToLocalDirection(data[2], rc);
                 }
 
                 if (enemy.Position != Vector3D.Zero && (enemy.TimeStamp - targetVel1.Item1) > 100)
@@ -386,23 +419,52 @@ namespace IngameScript
                     targetVel2 = targetVel1;
                     targetVel1 = new MyTuple<double, Vector3D>(enemy.TimeStamp, enemy.Velocity);
 
-                    targetAcceleration = Vector3DExtensions.ConvertToLocalDirection((targetVel1.Item2 - targetVel2.Item2) / ((double)(targetVel1.Item1 - targetVel2.Item1) / 1000), radar.WorldMatrix);
-
-                    Polynomial.SetVariables(localPos, Vector3DExtensions.ConvertToLocalDirection(targetVel1.Item2, radar.WorldMatrix), targetAcceleration, 100);
-                    interceptPoint = Polynomial.GetInterceptPoint();
+                    localPos = Vector3DExtensions.ConvertToLocalPosition(enemy.Position, rc);
+                    finalTargetVel = Vector3DExtensions.ConvertToLocalDirection(enemy.Velocity, rc);
+                    targetAcceleration = Vector3DExtensions.ConvertToLocalDirection((targetVel1.Item2 - targetVel2.Item2) / ((double)(targetVel1.Item1 - targetVel2.Item1) / 1000), rc);
 
                     if (interceptPoint == null) interceptPoint = Vector3D.Zero;
                 }
+
+                Polynomial.SetVariables(localPos, finalTargetVel, targetAcceleration, 100);
+                interceptPoint = Polynomial.GetInterceptPoint();
+
+                double timestep = Runtime.TimeSinceLastRun.TotalSeconds;
+                Vector3D interceptDir = Vector3D.Normalize(interceptPoint);
+
+                /*foreach (IMyGyro gyro in gyros)
+                {
+                    Echo(timestep.ToString());
+                    Echo(pitch.PID(interceptDir.Y, timestep).ToString());
+                    Echo(yaw.PID(interceptDir.X, timestep).ToString());
+                    gyro.Pitch = (float)pitch.PID(interceptDir.Y, timestep);
+                    gyro.Yaw = (float)yaw.PID(interceptDir.X, timestep);
+                }*/
+
+                Vector3D localTestPoint = Vector3D.Normalize(Vector3DExtensions.ConvertToLocalPosition(testPoint, rc));
+
+                foreach (IMyGyro gyro in gyros)
+                {
+                    Echo(timestep.ToString());
+                    Echo(pitch.PID(localTestPoint.Y, timestep).ToString());
+                    Echo(yaw.PID(localTestPoint.X, timestep).ToString());
+                    gyro.Pitch = (float)pitch.PID(-localTestPoint.Y, timestep);
+                    gyro.Yaw = (float)yaw.PID(localTestPoint.X, timestep);
+                }
+
                 count++;
                 if (count > 60)
                 {
                     //break;
                 }
 
-                Echo($"pos: {(Vector3I)localPos}");
+                
+
+                /*Echo($"pos: {(Vector3I)localPos}");
                 Echo($"vel: {(Vector3I)targetVel1.Item2}");
                 Echo($"acc: {(Vector3I)targetAcceleration}");
                 Echo($"Int: {(Vector3I)interceptPoint}");
+                Echo($"Int: {interceptDir}");*/
                 yield return 0;
             }
         }

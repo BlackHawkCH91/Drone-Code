@@ -76,6 +76,7 @@ Global
 		QuaternionDExtensions\QuaternionDExtensions.projitems*{64c899c8-4948-4420-a696-f1ed9c77a850}*SharedItemsImports = 13
 		Coroutine\Coroutine.projitems*{807e7f93-033e-4d6d-a4bb-20385f3f3b1f}*SharedItemsImports = 13
 		DoubleExtensions\DoubleExtensions.projitems*{b62bd133-a29e-4bb7-b06b-8ce8a2343dde}*SharedItemsImports = 13
+		Base6DirectionsExtensions\Base6DirectionsExtensions.projitems*{cc330d69-f922-4516-83cf-2f983043054d}*SharedItemsImports = 4
 		Coroutine\Coroutine.projitems*{cc330d69-f922-4516-83cf-2f983043054d}*SharedItemsImports = 4
 		Vector3DExtensions\Vector3DExtensions.projitems*{cc330d69-f922-4516-83cf-2f983043054d}*SharedItemsImports = 4
 		Coroutine\Coroutine.projitems*{d4f8ae46-8174-4f46-a895-6368583733b9}*SharedItemsImports = 4
