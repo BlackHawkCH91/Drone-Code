@@ -35,6 +35,7 @@ namespace IngameScript
             public double PID(double error, double timestep)
             {
                 lastErrorInt += error * timestep;
+                Echo($"({error} * {p}) + (({error} - {lastError}) / {timestep} * {d})");
                 double result = (error * p) + ((error - lastError) / timestep * d);
                 lastError = error;
 
@@ -362,6 +363,9 @@ namespace IngameScript
         IMyRemoteControl rc;
         List<IMyGyro> gyros = new List<IMyGyro>();
 
+        IMyThrust fwd1;
+        IMyThrust fwd2;
+
         public Program()
         {
             Polynomial.Echo = Echo;
@@ -371,6 +375,9 @@ namespace IngameScript
 
             rc = (IMyRemoteControl)GridTerminalSystem.GetBlockWithName("rc");
             GridTerminalSystem.GetBlocksOfType<IMyGyro>(gyros);
+
+            fwd1 = GridTerminalSystem.GetBlockWithName("fwd1") as IMyThrust;
+            fwd2 = GridTerminalSystem.GetBlockWithName("fwd2") as IMyThrust;
         }
 
         public void Save()
@@ -395,10 +402,19 @@ namespace IngameScript
             Vector3D testPoint = new Vector3D(53418.35, -26840.46, 12298.07);
             listener = IGC.RegisterBroadcastListener("target");
             int count = 0;
-            PIDController pitch = new PIDController(1, 0, 10);
-            PIDController yaw = new PIDController(10, 0, 10);
+            PIDController pitch = new PIDController(10, 0, 20);
+            PIDController yaw = new PIDController(10, 0, 20);
             pitch.Echo = Echo;
             yaw.Echo = Echo;
+
+            fwd1.ThrustOverridePercentage = 1;
+            fwd2.ThrustOverridePercentage = 1;
+
+            foreach (IMyGyro gyro in gyros)
+            {
+                gyro.GyroOverride = true;
+            }
+
             while (true)
             {
                 MyDetectedEntityInfo enemy = radar.GetTargetedEntity();
@@ -430,7 +446,6 @@ namespace IngameScript
                 interceptPoint = Polynomial.GetInterceptPoint();
 
                 double timestep = Runtime.TimeSinceLastRun.TotalSeconds;
-                Vector3D interceptDir = Vector3D.Normalize(interceptPoint);
 
                 /*foreach (IMyGyro gyro in gyros)
                 {
@@ -440,16 +455,21 @@ namespace IngameScript
                     gyro.Pitch = (float)pitch.PID(interceptDir.Y, timestep);
                     gyro.Yaw = (float)yaw.PID(interceptDir.X, timestep);
                 }*/
+                Vector3D localTestPoint = Vector3DExtensions.ConvertToLocalPosition(testPoint, rc);
 
-                Vector3D localTestPoint = Vector3D.Normalize(Vector3DExtensions.ConvertToLocalPosition(testPoint, rc));
+                double pitchAngle = Math.Atan(interceptPoint.Y / interceptPoint.Z);
+                double yawAngle = Math.Atan(interceptPoint.X / interceptPoint.Z);
+
+                /*double pitchAngle = Math.Atan(localTestPoint.Y / localTestPoint.Z);
+                double yawAngle = Math.Atan(localTestPoint.X / localTestPoint.Z);*/
 
                 foreach (IMyGyro gyro in gyros)
                 {
                     Echo(timestep.ToString());
-                    Echo(pitch.PID(localTestPoint.Y, timestep).ToString());
-                    Echo(yaw.PID(localTestPoint.X, timestep).ToString());
-                    gyro.Pitch = (float)pitch.PID(-localTestPoint.Y, timestep);
-                    gyro.Yaw = (float)yaw.PID(localTestPoint.X, timestep);
+                    //Echo(pitch.PID(localTestPoint.Y, timestep).ToString());
+                    //Echo(yaw.PID(localTestPoint.X, timestep).ToString());
+                    gyro.Pitch = (float)pitch.PID(pitchAngle, timestep);
+                    gyro.Yaw = (float)yaw.PID(-yawAngle, timestep);
                 }
 
                 count++;
