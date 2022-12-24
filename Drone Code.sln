@@ -51,6 +51,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "MissileControl", "MissileCo
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Missile", "Missile\Missile.csproj", "{CC330D69-F922-4516-83CF-2F983043054D}"
 EndProject
+Project("{D954291E-2A0B-460D-934E-DC6B0785DB48}") = "ShipController", "ShipController\ShipController.shproj", "{E60516A7-650C-42D0-BD52-CF7982204CBE}"
+EndProject
 Global
 	GlobalSection(SharedMSBuildProjectFiles) = preSolution
 		Base6DirectionsExtensions\Base6DirectionsExtensions.projitems*{02f986b5-b6dd-4e84-962c-c4a86f307b1a}*SharedItemsImports = 13
@@ -86,6 +88,7 @@ Global
 		Vector3DExtensions\Vector3DExtensions.projitems*{d7769a5c-4e12-41ff-bf4d-9edf0ff53d53}*SharedItemsImports = 4
 		Vector3DExtensions\Vector3DExtensions.projitems*{df63a6bf-0ce7-4a83-9475-2c405c25bd0f}*SharedItemsImports = 13
 		DebugAPI\DebugAPI.projitems*{dffc070a-5a6a-481d-9d72-3c6fbdd45673}*SharedItemsImports = 13
+		ShipController\ShipController.projitems*{e60516a7-650c-42d0-bd52-cf7982204cbe}*SharedItemsImports = 13
 	EndGlobalSection
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -201,6 +204,7 @@ Global
 		{51C427F9-5DFB-46E9-9B3B-9E71BCE59ECE} = {92BAC0A1-993A-40F9-9BF5-9AAAAEEF5433}
 		{D4F8AE46-8174-4F46-A895-6368583733B9} = {AF719AE0-43D6-4114-84AA-5CAA31016644}
 		{CC330D69-F922-4516-83CF-2F983043054D} = {AF719AE0-43D6-4114-84AA-5CAA31016644}
+		{E60516A7-650C-42D0-BD52-CF7982204CBE} = {611643A1-843E-4B4C-9F30-A47A8786B1A4}
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution
 		SolutionGuid = {C4CF8A6F-F7EF-4814-93B5-C21F41C3EE0B}
