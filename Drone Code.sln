@@ -89,7 +89,6 @@ Global
 		Vector3DExtensions\Vector3DExtensions.projitems*{d7769a5c-4e12-41ff-bf4d-9edf0ff53d53}*SharedItemsImports = 4
 		Vector3DExtensions\Vector3DExtensions.projitems*{df63a6bf-0ce7-4a83-9475-2c405c25bd0f}*SharedItemsImports = 13
 		DebugAPI\DebugAPI.projitems*{dffc070a-5a6a-481d-9d72-3c6fbdd45673}*SharedItemsImports = 13
-		Coroutine\Coroutine.projitems*{e60516a7-650c-42d0-bd52-cf7982204cbe}*SharedItemsImports = 13
 		ShipController\ShipController.projitems*{e60516a7-650c-42d0-bd52-cf7982204cbe}*SharedItemsImports = 13
 	EndGlobalSection
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
