@@ -33,7 +33,7 @@ namespace IngameScript
             private Dictionary<Base6Directions.Direction, List<IMyThrust>> thrusters = new Dictionary<Base6Directions.Direction, List<IMyThrust>>();
             private List<IMyGyro> gyros;
             private Vector3 desiredVelocity;
-            private Quaternion desiredRotation;
+            private MatrixD desiredRotation;
 
             public Vector3 DesiredVelocity {
                 get { return desiredVelocity; }
@@ -113,18 +113,18 @@ namespace IngameScript
                 MatrixD.CreateFromYawPitchRoll(0, 0, 0);
 
                 // Calc rotation error
-                MatrixD worldMatrix = controller.WorldMatrix;
-                Vector3D rotation;
-                MatrixD.GetEulerAnglesXYZ(ref worldMatrix, out rotation);
+                MatrixD rotMatrix = desiredRotation - controller.WorldMatrix;
+                Vector3 requiredRotation = rotMatrix.GetTaitBryanAnglesZYX();
 
                 // Calculate desired angular momentum
 
                 // Calc grid override
+                Vector3 gridOverride;
 
                 // Apply gyro overrides
 
 
-                
+
                 yield return 0;
             }
 

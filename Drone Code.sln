@@ -53,7 +53,7 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Missile", "Missile\Missile.
 EndProject
 Project("{D954291E-2A0B-460D-934E-DC6B0785DB48}") = "ShipController", "ShipController\ShipController.shproj", "{E60516A7-650C-42D0-BD52-CF7982204CBE}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ConsoleTest", "ConsoleTest\ConsoleTest.csproj", "{84F4E7E5-F06A-4B3A-85D1-716A602DAEAD}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "ConsoleTest", "ConsoleTest\ConsoleTest.csproj", "{84F4E7E5-F06A-4B3A-85D1-716A602DAEAD}"
 EndProject
 Global
 	GlobalSection(SharedMSBuildProjectFiles) = preSolution
@@ -71,6 +71,7 @@ Global
 		MatrixDExtensions\MatrixDExtensions.projitems*{4fea1d8d-11cc-4d65-993b-821aad1e7ed6}*SharedItemsImports = 4
 		PIDControllers\PIDControllers.projitems*{4fea1d8d-11cc-4d65-993b-821aad1e7ed6}*SharedItemsImports = 4
 		QuaternionDExtensions\QuaternionDExtensions.projitems*{4fea1d8d-11cc-4d65-993b-821aad1e7ed6}*SharedItemsImports = 4
+		ShipController\ShipController.projitems*{4fea1d8d-11cc-4d65-993b-821aad1e7ed6}*SharedItemsImports = 4
 		Vector3DExtensions\Vector3DExtensions.projitems*{4fea1d8d-11cc-4d65-993b-821aad1e7ed6}*SharedItemsImports = 4
 		Coroutine\Coroutine.projitems*{51c427f9-5dfb-46e9-9b3b-9e71bce59ece}*SharedItemsImports = 4
 		Vector3DExtensions\Vector3DExtensions.projitems*{51c427f9-5dfb-46e9-9b3b-9e71bce59ece}*SharedItemsImports = 4

@@ -22,6 +22,11 @@ namespace IngameScript
 {
     static class MatrixDExtensions
     {
+        /// <summary>
+        /// Returns the tait bryan angles that represent this matrix in the order of yaw, pitch, roll
+        /// </summary>
+        /// <param name="matrix"></param>
+        /// <returns></returns>
         public static Vector3 GetTaitBryanAnglesZYX(this MatrixD matrix)
         { 
             double yaw;
