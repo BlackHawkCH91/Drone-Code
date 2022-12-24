@@ -30,7 +30,7 @@ namespace IngameScript
             private Array directions = Enum.GetValues(typeof(Base6Directions.Direction));
 
             private IMyShipController controller;
-            public Dictionary<Base6Directions.Direction, List<IMyThrust>> thrusters = new Dictionary<Base6Directions.Direction, List<IMyThrust>>();
+            private Dictionary<Base6Directions.Direction, List<IMyThrust>> thrusters = new Dictionary<Base6Directions.Direction, List<IMyThrust>>();
             private List<IMyGyro> gyros;
             private Vector3 desiredVelocity;
             private Quaternion desiredRotation;
@@ -50,7 +50,7 @@ namespace IngameScript
                 this.controller = controller;
                 this.gyros = gyros;
 
-                // Make list of thrusters for each direction
+                // Make list of thrusters and gyros for each direction
                 foreach (Base6Directions.Direction direction in Enum.GetValues(typeof(Base6Directions.Direction)))
                 {
                     this.thrusters.Add(direction, new List<IMyThrust>());
@@ -109,6 +109,21 @@ namespace IngameScript
                 }
 
                 // Update gyros
+
+                MatrixD.CreateFromYawPitchRoll(0, 0, 0);
+
+                // Calc rotation error
+                MatrixD worldMatrix = controller.WorldMatrix;
+                Vector3D rotation;
+                MatrixD.GetEulerAnglesXYZ(ref worldMatrix, out rotation);
+
+                // Calculate desired angular momentum
+
+                // Calc grid override
+
+                // Apply gyro overrides
+
+
                 
                 yield return 0;
             }
