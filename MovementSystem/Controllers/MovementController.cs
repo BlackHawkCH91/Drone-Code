@@ -59,6 +59,7 @@ namespace IngameScript
                     }
                     return thrustForceSum;
                 }
+
                 private void RecalcError()
                 {
                     //Echo($"{movementAxis}\nerror:{errorVal.RoundToDp(3)}");

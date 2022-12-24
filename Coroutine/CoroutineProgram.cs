@@ -149,6 +149,11 @@ namespace IngameScript
         private static Action<string> Echo;
         private static bool EchoStatus = false;
 
+        /// <summary>
+        /// Seconds since the last step
+        /// </summary>
+        public static double TimeStep { get { return Runtime.TimeSinceLastRun.Seconds; } }
+
         // Coroutine Lists
         private static List<Coroutine> activeCoroutines = new List<Coroutine>();
         private static List<Coroutine> pausedCoroutines = new List<Coroutine>();
