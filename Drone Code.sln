@@ -80,6 +80,7 @@ Global
 		DoubleExtensions\DoubleExtensions.projitems*{b62bd133-a29e-4bb7-b06b-8ce8a2343dde}*SharedItemsImports = 13
 		Base6DirectionsExtensions\Base6DirectionsExtensions.projitems*{cc330d69-f922-4516-83cf-2f983043054d}*SharedItemsImports = 4
 		Coroutine\Coroutine.projitems*{cc330d69-f922-4516-83cf-2f983043054d}*SharedItemsImports = 4
+		ShipController\ShipController.projitems*{cc330d69-f922-4516-83cf-2f983043054d}*SharedItemsImports = 4
 		Vector3DExtensions\Vector3DExtensions.projitems*{cc330d69-f922-4516-83cf-2f983043054d}*SharedItemsImports = 4
 		Coroutine\Coroutine.projitems*{d4f8ae46-8174-4f46-a895-6368583733b9}*SharedItemsImports = 4
 		MatrixDExtensions\MatrixDExtensions.projitems*{d4f8ae46-8174-4f46-a895-6368583733b9}*SharedItemsImports = 4
@@ -88,6 +89,7 @@ Global
 		Vector3DExtensions\Vector3DExtensions.projitems*{d7769a5c-4e12-41ff-bf4d-9edf0ff53d53}*SharedItemsImports = 4
 		Vector3DExtensions\Vector3DExtensions.projitems*{df63a6bf-0ce7-4a83-9475-2c405c25bd0f}*SharedItemsImports = 13
 		DebugAPI\DebugAPI.projitems*{dffc070a-5a6a-481d-9d72-3c6fbdd45673}*SharedItemsImports = 13
+		Coroutine\Coroutine.projitems*{e60516a7-650c-42d0-bd52-cf7982204cbe}*SharedItemsImports = 13
 		ShipController\ShipController.projitems*{e60516a7-650c-42d0-bd52-cf7982204cbe}*SharedItemsImports = 13
 	EndGlobalSection
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
