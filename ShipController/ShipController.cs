@@ -33,16 +33,16 @@ namespace IngameScript
             private Dictionary<Base6Directions.Direction, List<IMyThrust>> thrusters = new Dictionary<Base6Directions.Direction, List<IMyThrust>>();
             private List<IMyGyro> gyros;
             private Vector3 desiredVelocity;
-            private MatrixD desiredRotation;
+            private MatrixD desiredOrientation;
 
             public Vector3 DesiredVelocity {
                 get { return desiredVelocity; }
                 set { desiredVelocity = value; }
             }
-            public MatrixD DesiredRotation
+            public MatrixD DesiredOrientation
             {
-                get { return desiredRotation; }
-                set { desiredRotation = value; }
+                get { return desiredOrientation; }
+                set { desiredOrientation = value; }
             }
 
             public ShipController(IMyShipController controller, List<IMyThrust> thrusters, List<IMyGyro> gyros)
@@ -112,25 +112,53 @@ namespace IngameScript
 
                     // Update gyros
                     // Calc rotation error
-                    MatrixD rotMatrix = desiredRotation - controller.WorldMatrix.GetOrientation();
-                    Vector3 requiredRotation = new Vector3(1, 0, 0); //rotMatrix.GetTaitBryanAnglesZYX();
+                    //MatrixD rotMatrix = desiredRotation - controller.WorldMatrix.GetOrientation();
+                    //Vector3 requiredRotation = new Vector3(1, 0, 0); //rotMatrix.GetTaitBryanAnglesZYX();
+
+                    // yaw pitch roll
+                    Vector3D requiredRotation = new Vector3();/*new Vector3(
+                        desiredOrientation.Forward.ConvertToLocalDirection(controller).X,
+                        0,
+                        0
+                        );*/
 
                     // Calculate desired angular momentum
 
                     // Calc grid override
-                    Vector3 gridOverride = requiredRotation.UnitVector();
+                    //Vector3 gridOverride = requiredRotation.UnitVector();
 
                     // Apply gyro overrides
                     for (int i = 0; i < gyros.Count(); i++)
                     {
                         IMyGyro gyro = gyros[i];
-                        Matrix orientation = new Matrix();
-                        gyro.Orientation.GetMatrix(out orientation);
-                        Vector3 gyroOverride = gridOverride.ConvertToLocalDirection(orientation);
+                        Matrix blockOrientation = new Matrix();
+                        gyro.Orientation.GetMatrix(out blockOrientation);
 
-                        gyro.Yaw = gyroOverride.X;
-                        gyro.Pitch = gyroOverride.Y;
-                        gyro.Roll = gyroOverride.Z;
+                        //MatrixD inverse = controller.WorldMatrix;
+                        //MatrixD.Invert(inverse);
+                        //MatrixD refMatrix = gyro.WorldMatrix.GetOrientation() * desiredOrientation;
+
+                        //requiredRotation = -refMatrix.GetTaitBryanAnglesZYX();
+                        //MatrixD.GetEulerAnglesXYZ(ref refMatrix, out requiredRotation);
+
+                        //Vector3 gyroOverride = requiredRotation;//gridOverride.ConvertToLocalDirection(orientation);
+
+                        float yaw;
+                        float pitch;
+                        float roll;
+
+                        yaw = (float) controller.WorldMatrix.Forward.Dot(desiredOrientation.Forward.ProjectOnPlane(controller.WorldMatrix.Up).UnitVector());
+                        pitch = (float) controller.WorldMatrix.Up.Dot(desiredOrientation.Up.ProjectOnPlane(controller.WorldMatrix.Left).UnitVector());
+                        roll = (float) controller.WorldMatrix.Left.Dot(desiredOrientation.Left.ProjectOnPlane(controller.WorldMatrix.Forward).UnitVector());
+
+
+                        gyro.Yaw = yaw * 3;
+                        gyro.Pitch = pitch * 3;
+                        gyro.Roll = roll * 3;
+
+                        //gyro.Yaw = (float)refMatrix.Up.Dot(gyro.WorldMatrix.Up);
+                        //gyro.Pitch = (float)refMatrix.Forward.Dot(gyro.WorldMatrix.Forward);//gyroOverride.Y;
+                        //gyro.Roll = 0; //gyroOverride.Z;
                     }
 
 
