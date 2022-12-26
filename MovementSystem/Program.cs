@@ -21,23 +21,22 @@ namespace IngameScript
 {
     partial class Program : MyGridProgram
     {
-        // General use vars
-        IMyShipController controller;
-        Vector3D destinationVector = new Vector3D(97828.09, -27530.95, 22508.69);
-
         public Program()
-        {
-            controller = GetMainRemoteControl();
-            
+        {            
             // Establish task scheduler
             TaskScheduler.EstablishTaskScheduler(Runtime, Echo, true);
-            
-            // Establish controllers
-            //MovementController.Establish(GridTerminalSystem, Runtime, Echo, controller);
-            RotationController.Establish(GridTerminalSystem, Runtime, Echo, controller);
 
-            // Set controller positions
-            MovementController.MoveTo(destinationVector);
+            // Get gyros & thrusters
+            List<IMyThrust> thrusters = new List<IMyThrust>();
+            List<IMyGyro> gyros = new List<IMyGyro>();
+            GridTerminalSystem.GetBlocksOfType(thrusters);
+            GridTerminalSystem.GetBlocksOfType(gyros);
+
+            // Establish controller
+            ShipController shipController = new ShipController(GetMainRemoteControl(), thrusters, gyros)
+            {
+                DesiredRotation = MatrixD.CreateWorld(Vector3D.Zero)
+            };
         }
 
         public void Save()

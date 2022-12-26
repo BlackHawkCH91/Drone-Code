@@ -39,7 +39,7 @@ namespace IngameScript
                 get { return desiredVelocity; }
                 set { desiredVelocity = value; }
             }
-            public Quaternion DesiredRotation
+            public MatrixD DesiredRotation
             {
                 get { return desiredRotation; }
                 set { desiredRotation = value; }
@@ -69,63 +69,73 @@ namespace IngameScript
 
             public IEnumerator<int> StepMovements()
             {
-                Vector3 currVelocity = (Vector3)controller.GetShipVelocities().LinearVelocity.ConvertToLocalDirection(controller);
-                float mass = controller.CalculateShipMass().TotalMass;
-
-                // Update thrusters
-                foreach (Base6Directions.Direction direction in Base6Directions.EnumDirections)
+                while (true)
                 {
-                    float thrust = 0f;
-                    foreach (IMyThrust thruster in thrusters[direction])
+                    Vector3 currVelocity = controller.GetShipVelocities().LinearVelocity.ConvertToLocalDirection(controller);
+                    float mass = controller.CalculateShipMass().TotalMass;
+
+                    // Update thrusters
+                    foreach (Base6Directions.Direction direction in Base6Directions.EnumDirections)
                     {
-                        thrust += thruster.MaxEffectiveThrust;
+                        float thrust = 0f;
+                        foreach (IMyThrust thruster in thrusters[direction])
+                        {
+                            thrust += thruster.MaxEffectiveThrust;
+                        }
+
+                        // Calculate velocities for direction
+                        float dirDesiredVelocity = desiredVelocity.Dot(Base6Directions.GetVector(direction));
+                        float dirCurrVelocity = currVelocity.Dot(Base6Directions.GetVector(direction));
+
+                        // Calc accel in this direction
+                        float accel = thrust / mass;
+
+                        // Calc thrust to apply and apply thrust
+                        float thrustToApply = 0;
+
+                        if (dirDesiredVelocity > dirCurrVelocity)
+                        {
+                            // Thrust is set to a range within 0 and 1
+                            thrustToApply = Math.Min((dirDesiredVelocity - dirCurrVelocity) / (accel * ((float)TaskScheduler.TimeStep * 2)), 1);
+                        }
+                        else if (dirDesiredVelocity < dirCurrVelocity)
+                        {
+                            thrustToApply = 0;
+                        }
+
+                        // Apply thrust value to all thrusters in this direction
+                        for (int i = 0; i < thrusters[direction].Count; i++)
+                        {
+                            thrusters[direction][i].ThrustOverridePercentage = thrustToApply;
+                        }
                     }
 
-                    // Calculate velocities for direction
-                    float dirDesiredVelocity = desiredVelocity.Dot(Base6Directions.GetVector(direction));
-                    float dirCurrVelocity = currVelocity.Dot(Base6Directions.GetVector(direction));
+                    // Update gyros
+                    // Calc rotation error
+                    MatrixD rotMatrix = desiredRotation - controller.WorldMatrix.GetOrientation();
+                    Vector3 requiredRotation = new Vector3(1, 0, 0); //rotMatrix.GetTaitBryanAnglesZYX();
 
-                    // Calc accel in this direction
-                    float accel = thrust / mass;
+                    // Calculate desired angular momentum
 
-                    // Calc thrust to apply and apply thrust
-                    float thrustToApply = 0;
+                    // Calc grid override
+                    Vector3 gridOverride = requiredRotation.UnitVector();
 
-                    if (dirDesiredVelocity > dirCurrVelocity)
+                    // Apply gyro overrides
+                    for (int i = 0; i < gyros.Count(); i++)
                     {
-                        // Thrust is set to a range within 0 and 1
-                        thrustToApply = Math.Min((dirDesiredVelocity - dirCurrVelocity) / (accel * ((float)TaskScheduler.TimeStep * 2)), 1);
-                    }
-                    else if (dirDesiredVelocity < dirCurrVelocity)
-                    {
-                        thrustToApply = 0;
+                        IMyGyro gyro = gyros[i];
+                        Matrix orientation = new Matrix();
+                        gyro.Orientation.GetMatrix(out orientation);
+                        Vector3 gyroOverride = gridOverride.ConvertToLocalDirection(orientation);
+
+                        gyro.Yaw = gyroOverride.X;
+                        gyro.Pitch = gyroOverride.Y;
+                        gyro.Roll = gyroOverride.Z;
                     }
 
-                    // Apply thrust value to all thrusters in this direction
-                    for(int i = 0; i < thrusters[direction].Count; i++)
-                    {
-                        thrusters[direction][i].ThrustOverridePercentage = thrustToApply;
-                    }
+
+                    yield return 0;
                 }
-
-                // Update gyros
-
-                MatrixD.CreateFromYawPitchRoll(0, 0, 0);
-
-                // Calc rotation error
-                MatrixD rotMatrix = desiredRotation - controller.WorldMatrix;
-                Vector3 requiredRotation = rotMatrix.GetTaitBryanAnglesZYX();
-
-                // Calculate desired angular momentum
-
-                // Calc grid override
-                Vector3 gridOverride;
-
-                // Apply gyro overrides
-
-
-
-                yield return 0;
             }
 
         }

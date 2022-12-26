@@ -21,7 +21,6 @@ namespace IngameScript
 {
     public static class Vector3DExtensions
     {
-
         // -- METHODS FOR DIRECTION VECTORS --
         public static Vector3D ConvertToWorldDirection(this Vector3D LocalDirection, IMyTerminalBlock ReferenceBlock)
         {
@@ -85,5 +84,72 @@ namespace IngameScript
         {
             return Vector3D.ProjectOnPlane(ref vector, ref normal);
         }
+    }
+    public static class Vector3Extensions
+    {
+        // -- METHODS FOR DIRECTION VECTORS --
+        public static Vector3 ConvertToWorldDirection(this Vector3 LocalDirection, IMyTerminalBlock ReferenceBlock)
+        {
+            return Vector3.TransformNormal(LocalDirection, ReferenceBlock.WorldMatrix);
+        }
+
+        public static Vector3 ConvertToLocalDirection(this Vector3 WorldDirection, IMyTerminalBlock ReferenceBlock)
+        {
+            return Vector3.TransformNormal(WorldDirection, MatrixD.Transpose(ReferenceBlock.WorldMatrix));
+        }
+
+        public static Vector3 ConvertToWorldDirection(this Vector3 LocalDirection, MatrixD WorldMatrix)
+        {
+            return Vector3.TransformNormal(LocalDirection, WorldMatrix);
+        }
+
+        public static Vector3 ConvertToLocalDirection(this Vector3 WorldDirection, MatrixD WorldMatrix)
+        {
+            return Vector3.TransformNormal(WorldDirection, MatrixD.Transpose(WorldMatrix));
+        }
+
+
+
+        // -- METHODS FOR POSITION VECTORS --
+        public static Vector3 ConvertToWorldPosition(this Vector3 LocalPosition, IMyTerminalBlock ReferenceBlock)
+        {
+            return Vector3.Transform(LocalPosition, ReferenceBlock.WorldMatrix);
+        }
+
+        public static Vector3 ConvertToLocalPosition(this Vector3 WorldPosition, IMyTerminalBlock ReferenceBlock)
+        {
+            Vector3 referenceWorldPosition = ReferenceBlock.WorldMatrix.Translation; // block.WorldMatrix.Translation is the same as block.GetPosition() btw
+            // Convert worldPosition into a world direction
+            Vector3 worldDirection = WorldPosition - referenceWorldPosition; // This is a vector starting at the reference block pointing at your desired position
+            // Convert worldDirection into a local direction
+            return Vector3.TransformNormal(worldDirection, MatrixD.Transpose(ReferenceBlock.WorldMatrix));
+        }
+
+        public static Vector3 ConvertToWorldPosition(this Vector3 LocalPosition, MatrixD WorldMatrix)
+        {
+            return Vector3.Transform(LocalPosition, WorldMatrix);
+        }
+
+        public static Vector3 ConvertToLocalPosition(this Vector3 WorldPosition, MatrixD WorldMatrix)
+        {
+            Vector3 referenceWorldPosition = WorldMatrix.Translation; // block.WorldMatrix.Translation is the same as block.GetPosition() btw
+            // Convert worldPosition into a world direction
+            Vector3 worldDirection = WorldPosition - referenceWorldPosition; // This is a vector starting at the reference block pointing at your desired position
+            // Convert worldDirection into a local direction
+            return Vector3.TransformNormal(worldDirection, MatrixD.Transpose(WorldMatrix));
+        }
+
+
+        // -- GENERAL USE METHODS --
+        public static Vector3 UnitVector(this Vector3 vector)
+        {
+            return vector / vector.Length();
+        }
+
+        public static Vector3 ProjectOnPlane(this Vector3 vector, Vector3 normal)
+        {
+            return Vector3.ProjectOnPlane(ref vector, ref normal);
+        }
+
     }
 }

@@ -3,12 +3,12 @@
   <PropertyGroup>
     <MSBuildAllProjects Condition="'$(MSBuildVersion)' == '' Or '$(MSBuildVersion)' &lt; '16.0'">$(MSBuildAllProjects);$(MSBuildThisFileFullPath)</MSBuildAllProjects>
     <HasSharedItems>true</HasSharedItems>
-    <SharedGUID>df63a6bf-0ce7-4a83-9475-2c405c25bd0f</SharedGUID>
+    <SharedGUID>38836ae1-433b-4482-87d6-f1d0f3bf12ac</SharedGUID>
   </PropertyGroup>
   <PropertyGroup Label="Configuration">
-    <Import_RootNamespace>Vector3DExtensions</Import_RootNamespace>
+    <Import_RootNamespace>Vector3Extensions</Import_RootNamespace>
   </PropertyGroup>
   <ItemGroup>
-    <Compile Include="$(MSBuildThisFileDirectory)Vector3DExtensionsProgram.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Vector3ExtensionsProgram.cs" />
   </ItemGroup>
 </Project>

@@ -50,7 +50,6 @@
     <AdditionalFiles Include="thumb.png" />
     <AdditionalFiles Include="MDK\whitelist.cache" />
   </ItemGroup>
-  <Import Project="..\Vector3DExtensions\Vector3DExtensions.projitems" Label="Shared" />
   <Import Project="..\Coroutine\Coroutine.projitems" Label="Shared" />
   <Import Project="..\Base6DirectionsExtensions\Base6DirectionsExtensions.projitems" Label="Shared" />
   <Import Project="..\ShipController\ShipController.projitems" Label="Shared" />
