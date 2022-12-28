@@ -53,6 +53,7 @@ namespace IngameScript
 
         public static class Polynomial
         {
+            //Polynomial vars
             static double a;
             static double b;
             static double c;
@@ -61,12 +62,15 @@ namespace IngameScript
             static double f;
             static double g;
 
+            //Target info
             static Vector3D pos;
             static Vector3D vel;
             static Vector3D accel;
+            static Vector3D jerk;
 
             public static Action<string> Echo;
 
+            //Set variables based on target info
             public static void SetVariables(Vector3D _pos, Vector3D _vel, Vector3D _accel, double speed)
             {
                 pos = _pos;
@@ -82,6 +86,24 @@ namespace IngameScript
                 e = pos.X * pos.X + pos.Y * pos.Y + pos.Z * pos.Z;
             }
 
+            //Set variables based on target info
+            public static void SetVariables(Vector3D _pos, Vector3D _vel, Vector3D _accel, Vector3D _jerk, double speed)
+            {
+                pos = _pos;
+                vel = _vel;
+                accel = _accel;
+                jerk = _jerk;
+
+                a = (jerk.X * jerk.X + jerk.Y * jerk.Y + jerk.Z * jerk.Z) / 36;
+                b = (jerk.X * accel.X + jerk.Y * accel.Y + jerk.Z * accel.Z) / 6;
+                c = ((accel.X * accel.X + accel.Y * accel.Y + accel.Z * accel.Z) / 4) + ((jerk.X * vel.X + jerk.Y * vel.Y + jerk.Z * vel.Z) / 3);
+                d = vel.X * accel.X + vel.Y * accel.Y + vel.Z * accel.Z + jerk.X * pos.X + jerk.Y * pos.Y + jerk.Z * pos.Z;
+                e = (vel.X * vel.X + pos.X * accel.X + vel.Y * vel.Y + pos.Y * accel.Y + vel.Z * vel.Z + pos.Z * accel.Z) - (speed * speed);
+                f = 2 * (pos.X * vel.X + pos.Y * vel.Y + pos.Z * vel.Z);
+                g = (pos.X * pos.X + pos.Y * pos.Y + pos.Z * pos.Z);
+            }
+
+            //Get time of intercept 
             public static double[] SolveQuartic()
             {
                 double D0 = c * c - 3 * b * d + 12 * a * e;
@@ -101,6 +123,7 @@ namespace IngameScript
                 return new double[] { output[0].Real, output[1].Real, output[2].Real, output[3].Real };
             }
 
+            //Get time of intercept 
             public static double[] SolveQuadratic()
             {
                 double sqrt = Math.Sqrt(b * b - (4 * a * c));
@@ -109,31 +132,98 @@ namespace IngameScript
                 return new double[] { (-b - sqrt) / (2 * a), (-b + sqrt) / (2 * a) };
             }
 
+            //Polynomial function for bisection method
+            static double func(double x)
+            {
+                return a * Math.Pow(x, 6) + b * Math.Pow(x, 5) + c * Math.Pow(x, 4) + d * Math.Pow(x, 3) + e * x * x + f * x + g;
+            }
+
+            //Gets time of intercept for polynomials > 6
+            public static double BisectionMethod(double leftBorder, double rightBorder, double fault)
+            {
+                MyTuple<int, double> highestNegative = new MyTuple<int, double>((int)Math.Floor(leftBorder), double.MinValue);
+                MyTuple<int, double> lowestPositive = new MyTuple<int, double>((int)Math.Ceiling(rightBorder), double.MaxValue);
+
+                bool negSet = false;
+                bool posSet = false;
+
+
+                int counter = 0;
+
+                for (int i = (int)Math.Floor(leftBorder); i <= rightBorder; i++)
+                {
+                    double result = func(i);
+                    if (result > highestNegative.Item2 && result <= 0)
+                    {
+                        highestNegative = new MyTuple<int, double>(i, result);
+                        negSet = true;
+                        continue;
+                    }
+
+                    if (result < lowestPositive.Item2 && result >= 0)
+                    {
+                        lowestPositive = new MyTuple<int, double>(i, result);
+                        posSet = true;
+                    }
+
+                    if (negSet && posSet)
+                    {
+                        break;
+                    }
+                    counter++;
+                }
+
+                leftBorder = Math.Min(highestNegative.Item1, lowestPositive.Item1);
+                rightBorder = Math.Max(highestNegative.Item1, lowestPositive.Item1);
+
+                double solution = (leftBorder + rightBorder) / 2;
+                uint iterationsNumber = 0;
+
+                while (Math.Abs(func(solution)) > fault && iterationsNumber <= 20)
+                {
+                    if (func(leftBorder) * func(solution) > 0)
+                    {
+                        leftBorder = solution;
+                    }
+                    else
+                    {
+                        rightBorder = solution;
+                    }
+                    solution = (leftBorder + rightBorder) / 2;
+                    iterationsNumber++;
+                }
+
+                return solution;
+            }
+
+            //Get actual intercept point
             public static Vector3D GetInterceptPoint()
             {
                 double[] roots;
 
-                //Echo("1");
                 if (a == 0)
                 {
                     if (d == 0)
                     {
-                        //Echo("2");
                         return pos;
                     }
 
-                    //Echo(e.ToString());
                     roots = SolveQuadratic();
                 }
                 else
                 {
-                    //Echo("3");
-                    roots = SolveQuartic();
+                    if (g == 0)
+                    {
+                        roots = SolveQuartic();
+                    } else
+                    {
+                        roots = new double[1];
+                        roots[0] = BisectionMethod(0, 30, 0.01); 
+                    }
                 }
 
                 float t = -1;
 
-                //Echo("4");
                 foreach (double x in roots)
                 {
                     if (x > 0 && (x < t || t < 0))
@@ -148,10 +238,11 @@ namespace IngameScript
                 }
 
                 //Echo("5");
-                return pos + t * vel + (t / 2) * accel;
+                return pos + t * vel + (t / 2) * accel + (t / 6) * jerk;
             }
         }
 
+        //Imaginary numbers from System.Numerics.Complex
         public struct Complex : IEquatable<Complex>
         {
 
@@ -358,16 +449,20 @@ namespace IngameScript
                 return new Complex(t * Math.Cos(newRho), t * Math.Sin(newRho));
             }
         }
+
+        //Get important blocks needed.
         IMyTurretControlBlock radar;
         IMyBroadcastListener listener;
         IMyRemoteControl rc;
         List<IMyGyro> gyros = new List<IMyGyro>();
 
+        //Need to change this
         IMyThrust fwd1;
         IMyThrust fwd2;
 
         public Program()
         {
+            //Get blocks from grid
             Polynomial.Echo = Echo;
             radar = GridTerminalSystem.GetBlockWithName("radar") as IMyTurretControlBlock;
             TaskScheduler.EstablishTaskScheduler(Runtime, Echo, true);
@@ -380,28 +475,25 @@ namespace IngameScript
             fwd2 = GridTerminalSystem.GetBlockWithName("fwd2") as IMyThrust;
         }
 
-        public void Save()
-        {
-
-        }
-
         public void Main(string argument, UpdateType updateSource)
         {
             TaskScheduler.StepCoroutines(updateSource, argument);
         }
 
+        //
         MyTuple<double, Vector3D> targetVel1 = new MyTuple<double, Vector3D>(0, Vector3D.Zero);
         MyTuple<double, Vector3D> targetVel2 = new MyTuple<double, Vector3D>(0, Vector3D.Zero);
-        Vector3D targetAcceleration = Vector3D.Zero;
-        Vector3D finalTargetVel = Vector3D.Zero;
+
+        Vector3D targetPos = Vector3D.Zero;
+        Vector3D targetVel = Vector3D.Zero;
+        Vector3D targetAccel = Vector3D.Zero;
+        Vector3D targetJerk = Vector3D.Zero;
+
         Vector3D interceptPoint = Vector3D.Zero;
-        Vector3D localPos = Vector3D.Zero;
 
         IEnumerator<int> IEnumMain()
         {
-            Vector3D testPoint = new Vector3D(53418.35, -26840.46, 12298.07);
             listener = IGC.RegisterBroadcastListener("target");
-            int count = 0;
             PIDController pitch = new PIDController(10, 0, 20);
             PIDController yaw = new PIDController(10, 0, 20);
             pitch.Echo = Echo;
@@ -417,74 +509,51 @@ namespace IngameScript
 
             while (true)
             {
+                //Get enemy info from radar
                 MyDetectedEntityInfo enemy = radar.GetTargetedEntity();
 
+                ImmutableArray<Vector3D> data = (ImmutableArray<Vector3D>)listener.AcceptMessage().Data;
 
+                targetPos = Vector3DExtensions.ConvertToLocalPosition(data[0], rc);
+                targetVel = Vector3DExtensions.ConvertToLocalDirection(data[1], rc);
+                targetAccel = Vector3DExtensions.ConvertToLocalDirection(data[2], rc);
+                targetJerk = Vector3DExtensions.ConvertToLocalDirection(data[3], rc);
+
+                //Going to change this:
                 if (listener.HasPendingMessage && enemy.Position == Vector3D.Zero)
                 {
                     targetVel2 = targetVel1;
-                    ImmutableArray<Vector3D> data = (ImmutableArray<Vector3D>)listener.AcceptMessage().Data;
-
-                    localPos = Vector3DExtensions.ConvertToLocalPosition(data[0], rc);
-                    finalTargetVel = Vector3DExtensions.ConvertToLocalDirection(data[1], rc);
-                    targetAcceleration = Vector3DExtensions.ConvertToLocalDirection(data[2], rc);
+                    
                 }
 
                 if (enemy.Position != Vector3D.Zero && (enemy.TimeStamp - targetVel1.Item1) > 100)
                 {
-                    targetVel2 = targetVel1;
+                    /*targetVel2 = targetVel1;
                     targetVel1 = new MyTuple<double, Vector3D>(enemy.TimeStamp, enemy.Velocity);
 
-                    localPos = Vector3DExtensions.ConvertToLocalPosition(enemy.Position, rc);
-                    finalTargetVel = Vector3DExtensions.ConvertToLocalDirection(enemy.Velocity, rc);
-                    targetAcceleration = Vector3DExtensions.ConvertToLocalDirection((targetVel1.Item2 - targetVel2.Item2) / ((double)(targetVel1.Item1 - targetVel2.Item1) / 1000), rc);
+                    targetPos = Vector3DExtensions.ConvertToLocalPosition(enemy.Position, rc);
+                    targetVel = Vector3DExtensions.ConvertToLocalDirection(enemy.Velocity, rc);
+                    targetAccel = Vector3DExtensions.ConvertToLocalDirection((targetVel1.Item2 - targetVel2.Item2) / ((double)(targetVel1.Item1 - targetVel2.Item1) / 1000), rc);
 
-                    if (interceptPoint == null) interceptPoint = Vector3D.Zero;
+                    if (interceptPoint == null) interceptPoint = Vector3D.Zero;*/
                 }
 
-                Polynomial.SetVariables(localPos, finalTargetVel, targetAcceleration, 100);
+                //Polynomial.SetVariables(targetPos, targetVel, targetAccel, 100);
+                Polynomial.SetVariables(targetPos, targetVel, targetAccel, targetJerk, 100);
                 interceptPoint = Polynomial.GetInterceptPoint();
 
                 double timestep = Runtime.TimeSinceLastRun.TotalSeconds;
 
-                /*foreach (IMyGyro gyro in gyros)
-                {
-                    Echo(timestep.ToString());
-                    Echo(pitch.PID(interceptDir.Y, timestep).ToString());
-                    Echo(yaw.PID(interceptDir.X, timestep).ToString());
-                    gyro.Pitch = (float)pitch.PID(interceptDir.Y, timestep);
-                    gyro.Yaw = (float)yaw.PID(interceptDir.X, timestep);
-                }*/
-                Vector3D localTestPoint = Vector3DExtensions.ConvertToLocalPosition(testPoint, rc);
-
                 double pitchAngle = Math.Atan(interceptPoint.Y / interceptPoint.Z);
                 double yawAngle = Math.Atan(interceptPoint.X / interceptPoint.Z);
 
-                /*double pitchAngle = Math.Atan(localTestPoint.Y / localTestPoint.Z);
-                double yawAngle = Math.Atan(localTestPoint.X / localTestPoint.Z);*/
 
                 foreach (IMyGyro gyro in gyros)
                 {
-                    Echo(timestep.ToString());
-                    //Echo(pitch.PID(localTestPoint.Y, timestep).ToString());
-                    //Echo(yaw.PID(localTestPoint.X, timestep).ToString());
                     gyro.Pitch = (float)pitch.PID(pitchAngle, timestep);
                     gyro.Yaw = (float)yaw.PID(-yawAngle, timestep);
                 }
 
-                count++;
-                if (count > 60)
-                {
-                    //break;
-                }
-
-                
-
-                /*Echo($"pos: {(Vector3I)localPos}");
-                Echo($"vel: {(Vector3I)targetVel1.Item2}");
-                Echo($"acc: {(Vector3I)targetAcceleration}");
-                Echo($"Int: {(Vector3I)interceptPoint}");
-                Echo($"Int: {interceptDir}");*/
                 yield return 0;
             }
         }
