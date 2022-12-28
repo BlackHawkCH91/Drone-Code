@@ -219,7 +219,6 @@ namespace IngameScript
                 Vector3D altitudeDirection = -Vector3D.Normalize(Vector3DExtensions.ConvertToLocalPosition(altitudePos - rc.GetPosition(), rc));
                 Vector3D planetDirection = Vector3D.Normalize(Vector3DExtensions.ConvertToLocalPosition(planetPosition, rc));
 
-
                 double pitchAngle = AngleBetweenVectors(new Vector3D(0, 0, 1), Vector3DExtensions.ConvertToLocalPosition(Vector3D.Normalize(rc.GetPosition() - planetPosition), rc));
 
                 double altError = Clamp(orbitAltitude - (rc.GetPosition() - planetPosition).Length(), -300, 300) / 300;
