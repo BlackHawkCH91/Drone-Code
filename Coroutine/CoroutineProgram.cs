@@ -147,13 +147,13 @@ namespace IngameScript
 
         private static IMyGridProgramRuntimeInfo Runtime;
         private static Queue<double> prevTimeSteps = new Queue<double>();
-        private static Action<string> Echo;
+        private static Action<string> echo;
         private static bool EchoStatus = false;
 
         /// <summary>
         /// Seconds since the last step
         /// </summary>
-        public static double TimeStep { get { return Runtime.TimeSinceLastRun.Seconds; } }
+        public static double TimeStep { get { return Runtime.TimeSinceLastRun.TotalMilliseconds / 1000; } }
         public static double AverageRunTime {
             get {
                 double sum = 0;
@@ -164,6 +164,8 @@ namespace IngameScript
                 return sum / prevTimeSteps.Count;
             }
         }
+
+        public static Action<string> Echo { get { return echo; } }
 
         // Coroutine Lists
         private static List<Coroutine> activeCoroutines = new List<Coroutine>();
@@ -180,8 +182,15 @@ namespace IngameScript
         public static void EstablishTaskScheduler(IMyGridProgramRuntimeInfo GridRuntime, Action<string> GridEcho, bool echoStatus)
         {
             Runtime = GridRuntime;
-            Echo = GridEcho;
+            echo = GridEcho;
             EchoStatus = echoStatus;
+        }
+
+        public static void EstablishTaskScheduler(IMyGridProgramRuntimeInfo GridRuntime, Action<string> GridEcho)
+        {
+            Runtime = GridRuntime;
+            echo = GridEcho;
+            EchoStatus = false;
         }
 
         public static void StepCoroutines(UpdateType updateSource, string argument)
