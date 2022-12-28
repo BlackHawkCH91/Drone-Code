@@ -22,106 +22,7 @@ namespace IngameScript
 {
     partial class Program : MyGridProgram
     {
-        public static class Polynomial
-        {
-            static double a;
-            static double b;
-            static double c;
-            static double d;
-            static double e;
-            static double f;
-            static double g;
-
-            static Vector3D pos;
-            static Vector3D vel;
-            static Vector3D accel;
-
-            public static Action<string> Echo;
-
-            public static void SetVariables(Vector3D _pos, Vector3D _vel, Vector3D _accel, double speed)
-            {
-                pos = _pos;
-                vel = _vel;
-                accel = _accel;
-
-                a = (accel.X * accel.X + accel.Y * accel.Y + accel.Z * accel.Z) / 4;
-                b = accel.X * vel.X + accel.Y * vel.Y + accel.Z * vel.Z;
-                c = vel.X * vel.X + pos.X * accel.X +
-                          vel.Y * vel.Y + pos.Y * accel.Y +
-                          vel.Z * vel.Z + pos.Z * accel.Z - (speed * speed);
-                d = 2 * (pos.X * vel.X + pos.Y * vel.Y + pos.Z * vel.Z);
-                e = pos.X * pos.X + pos.Y * pos.Y + pos.Z * pos.Z;
-            }
-
-            public static double[] SolveQuartic()
-            {
-                double D0 = c * c - 3 * b * d + 12 * a * e;
-                double D1 = 2 * c * c * c - 9 * b * c * d + 27 * b * b * e + 27 * a * d * d - 72 * a * c * e;
-                double p = (8 * a * c - 3 * b * b) / (8 * a * a);
-                double q = (b * b * b - 4 * a * b * c + 8 * a * a * d) / (8 * a * a * a);
-                Complex Q = Complex.Pow((D1 + Complex.Sqrt(D1 * D1 - 4 * D0 * D0 * D0)) / 2, 1.0 / 3.0);
-                Complex S = Complex.Sqrt(-2 * p / 3 + (Q + D0 / Q) / (3 * a)) / 2;
-                Complex u = Complex.Sqrt(-4 * S * S - 2 * p + q / S) / 2;
-                Complex v = Complex.Sqrt(-4 * S * S - 2 * p - q / S) / 2;
-                Complex[] output = new Complex[4];
-                output[0] = -b / (4 * a) - S + u;
-                output[1] = -b / (4 * a) - S - u;
-                output[2] = -b / (4 * a) + S + v;
-                output[3] = -b / (4 * a) + S - v;
-
-                return new double[] { output[0].Real, output[1].Real, output[2].Real, output[3].Real };
-            }
-
-            public static double[] SolveQuadratic()
-            {
-                double sqrt = Math.Sqrt(b * b - (4 * a * c));
-                if (sqrt == double.NaN) { return null; }
-
-                return new double[] { (-b - sqrt) / (2 * a), (-b + sqrt) / (2 * a) };
-            }
-
-            public static Vector3D? GetInterceptPoint()
-            {
-                double[] roots;
-
-                //Echo("1");
-                if (a == 0)
-                {
-                    if (d == 0)
-                    {
-                        //Echo("2");
-                        return pos;
-                    }
-
-                    //Echo(e.ToString());
-                    roots = SolveQuadratic();
-                }
-                else
-                {
-                    //Echo("3");
-                    roots = SolveQuartic();
-                }
-
-                float t = -1;
-
-                //Echo("4");
-                foreach (double x in roots)
-                {
-                    if (x > 0 && (x < t || t < 0))
-                    {
-                        t = (float)x;
-                    }
-                }
-
-                if (t < 0)
-                {
-                    return null;
-                }
-
-                //Echo("5");
-                return pos + t * vel + (t / 2) * accel;
-            }
-        }
+        
 
         public struct Complex : IEquatable<Complex>
         {
@@ -335,7 +236,6 @@ namespace IngameScript
 
         public Program()
         {
-            Polynomial.Echo = Echo;
             radar = GridTerminalSystem.GetBlockWithName("radar") as IMyTurretControlBlock;
             TaskScheduler.EstablishTaskScheduler(Runtime, Echo, true);
             TaskScheduler.SpawnCoroutine(new Func<IEnumerator<int>>(IEnumMain));
@@ -381,7 +281,7 @@ namespace IngameScript
                     if (accelerations.Count >= 15)
                     {
                         Vector3D total = Vector3D.Zero;
-                        foreach (Vector3 acc in accelerations)
+                        foreach (Vector3D acc in accelerations)
                         {
                             total += acc;
                         }
@@ -393,7 +293,7 @@ namespace IngameScript
                     if (jerks.Count >= 15)
                     {
                         Vector3D total = Vector3D.Zero;
-                        foreach (Vector3 jerk in jerks)
+                        foreach (Vector3D jerk in jerks)
                         {
                             total += jerk;
                         }
@@ -408,8 +308,9 @@ namespace IngameScript
 
                 Echo($"pos: {(Vector3I)enemy.Position}");
                 Echo($"vel: {(Vector3I)targetVel1}");
-                Echo($"acc: {(Vector3I)targetAccel}");
+                Echo($"acc: {(Vector3I)targetAccel1}");
                 Echo($"jer: {(Vector3I)targetJerk}");
+                //Echo($"jer: {}");
                 yield return 0;
             }
         }
