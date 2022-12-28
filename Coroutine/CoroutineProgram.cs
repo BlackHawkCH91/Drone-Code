@@ -146,6 +146,7 @@ namespace IngameScript
         public static string lastArgument { get { return LastArgument; } }
 
         private static IMyGridProgramRuntimeInfo Runtime;
+        private static Queue<double> prevTimeSteps = new Queue<double>();
         private static Action<string> Echo;
         private static bool EchoStatus = false;
 
@@ -153,6 +154,16 @@ namespace IngameScript
         /// Seconds since the last step
         /// </summary>
         public static double TimeStep { get { return Runtime.TimeSinceLastRun.Seconds; } }
+        public static double AverageRunTime {
+            get {
+                double sum = 0;
+                foreach(double val in prevTimeSteps)
+                {
+                    sum += val;
+                }
+                return sum / prevTimeSteps.Count;
+            }
+        }
 
         // Coroutine Lists
         private static List<Coroutine> activeCoroutines = new List<Coroutine>();
@@ -182,6 +193,13 @@ namespace IngameScript
             // Coroutine will trigger when user presses run or when it triggers itself
             if (updateSource == UpdateType.Once || updateSource == UpdateType.Terminal)
             {
+                // Update average timestep
+                prevTimeSteps.Enqueue(Runtime.LastRunTimeMs);
+                if(prevTimeSteps.Count > 120)
+                {
+                    prevTimeSteps.Dequeue();
+                }
+
                 if (EchoStatus)
                 {
                     Echo(
@@ -192,6 +210,7 @@ namespace IngameScript
                         "Max Call Chain Depth: " + Runtime.MaxCallChainDepth.ToString() + "\n" +
                         "Current Call Chain Depth: " + Runtime.CurrentCallChainDepth.ToString() + "\n" +
                         "Last Run Time ms: " + Runtime.LastRunTimeMs.ToString() + "\n" +
+                        "Average Runtime ms: " + AverageRunTime.RoundToDp(2) + "\n" +
                         "Time Since Last Run ms: " + Runtime.TimeSinceLastRun.TotalMilliseconds.ToString()
                         );
                 }

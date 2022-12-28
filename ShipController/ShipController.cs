@@ -111,54 +111,32 @@ namespace IngameScript
                     }
 
                     // Update gyros
-                    // Calc rotation error
-                    //MatrixD rotMatrix = desiredRotation - controller.WorldMatrix.GetOrientation();
-                    //Vector3 requiredRotation = new Vector3(1, 0, 0); //rotMatrix.GetTaitBryanAnglesZYX();
 
-                    // yaw pitch roll
-                    Vector3D requiredRotation = new Vector3();/*new Vector3(
-                        desiredOrientation.Forward.ConvertToLocalDirection(controller).X,
-                        0,
-                        0
-                        );*/
+                    // Calc rotation errors
+                    MatrixD shipOrientation = controller.WorldMatrix.GetOrientation();
 
-                    // Calculate desired angular momentum
+                    float yaw = (float)shipOrientation.Forward.Dot(desiredOrientation.Forward.ProjectOnPlane(shipOrientation.Up).UnitVector());
+                    float pitch = (float)shipOrientation.Up.Dot(desiredOrientation.Up.ProjectOnPlane(shipOrientation.Left).UnitVector());
+                    float roll = (float)shipOrientation.Left.Dot(desiredOrientation.Left.ProjectOnPlane(shipOrientation.Forward).UnitVector());
 
-                    // Calc grid override
-                    //Vector3 gridOverride = requiredRotation.UnitVector();
+                    // Assign to axis
+                    Dictionary<Base6Directions.Direction, float> gridRotations = new Dictionary<Base6Directions.Direction, float>();
+                    // Yaw
+                    gridRotations.Add(controller.Orientation.Up, yaw);
+                    // Pitch
+                    gridRotations.Add(controller.Orientation.Forward, pitch);
+                    // Roll
+                    gridRotations.Add(controller.Orientation.Left, roll);
 
                     // Apply gyro overrides
                     for (int i = 0; i < gyros.Count(); i++)
                     {
                         IMyGyro gyro = gyros[i];
-                        Matrix blockOrientation = new Matrix();
-                        gyro.Orientation.GetMatrix(out blockOrientation);
+                        MatrixD gyroOrientation = gyro.WorldMatrix.GetOrientation();
 
-                        //MatrixD inverse = controller.WorldMatrix;
-                        //MatrixD.Invert(inverse);
-                        //MatrixD refMatrix = gyro.WorldMatrix.GetOrientation() * desiredOrientation;
-
-                        //requiredRotation = -refMatrix.GetTaitBryanAnglesZYX();
-                        //MatrixD.GetEulerAnglesXYZ(ref refMatrix, out requiredRotation);
-
-                        //Vector3 gyroOverride = requiredRotation;//gridOverride.ConvertToLocalDirection(orientation);
-
-                        float yaw;
-                        float pitch;
-                        float roll;
-
-                        yaw = (float) controller.WorldMatrix.Forward.Dot(desiredOrientation.Forward.ProjectOnPlane(controller.WorldMatrix.Up).UnitVector());
-                        pitch = (float) controller.WorldMatrix.Up.Dot(desiredOrientation.Up.ProjectOnPlane(controller.WorldMatrix.Left).UnitVector());
-                        roll = (float) controller.WorldMatrix.Left.Dot(desiredOrientation.Left.ProjectOnPlane(controller.WorldMatrix.Forward).UnitVector());
-
-
-                        gyro.Yaw = yaw * 3;
-                        gyro.Pitch = pitch * 3;
-                        gyro.Roll = roll * 3;
-
-                        //gyro.Yaw = (float)refMatrix.Up.Dot(gyro.WorldMatrix.Up);
-                        //gyro.Pitch = (float)refMatrix.Forward.Dot(gyro.WorldMatrix.Forward);//gyroOverride.Y;
-                        //gyro.Roll = 0; //gyroOverride.Z;
+                        gyro.Yaw = (float)shipOrientation.Forward.Dot(desiredOrientation.Forward.ProjectOnPlane(shipOrientation.Up).UnitVector());
+                        gyro.Pitch = (float)shipOrientation.Up.Dot(desiredOrientation.Up.ProjectOnPlane(shipOrientation.Left).UnitVector());
+                        gyro.Roll = (float)shipOrientation.Left.Dot(desiredOrientation.Left.ProjectOnPlane(shipOrientation.Forward).UnitVector());
                     }
 
 

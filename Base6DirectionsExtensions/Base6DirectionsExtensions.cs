@@ -26,5 +26,10 @@ namespace IngameScript
         {
             return referenceBlock.Orientation.TransformDirection(direction);
         }
+
+        public static Base6Directions.Direction ConvertToWorld(this Base6Directions.Direction direction, IMyCubeBlock referenceBlock)
+        {
+            return referenceBlock.Orientation.TransformDirectionInverse(direction);
+        }
     }
 }

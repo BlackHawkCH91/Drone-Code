@@ -38,7 +38,6 @@ namespace IngameScript
                 DesiredOrientation = MatrixD.CreateLookAt(GetMainRemoteControl().WorldMatrix.Translation, new Vector3D(1,0,0), new Vector3D(0,1,0))
             };
 
-            DebugAPI debugAPI = new DebugAPI(this);
         }
 
         public void Save()
