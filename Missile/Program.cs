@@ -64,6 +64,7 @@ namespace IngameScript
             static Vector3D pos;
             static Vector3D vel;
             static Vector3D accel;
+            static Vector3D jerk;
 
             public static Action<string> Echo;
 
@@ -80,6 +81,22 @@ namespace IngameScript
                           vel.Z * vel.Z + pos.Z * accel.Z - (speed * speed);
                 d = 2 * (pos.X * vel.X + pos.Y * vel.Y + pos.Z * vel.Z);
                 e = pos.X * pos.X + pos.Y * pos.Y + pos.Z * pos.Z;
+            }
+
+            public static void SetVariables(Vector3D _pos, Vector3D _vel, Vector3D _accel, Vector3D _jerk, double speed)
+            {
+                pos = _pos;
+                vel = _vel;
+                accel = _accel;
+                jerk = _jerk;
+
+                a = (jerk.X * jerk.X + jerk.Y * jerk.Y + jerk.Z * jerk.Z) / 36;
+                b = (jerk.X * accel.X + jerk.Y * accel.Y + jerk.Z * accel.Z) / 6;
+                c = ((accel.X * accel.X + accel.Y * accel.Y + accel.Z * accel.Z) / 4) + ((jerk.X * vel.X + jerk.Y * vel.Y + jerk.Z * vel.Z) / 3);
+                d = vel.X * accel.X + vel.Y * accel.Y + vel.Z * accel.Z + jerk.X * pos.X + jerk.Y * pos.Y + jerk.Z * pos.Z;
+                e = (vel.X * vel.X + pos.X * accel.X + vel.Y * vel.Y + pos.Y * accel.Y + vel.Z * vel.Z + pos.Z * accel.Z) - (speed * speed);
+                f = 2 * (pos.X * vel.X + pos.Y * vel.Y + pos.Z * vel.Z);
+                g = (pos.X * pos.X + pos.Y * pos.Y + pos.Z * pos.Z);
             }
 
             public static double[] SolveQuartic()
@@ -109,31 +126,95 @@ namespace IngameScript
                 return new double[] { (-b - sqrt) / (2 * a), (-b + sqrt) / (2 * a) };
             }
 
+            static double func(double x)
+            {
+                return a * Math.Pow(x, 6) + b * Math.Pow(x, 5) + c * Math.Pow(x, 4) + d * Math.Pow(x, 3) + e * x * x + f * x + g;
+            }
+
+            public static double BisectionMethod(double leftBorder, double rightBorder, double fault)
+            {
+                MyTuple<int, double> highestNegative = new MyTuple<int, double>((int)Math.Floor(leftBorder), double.MinValue);
+                MyTuple<int, double> lowestPositive = new MyTuple<int, double>((int)Math.Ceiling(rightBorder), double.MaxValue);
+
+                bool negSet = false;
+                bool posSet = false;
+
+
+                int counter = 0;
+
+                for (int i = (int)Math.Floor(leftBorder); i <= rightBorder; i++)
+                {
+                    double result = func(i);
+                    if (result > highestNegative.Item2 && result <= 0)
+                    {
+                        highestNegative = new MyTuple<int, double>(i, result);
+                        negSet = true;
+                        continue;
+                    }
+
+                    if (result < lowestPositive.Item2 && result >= 0)
+                    {
+                        lowestPositive = new MyTuple<int, double>(i, result);
+                        posSet = true;
+                    }
+
+                    if (negSet && posSet)
+                    {
+                        break;
+                    }
+                    counter++;
+                }
+
+                leftBorder = Math.Min(highestNegative.Item1, lowestPositive.Item1);
+                rightBorder = Math.Max(highestNegative.Item1, lowestPositive.Item1);
+
+                double solution = (leftBorder + rightBorder) / 2;
+                uint iterationsNumber = 0;
+
+                while (Math.Abs(func(solution)) > fault && iterationsNumber <= 20)
+                {
+                    if (func(leftBorder) * func(solution) > 0)
+                    {
+                        leftBorder = solution;
+                    }
+                    else
+                    {
+                        rightBorder = solution;
+                    }
+                    solution = (leftBorder + rightBorder) / 2;
+                    iterationsNumber++;
+                }
+
+                return solution;
+            }
+
             public static Vector3D GetInterceptPoint()
             {
                 double[] roots;
 
-                //Echo("1");
                 if (a == 0)
                 {
                     if (d == 0)
                     {
-                        //Echo("2");
                         return pos;
                     }
 
-                    //Echo(e.ToString());
                     roots = SolveQuadratic();
                 }
                 else
                 {
-                    //Echo("3");
-                    roots = SolveQuartic();
+                    if (g == 0)
+                    {
+                        roots = SolveQuartic();
+                    } else
+                    {
+                        roots = new double[1];
+                        roots[0] = BisectionMethod(0, 30, 0.01); 
+                    }
                 }
 
                 float t = -1;
 
-                //Echo("4");
                 foreach (double x in roots)
                 {
                     if (x > 0 && (x < t || t < 0))
@@ -148,7 +229,7 @@ namespace IngameScript
                 }
 
                 //Echo("5");
-                return pos + t * vel + (t / 2) * accel;
+                return pos + t * vel + (t / 2) * accel + (t / 6) * jerk;
             }
         }
 

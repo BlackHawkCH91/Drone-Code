@@ -361,7 +361,6 @@ namespace IngameScript
             while (true)
             {
                 MyDetectedEntityInfo enemy = radar.GetTargetedEntity();
-                //Vector3D localPos = Vector3DExtensions.ConvertToLocalPosition(enemy.Position, radar.WorldMatrix);
 
                 if (enemy.Position != Vector3D.Zero && (enemy.TimeStamp - targetVel1.Item1) > 100)
                 {
@@ -383,7 +382,6 @@ namespace IngameScript
                 Echo($"pos: {(Vector3I)enemy.Position}");
                 Echo($"vel: {(Vector3I)targetVel1.Item2}");
                 Echo($"acc: {(Vector3I)targetAcceleration}");
-                //Echo($"Int: {(Vector3I)interceptPoint}");
                 yield return 0;
             }
         }
