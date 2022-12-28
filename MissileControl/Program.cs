@@ -310,7 +310,6 @@ namespace IngameScript
                 Echo($"vel: {(Vector3I)targetVel1}");
                 Echo($"acc: {(Vector3I)targetAccel1}");
                 Echo($"jer: {(Vector3I)targetJerk}");
-                //Echo($"jer: {}");
                 yield return 0;
             }
         }
