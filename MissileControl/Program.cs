@@ -351,37 +351,65 @@ namespace IngameScript
             TaskScheduler.StepCoroutines(updateSource, argument);
         }
 
-        MyTuple<double, Vector3D> targetVel1 = new MyTuple<double, Vector3D>(0, Vector3D.Zero);
-        MyTuple<double, Vector3D> targetVel2 = new MyTuple<double, Vector3D>(0, Vector3D.Zero);
-        Vector3D targetAcceleration = Vector3D.Zero;
+        Vector3D targetVel1 = Vector3D.Zero;
+        Vector3D targetVel2 = Vector3D.Zero;
+
+        Vector3D targetAccel = Vector3D.Zero;
+        Vector3D targetAccel1 = Vector3D.Zero;
+        Vector3D targetAccel2 = Vector3D.Zero;
+
+        Vector3D targetJerk = Vector3D.Zero;
+
+        List<Vector3> accelerations = new List<Vector3>();
+        List<Vector3> jerks = new List<Vector3>();
 
         public IEnumerator<int> IEnumMain()
         {
-            int count = 0;
             while (true)
             {
                 MyDetectedEntityInfo enemy = radar.GetTargetedEntity();
 
-                if (enemy.Position != Vector3D.Zero && (enemy.TimeStamp - targetVel1.Item1) > 100)
+                if (enemy.Position != Vector3D.Zero)
                 {
                     targetVel2 = targetVel1;
-                    targetVel1 = new MyTuple<double, Vector3D>(enemy.TimeStamp,enemy.Velocity);
+                    targetVel1 = enemy.Velocity;
 
-                    targetAcceleration = (targetVel1.Item2 - targetVel2.Item2) / ((double)(targetVel1.Item1 - targetVel2.Item1) / 1000);
+                    targetAccel2 = targetAccel1;
+                    targetAccel1 = (targetVel1 - targetVel2) / TaskScheduler.TimeStep;
+                    accelerations.Add(targetAccel1);
 
-                    ImmutableArray<Vector3D> targetInfo = ImmutableArray.Create(new Vector3D[] { enemy.Position, enemy.Velocity, targetAcceleration });
+                    if (accelerations.Count >= 15)
+                    {
+                        Vector3D total = Vector3D.Zero;
+                        foreach (Vector3 acc in accelerations)
+                        {
+                            total += acc;
+                        }
+                        targetAccel = total / 15;
+                        accelerations.RemoveAt(0);
+                    }
+
+                    jerks.Add((targetAccel1 - targetAccel2) / TaskScheduler.TimeStep);
+                    if (jerks.Count >= 15)
+                    {
+                        Vector3D total = Vector3D.Zero;
+                        foreach (Vector3 jerk in jerks)
+                        {
+                            total += jerk;
+                        }
+                        targetJerk = total / 15;
+                        jerks.RemoveAt(0);
+                    }
+
+                    ImmutableArray<Vector3D> targetInfo = ImmutableArray.Create(new Vector3D[] { enemy.Position, enemy.Velocity, targetAccel, targetJerk });
                     IGC.SendBroadcastMessage("target", targetInfo);
 
                 }
-                count++;
-                if (count > 60)
-                {
-                    //break;
-                }
 
                 Echo($"pos: {(Vector3I)enemy.Position}");
-                Echo($"vel: {(Vector3I)targetVel1.Item2}");
-                Echo($"acc: {(Vector3I)targetAcceleration}");
+                Echo($"vel: {(Vector3I)targetVel1}");
+                Echo($"acc: {(Vector3I)targetAccel}");
+                Echo($"jer: {(Vector3I)targetJerk}");
                 yield return 0;
             }
         }
