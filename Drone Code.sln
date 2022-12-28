@@ -50,8 +50,8 @@ EndProject
 Global
 	GlobalSection(SharedMSBuildProjectFiles) = preSolution
 		Coroutine\Coroutine.projitems*{059caf3a-f0c7-4284-a14c-fc0f11e82b15}*SharedItemsImports = 4
+		Math\Math.projitems*{059caf3a-f0c7-4284-a14c-fc0f11e82b15}*SharedItemsImports = 4
 		NetworkMethods\NetworkMethods.projitems*{059caf3a-f0c7-4284-a14c-fc0f11e82b15}*SharedItemsImports = 4
-		Vector3Extensions\Vector3Extensions.projitems*{059caf3a-f0c7-4284-a14c-fc0f11e82b15}*SharedItemsImports = 4
 		Coroutine\Coroutine.projitems*{33262ce1-6d65-43de-b2f3-9a5542e538c7}*SharedItemsImports = 4
 		Vector3Extensions\Vector3Extensions.projitems*{33262ce1-6d65-43de-b2f3-9a5542e538c7}*SharedItemsImports = 4
 		Coroutine\Coroutine.projitems*{4fea1d8d-11cc-4d65-993b-821aad1e7ed6}*SharedItemsImports = 4
