@@ -1,0 +1,20 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <PropertyGroup>
+    <MSBuildAllProjects Condition="'$(MSBuildVersion)' == '' Or '$(MSBuildVersion)' &lt; '16.0'">$(MSBuildAllProjects);$(MSBuildThisFileFullPath)</MSBuildAllProjects>
+    <HasSharedItems>true</HasSharedItems>
+    <SharedGUID>647a5bd9-bb67-4693-bb3b-3910e3ba2ab0</SharedGUID>
+  </PropertyGroup>
+  <PropertyGroup Label="Configuration">
+    <Import_RootNamespace>Math</Import_RootNamespace>
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="$(MSBuildThisFileDirectory)Base6DirectionsExtensions.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)DoubleExtensions.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)LinearMap.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)MatrixExtensions.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)MovingAverage.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)QuaternionDExtensions.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Vector3Extensions.cs" />
+  </ItemGroup>
+</Project>
