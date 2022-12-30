@@ -25,7 +25,7 @@ namespace IngameScript
         public Program()
         {            
             // Establish task scheduler
-            TaskScheduler.EstablishTaskScheduler(Runtime, Echo, false);
+            TaskScheduler.EstablishTaskScheduler(Runtime, Echo, true);
 
             // Get gyros & thrusters
             List<IMyThrust> thrusters = new List<IMyThrust>();

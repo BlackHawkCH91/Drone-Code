@@ -98,12 +98,14 @@ namespace IngameScript
 
                 public void Step()
                 {
-                    bool hasMoreSteps = enumerator.MoveNext();
+                    bool stepped = enumerator.MoveNext();
 
-                    if (hasMoreSteps)
+                    if (stepped)
                     {
+                        // Queue next update
+                        Runtime.UpdateFrequency = UpdateFrequency.Once;
+
                         int yieldTime = enumerator.Current;
-                        
                         if(yieldTime > 0)
                         {
                             // Change to yielded coroutine
@@ -167,6 +169,9 @@ namespace IngameScript
                         // Change to running coroutine
                         coroutines[GetCoroutineIndex(id)] = new CoroutineRunning(enumerator, id);
                     }
+
+                    // Queue next update
+                    Runtime.UpdateFrequency = UpdateFrequency.Once;
                 }
                 #endregion
             }
@@ -286,11 +291,30 @@ namespace IngameScript
                     lastArgument = argument;
                 }
 
+                // Update average timestep
+                averageRuntime.AddValue(Runtime.LastRunTimeMs); // Add last runtime in ms
+
+#if !NO_LOGS
+                // Log status
+                if (echoStatus)
+                {
+                    Echo(
+                        "Num Coroutines: " + coroutines.Count() + "\n" +
+                        "Max Instruction Count: " + Runtime.MaxInstructionCount.ToString() + "\n" +
+                        "Current Instruction Count: " + Runtime.CurrentInstructionCount.ToString() + "\n" +
+                        "Max Call Chain Depth: " + Runtime.MaxCallChainDepth.ToString() + "\n" +
+                        "Current Call Chain Depth: " + Runtime.CurrentCallChainDepth.ToString() + "\n" +
+                        "Last Run Time ms: " + Runtime.LastRunTimeMs.ToString() + "\n" +
+                        "Average Runtime ms: " + AverageRunTime.RoundToDp(3) + "\n" +
+                        "Time Since Last Run ms: " + Runtime.TimeSinceLastRun.TotalMilliseconds.ToString()
+                        );
+                }
+
+#endif
+
                 // Coroutine will trigger when user presses run or when it triggers itself
                 if (updateSource == UpdateType.Once || updateSource == UpdateType.Terminal)
                 {
-                    // Update average timestep
-                    averageRuntime.AddValue(Runtime.LastRunTimeMs * 0.001); // Add last runtime in seconds
 
                     // Remove dead coroutines
                     coroutines.RemoveAll(coroutine => deadCoroutines.Contains(coroutine.Id));
@@ -302,40 +326,34 @@ namespace IngameScript
                         ICoroutine coroutine = coroutines[i];
                         coroutine.Step();
                     }
-
-#if !NO_LOGS
-
-                        if (echoStatus)
-                        {
-                            Echo(
-                                "Num Coroutines: " + coroutines.Count() + "\n" +
-                                "Max Instruction Count: " + Runtime.MaxInstructionCount.ToString() + "\n" +
-                                "Current Instruction Count: " + Runtime.CurrentInstructionCount.ToString() + "\n" +
-                                "Max Call Chain Depth: " + Runtime.MaxCallChainDepth.ToString() + "\n" +
-                                "Current Call Chain Depth: " + Runtime.CurrentCallChainDepth.ToString() + "\n" +
-                                "Last Run Time ms: " + Runtime.LastRunTimeMs.ToString() + "\n" +
-                                "Average Runtime ms: " + AverageRunTime.RoundToDp(2) + "\n" +
-                                "Time Since Last Run ms: " + Runtime.TimeSinceLastRun.TotalMilliseconds.ToString()
-                                );
-                        }
-
-#endif
                 }
             }
 
+            /// <summary>
+            /// Creates a coroutine that is paused by default
+            /// </summary>
+            /// <param name="CoroutineFunc"></param>
+            /// <param name="args"></param>
+            /// <returns></returns>
             public static ulong CreateCoroutine(Delegate CoroutineFunc, params object[] args)
             {
                 IEnumerator<int> enumerator = (IEnumerator<int>)CoroutineFunc.DynamicInvoke(args);
                 ulong coroutineId = UIDGenerator.GenerateUID();
-                ICoroutine coroutine = new CoroutinePaused(enumerator, coroutineId);
+                coroutines.Add(new CoroutinePaused(enumerator, coroutineId));
                 return coroutineId;
             }
-
+            
+            /// <summary>
+            /// Creates a coroutine that is running by default
+            /// </summary>
+            /// <param name="CoroutineFunc"></param>
+            /// <param name="args"></param>
+            /// <returns></returns>
             public static ulong SpawnCoroutine(Delegate CoroutineFunc, params object[] args)
             {
                 IEnumerator<int> enumerator = (IEnumerator<int>)CoroutineFunc.DynamicInvoke(args);
                 ulong coroutineId = UIDGenerator.GenerateUID();
-                ICoroutine coroutine = new CoroutineRunning(enumerator, coroutineId);
+                coroutines.Add(new CoroutineRunning(enumerator, coroutineId));
                 return coroutineId;
             }
             #endregion
