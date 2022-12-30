@@ -19,360 +19,342 @@ using VRageMath;
 
 namespace IngameScript
 {
-    /*
-     * 
-     * NOTES:
-     * - Coroutines execute in the order that they are added into the system
-     * - There are 60 ticks per ingame second
-     * 
-     */
-    public static class TaskScheduler
+    partial class Program
     {
-        public class Coroutine
+        /*
+         * 
+         * NOTES:
+         * - Coroutines execute in the order that they are added into the system
+         * - There are 60 ticks per ingame second
+         * 
+         */
+        public static class TaskScheduler
         {
-            internal int yieldTime = 0;
-            internal string status = "new";         // field
-            public string Status                    // property
+            #region Enums
+            public enum CoroutineStatus
             {
-                get { return status; }
+                Running,
+                Paused,
+                Dead
             }
+            #endregion
 
-            internal Delegate CoroutineMethod;
-            internal object[] InitialArgs;
-            internal IEnumerator<int> CoroutineEnumerator;
-
-            // Constructor
-            public Coroutine(Delegate coroutineMethod, params object[] args)
+            #region Interfaces
+            private interface ICoroutine
             {
-                CoroutineEnumerator = (IEnumerator<int>)coroutineMethod.DynamicInvoke(args);
+                #region Properties
+                CoroutineStatus Status { get; }
+                IEnumerator<int> Enumerator { get; }
+                ulong Id { get; }
+                #endregion
+
+                #region Methods
+                void Pause();
+                void Resume();
+                void Kill();
+                void Step();
+                #endregion
             }
+            #endregion
 
-            public void Kill()
-            {
-                status = "dead";
-                CoroutineEnumerator.Dispose();
-            }
+            #region State Classes
 
-            internal bool RunningThisTick()
+            internal class CoroutineRunning : ICoroutine
             {
-                if(yieldTime <= 0)
+                #region Fields
+                private readonly IEnumerator<int> enumerator;
+                private const CoroutineStatus status = CoroutineStatus.Running;
+                private readonly ulong id;
+                #endregion
+
+                #region Properties
+                public CoroutineStatus Status { get { return status; } }
+                public IEnumerator<int> Enumerator { get { return enumerator; } }
+                public ulong Id { get { return id; } }
+                #endregion
+
+                #region Constructors
+                public CoroutineRunning(IEnumerator<int> enumerator, ulong id)
                 {
-                    return true;
+                    this.enumerator = enumerator;
+                    this.id = id;
                 }
-                else
+                #endregion
+
+                #region Methods
+                public void Pause()
                 {
-                    yieldTime--;
-                    return false;
-                }
-            }
-        }
-
-        public class EventConnection
-        {
-            internal Delegate connectedMethod;
-            private EventSignal connectedSignal;
-            public void Disconnect()
-            {
-                connectedSignal.RemoveConnection(this);
-            }
-
-            // Constructor
-            internal EventConnection(Delegate MethodToConnect, EventSignal SignalToConnect)
-            {
-                connectedMethod = MethodToConnect;
-                connectedSignal = SignalToConnect;
-            }
-        }
-
-        public class EventSignal
-        {
-            private List<EventConnection> connections;
-
-            internal void RemoveConnection(EventConnection connection)
-            {
-                connections.Remove(connection);
-            }
-
-            public void Fire(params object[] args)
-            {
-                foreach (EventConnection connection in connections)
-                {
-                    ResumeCoroutine(CreateCoroutine(connection.connectedMethod, args));
-                }
-            }
-
-            public EventConnection Connect(Delegate MethodToConnect)
-            {
-                EventConnection NewConn = new EventConnection(MethodToConnect, this);
-                connections.Add(NewConn);
-                return NewConn;
-            }
-
-            internal EventSignal()
-            {
-                connections = new List<EventConnection>();
-            }
-        }
-
-        public class BindableEvent
-        {
-            public EventSignal Event;
-            public FireDelegate Fire;
-            public ConnectDelegate Connect;
-
-            public delegate void FireDelegate(params object[] args);
-            public delegate EventConnection ConnectDelegate(Delegate MethodToConnect);
-
-            /*public EventConnection Connect(Delegate MethodToConnect)
-            {
-                return Event.Connect(MethodToConnect);
-            }*/
-
-            /*public void Fire(params object[] args)
-            {
-                Event.Fire(args);
-            }*/
-
-            public BindableEvent()
-            {
-                Event = new EventSignal();
-                Fire = new FireDelegate(Event.Fire);
-                Connect = new ConnectDelegate(Event.Connect);
-            }
-        }
-
-        // Public get only
-        private static string LastArgument = "";
-        public static string lastArgument { get { return LastArgument; } }
-
-        private static IMyGridProgramRuntimeInfo Runtime;
-        private static Queue<double> prevTimeSteps = new Queue<double>();
-        private static Action<string> echo;
-        private static bool EchoStatus = false;
-
-        /// <summary>
-        /// Seconds since the last step
-        /// </summary>
-        public static double TimeStep { get { return Runtime.TimeSinceLastRun.TotalMilliseconds / 1000; } }
-        public static double AverageRunTime {
-            get {
-                double sum = 0;
-                foreach(double val in prevTimeSteps)
-                {
-                    sum += val;
-                }
-                return sum / prevTimeSteps.Count;
-            }
-        }
-
-        public static Action<string> Echo { get { return echo; } }
-
-        // Coroutine Lists
-        private static List<Coroutine> activeCoroutines = new List<Coroutine>();
-        private static List<Coroutine> pausedCoroutines = new List<Coroutine>();
-        private static List<Coroutine> yieldedCoroutines = new List<Coroutine>();
-
-        private static List<Coroutine> coroutinesToRemove = new List<Coroutine>();
-        private static List<Coroutine> coroutinesToPause = new List<Coroutine>();
-        private static List<Coroutine> coroutinesToYield = new List<Coroutine>();
-        private static List<Coroutine> coroutinesToResume = new List<Coroutine>();
-
-        private static List<Coroutine> yieldedCoroutinesToRemove = new List<Coroutine>();
-
-        public static void EstablishTaskScheduler(IMyGridProgramRuntimeInfo GridRuntime, Action<string> GridEcho, bool echoStatus)
-        {
-            Runtime = GridRuntime;
-            echo = GridEcho;
-            EchoStatus = echoStatus;
-        }
-
-        public static void EstablishTaskScheduler(IMyGridProgramRuntimeInfo GridRuntime, Action<string> GridEcho)
-        {
-            Runtime = GridRuntime;
-            echo = GridEcho;
-            EchoStatus = false;
-        }
-
-        public static void StepCoroutines(UpdateType updateSource, string argument)
-        {
-            if(argument != ""){
-                LastArgument = argument;
-            }
-
-            // Coroutine will trigger when user presses run or when it triggers itself
-            if (updateSource == UpdateType.Once || updateSource == UpdateType.Terminal)
-            {
-                // Update average timestep
-                prevTimeSteps.Enqueue(Runtime.LastRunTimeMs);
-                if(prevTimeSteps.Count > 120)
-                {
-                    prevTimeSteps.Dequeue();
+                    // Change to paused coroutine
+                    coroutines[GetCoroutineIndex(id)] = new CoroutinePaused(enumerator, id);
                 }
 
-                if (EchoStatus)
+                public void Resume() { }
+
+                public void Kill()
                 {
-                    Echo(
-                        "Active Coroutines: " + (activeCoroutines.Count() + yieldedCoroutines.Count()) + "\n" +
-                        "Paused Coroutines: " + pausedCoroutines.Count() + "\n" +
-                        "Max Instruction Count: " + Runtime.MaxInstructionCount.ToString() + "\n" +
-                        "Current Instruction Count: " + Runtime.CurrentInstructionCount.ToString() + "\n" +
-                        "Max Call Chain Depth: " + Runtime.MaxCallChainDepth.ToString() + "\n" +
-                        "Current Call Chain Depth: " + Runtime.CurrentCallChainDepth.ToString() + "\n" +
-                        "Last Run Time ms: " + Runtime.LastRunTimeMs.ToString() + "\n" +
-                        "Average Runtime ms: " + AverageRunTime.RoundToDp(2) + "\n" +
-                        "Time Since Last Run ms: " + Runtime.TimeSinceLastRun.TotalMilliseconds.ToString()
-                        );
+                    // Change to dead coroutine
+                    deadCoroutines.Add(id);
                 }
 
-                CheckYieldedCoroutines();
-                // Step all active coroutines
-                foreach (Coroutine coroutine in activeCoroutines)
+                public void Step()
                 {
-                    bool hasMoreSteps = coroutine.CoroutineEnumerator.MoveNext();
+                    bool hasMoreSteps = enumerator.MoveNext();
 
                     if (hasMoreSteps)
                     {
-                        // if yield time is 0 then coroutine must be run next tick so do not create a "paused coroutine" for it
-                        if (coroutine.CoroutineEnumerator.Current > 0)
+                        int yieldTime = enumerator.Current;
+                        
+                        if(yieldTime > 0)
                         {
-                            // Update frequency is changed to update once if it is not already set
-                            Runtime.UpdateFrequency |= UpdateFrequency.Once;
-                            coroutinesToYield.Add(coroutine);
+                            // Change to yielded coroutine
+                            coroutines[GetCoroutineIndex(id)] = new CoroutineYielded(enumerator, id, yieldTime);
                         }
-
-                        // Update frequency is changed to update once if it is not already set
-                        Runtime.UpdateFrequency |= UpdateFrequency.Once;
                     }
                     else
                     {
-                        coroutinesToRemove.Add(coroutine);
+                        // Change to dead coroutine
+                        deadCoroutines.Add(id);
                     }
                 }
-
-                // Remove all coroutines to remove
-                foreach (Coroutine coroutine in coroutinesToRemove)
-                {
-                    InternalRemoveCoroutine(coroutine);
-                }
-                coroutinesToRemove.Clear();
-
-                // Pause all coroutines that must be paused
-                foreach (Coroutine coroutine in coroutinesToPause)
-                {
-                    InternalPauseCoroutine(coroutine);
-                }
-                coroutinesToPause.Clear();
-
-                // Yield all coroutines that must be yielded
-                foreach (Coroutine coroutine in coroutinesToYield)
-                {
-                    InternalYieldCoroutine(coroutine, coroutine.CoroutineEnumerator.Current);
-                }
-                coroutinesToYield.Clear();
-
-                // Resume all coroutines that must be resumed
-                foreach (Coroutine coroutine in coroutinesToResume)
-                {
-                    InternalResumeCoroutine(coroutine);
-                }
-                coroutinesToResume.Clear();
+                #endregion
             }
-        }
 
-        public static Coroutine CreateCoroutine(Delegate CoroutineFunc, params object[] args)
-        {
-            Coroutine Coroutine = new Coroutine(CoroutineFunc, args);
-            PauseCoroutine(Coroutine);
-            return Coroutine;
-        }
-
-        public static Coroutine SpawnCoroutine(Delegate CoroutineFunc, params object[] args)
-        {
-            Coroutine Coroutine = new Coroutine(CoroutineFunc, args);
-            ResumeCoroutine(Coroutine);
-            return Coroutine;
-        }
-
-        private static void InternalPauseCoroutine(Coroutine coroutine)
-        {
-            activeCoroutines.Remove(coroutine);
-            yieldedCoroutines.Remove(coroutine);
-
-            pausedCoroutines.Add(coroutine);
-            coroutine.status = "paused";
-        }
-        public static void PauseCoroutine(Coroutine coroutine)
-        {
-            // Flag coroutine to be paused next coroutine step
-            coroutinesToPause.Add(coroutine);
-        }
-
-        private static void InternalResumeCoroutine(Coroutine coroutine)
-        {
-            pausedCoroutines.Remove(coroutine);
-            yieldedCoroutines.Remove(coroutine);
-
-            // Add coroutine to active list and set yield time to 0 to execute next frame
-            activeCoroutines.Add(coroutine);
-            coroutine.yieldTime = 0;
-            coroutine.status = "running";
-        }
-        public static void ResumeCoroutine(Coroutine coroutine)
-        {
-            coroutinesToResume.Add(coroutine);
-            // Set update frequency so that step is run and coroutines can actually be resumed next frame
-            Runtime.UpdateFrequency |= UpdateFrequency.Once;
-        }
-
-        private static void InternalRemoveCoroutine(Coroutine coroutine)
-        {
-            activeCoroutines.Remove(coroutine);
-            pausedCoroutines.Remove(coroutine);
-            yieldedCoroutines.Remove(coroutine);
-            coroutinesToPause.Remove(coroutine);
-            coroutinesToYield.Remove(coroutine);
-            coroutinesToResume.Remove(coroutine);
-            coroutine.Kill();
-        }
-        public static void RemoveCoroutine(Coroutine coroutine)
-        {
-            coroutinesToRemove.Add(coroutine);
-        }
-
-        private static void InternalYieldCoroutine(Coroutine coroutine, int YieldTime)
-        {
-            activeCoroutines.Remove(coroutine);
-            yieldedCoroutines.Add(coroutine);
-
-            coroutine.yieldTime = YieldTime;
-        }
-
-        private static void CheckYieldedCoroutines()
-        {
-            foreach (Coroutine coroutine in yieldedCoroutines)
+            internal class CoroutineYielded : ICoroutine
             {
-                if (coroutine.RunningThisTick())
+                #region Fields
+                private readonly IEnumerator<int> enumerator;
+                public const CoroutineStatus status = CoroutineStatus.Running;
+                private readonly ulong id;
+                private int yieldTime;
+                #endregion
+
+                #region Properties
+                public CoroutineStatus Status { get { return status; } }
+                public IEnumerator<int> Enumerator { get { return enumerator; } }
+                public ulong Id { get { return id; } }
+                #endregion
+
+                #region Constructors
+                public CoroutineYielded(IEnumerator<int> enumerator, ulong id, int yieldTime)
                 {
-                    activeCoroutines.Add(coroutine);
-                    yieldedCoroutinesToRemove.Add(coroutine);
+                    this.enumerator = enumerator;
+                    this.id = id;
+                    this.yieldTime = yieldTime;
+                }
+                #endregion
+
+                #region Methods
+                public void Pause()
+                {
+                    // Change to paused coroutine
+                    coroutines[GetCoroutineIndex(id)] = new CoroutinePaused(enumerator, id);
+                }
+
+                public void Resume() { }
+
+                public void Kill()
+                {
+                    // Change to dead coroutine
+                    deadCoroutines.Add(id);
+                }
+
+                public void Step()
+                {
+                    yieldTime -= 1;
+
+                    if(yieldTime <= 0)
+                    {
+                        // Change to running coroutine
+                        coroutines[GetCoroutineIndex(id)] = new CoroutineRunning(enumerator, id);
+                    }
+                }
+                #endregion
+            }
+
+            internal class CoroutinePaused : ICoroutine
+            {
+                #region Fields
+                private readonly IEnumerator<int> enumerator;
+                public const CoroutineStatus status = CoroutineStatus.Paused;
+                private readonly ulong id;
+                #endregion
+
+                #region Properties
+                public CoroutineStatus Status { get { return status; } }
+                public IEnumerator<int> Enumerator { get { return enumerator; } }
+                public ulong Id { get { return id; } }
+                #endregion
+
+                #region Constructors
+                public CoroutinePaused(IEnumerator<int> enumerator, ulong id)
+                {
+                    this.enumerator = enumerator;
+                    this.id = id;
+                }
+                #endregion
+
+                #region Methods
+                public void Pause() { }
+
+                public void Resume()
+                {
+                    // Change to running coroutine
+                    coroutines[GetCoroutineIndex(id)] = new CoroutineRunning(enumerator, id);
+                }
+
+                public void Kill()
+                {
+                    // Change to dead coroutine
+                    deadCoroutines.Add(id);
+                }
+
+                public void Step() { }
+                #endregion
+            }
+
+            #endregion
+
+            #region Fields
+            private static string lastArgument = "";
+
+            private static IMyGridProgramRuntimeInfo Runtime;
+            private static MovingAverage averageRuntime = new MovingAverage(120);
+            private static Action<string> echo;
+            private static bool echoStatus = false;
+            private static List<ICoroutine> coroutines = new List<ICoroutine>();
+            private static List<ulong> deadCoroutines = new List<ulong>();
+            
+            #endregion
+
+            #region Properties
+            /// <summary>
+            /// Seconds since the last step
+            /// </summary>
+            public static double TimeStep { get { return Runtime.TimeSinceLastRun.TotalMilliseconds / 1000; } }
+
+            public static string LastArgument { get { return lastArgument; } }
+
+            public static double AverageRunTime { get { return averageRuntime.GetAverageValue();} }
+
+            public static Action<string> Echo { get { return echo; } }
+            #endregion
+
+            #region Methods
+
+            #region Public
+            public static void EstablishTaskScheduler(IMyGridProgramRuntimeInfo GridRuntime, Action<string> Echo, bool EchoStatus)
+            {
+                Runtime = GridRuntime;
+                echo = Echo;
+                echoStatus = EchoStatus;
+            }
+
+            public static void EstablishTaskScheduler(IMyGridProgramRuntimeInfo GridRuntime, Action<string> GridEcho)
+            {
+                Runtime = GridRuntime;
+                echo = GridEcho;
+                echoStatus = false;
+            }
+
+            public static CoroutineStatus GetCoroutineStatus(ulong CoroutineId)
+            {
+                if(GetCoroutine(CoroutineId) != null)
+                {
+                    return GetCoroutine(CoroutineId).Status;
                 }
                 else
                 {
-                    // Update frequency is changed to update once if it is not already set to make sure that execution will continue until all coroutines resume
-                    Runtime.UpdateFrequency |= UpdateFrequency.Once;
+                    return CoroutineStatus.Dead;
                 }
             }
 
-            // Remove all coroutines that have been resumed
-            foreach (Coroutine coroutine in yieldedCoroutinesToRemove)
+            public static void PauseCoroutine(ulong CoroutineId)
             {
-                yieldedCoroutines.Remove(coroutine);
+                GetCoroutine(CoroutineId).Pause();
             }
-            yieldedCoroutinesToRemove.Clear();
 
+            public static void KillCoroutine(ulong CoroutineId)
+            {
+                GetCoroutine(CoroutineId).Kill();
+            }
+
+            public static void StepCoroutines(UpdateType updateSource, string argument)
+            {
+                // Set argument if it has been changed
+                if (argument != "")
+                {
+                    lastArgument = argument;
+                }
+
+                // Coroutine will trigger when user presses run or when it triggers itself
+                if (updateSource == UpdateType.Once || updateSource == UpdateType.Terminal)
+                {
+                    // Update average timestep
+                    averageRuntime.AddValue(Runtime.LastRunTimeMs * 0.001); // Add last runtime in seconds
+
+                    // Remove dead coroutines
+                    coroutines.RemoveAll(coroutine => deadCoroutines.Contains(coroutine.Id));
+                    deadCoroutines.Clear();
+
+                    // Run coroutines
+                    for (int i = 0; i < coroutines.Count(); i++)
+                    {
+                        ICoroutine coroutine = coroutines[i];
+                        coroutine.Step();
+                    }
+
+#if !NO_LOGS
+
+                        if (echoStatus)
+                        {
+                            Echo(
+                                "Num Coroutines: " + coroutines.Count() + "\n" +
+                                "Max Instruction Count: " + Runtime.MaxInstructionCount.ToString() + "\n" +
+                                "Current Instruction Count: " + Runtime.CurrentInstructionCount.ToString() + "\n" +
+                                "Max Call Chain Depth: " + Runtime.MaxCallChainDepth.ToString() + "\n" +
+                                "Current Call Chain Depth: " + Runtime.CurrentCallChainDepth.ToString() + "\n" +
+                                "Last Run Time ms: " + Runtime.LastRunTimeMs.ToString() + "\n" +
+                                "Average Runtime ms: " + AverageRunTime.RoundToDp(2) + "\n" +
+                                "Time Since Last Run ms: " + Runtime.TimeSinceLastRun.TotalMilliseconds.ToString()
+                                );
+                        }
+
+#endif
+                }
+            }
+
+            public static ulong CreateCoroutine(Delegate CoroutineFunc, params object[] args)
+            {
+                IEnumerator<int> enumerator = (IEnumerator<int>)CoroutineFunc.DynamicInvoke(args);
+                ulong coroutineId = UIDGenerator.GenerateUID();
+                ICoroutine coroutine = new CoroutinePaused(enumerator, coroutineId);
+                return coroutineId;
+            }
+
+            public static ulong SpawnCoroutine(Delegate CoroutineFunc, params object[] args)
+            {
+                IEnumerator<int> enumerator = (IEnumerator<int>)CoroutineFunc.DynamicInvoke(args);
+                ulong coroutineId = UIDGenerator.GenerateUID();
+                ICoroutine coroutine = new CoroutineRunning(enumerator, coroutineId);
+                return coroutineId;
+            }
+            #endregion
+
+            #region Private
+            private static ICoroutine GetCoroutine(ulong id)
+            {
+                return coroutines.Find(coroutine => coroutine.Id == id);
+            }
+
+            private static int GetCoroutineIndex(ulong id)
+            {
+                return coroutines.FindIndex(coroutine => coroutine.Id == id);
+            }
+            #endregion
+            
+            #endregion
         }
 
-    }
-    
 
+    }
 }

@@ -10,5 +10,6 @@
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="$(MSBuildThisFileDirectory)CoroutineProgram.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)UIDGenerator.cs" />
   </ItemGroup>
 </Project>
