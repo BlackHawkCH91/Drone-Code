@@ -50,10 +50,9 @@ EndProject
 Global
 	GlobalSection(SharedMSBuildProjectFiles) = preSolution
 		Coroutine\Coroutine.projitems*{059caf3a-f0c7-4284-a14c-fc0f11e82b15}*SharedItemsImports = 4
+		Math\Math.projitems*{059caf3a-f0c7-4284-a14c-fc0f11e82b15}*SharedItemsImports = 4
 		NetworkMethods\NetworkMethods.projitems*{059caf3a-f0c7-4284-a14c-fc0f11e82b15}*SharedItemsImports = 4
-		Vector3Extensions\Vector3Extensions.projitems*{059caf3a-f0c7-4284-a14c-fc0f11e82b15}*SharedItemsImports = 4
 		Coroutine\Coroutine.projitems*{33262ce1-6d65-43de-b2f3-9a5542e538c7}*SharedItemsImports = 4
-		Vector3Extensions\Vector3Extensions.projitems*{33262ce1-6d65-43de-b2f3-9a5542e538c7}*SharedItemsImports = 4
 		Coroutine\Coroutine.projitems*{4fea1d8d-11cc-4d65-993b-821aad1e7ed6}*SharedItemsImports = 4
 		DebugAPI\DebugAPI.projitems*{4fea1d8d-11cc-4d65-993b-821aad1e7ed6}*SharedItemsImports = 4
 		Math\Math.projitems*{4fea1d8d-11cc-4d65-993b-821aad1e7ed6}*SharedItemsImports = 4
@@ -69,6 +68,7 @@ Global
 		Math\Math.projitems*{cc330d69-f922-4516-83cf-2f983043054d}*SharedItemsImports = 4
 		ShipController\ShipController.projitems*{cc330d69-f922-4516-83cf-2f983043054d}*SharedItemsImports = 4
 		Coroutine\Coroutine.projitems*{d4f8ae46-8174-4f46-a895-6368583733b9}*SharedItemsImports = 4
+		Math\Math.projitems*{d4f8ae46-8174-4f46-a895-6368583733b9}*SharedItemsImports = 4
 		Coroutine\Coroutine.projitems*{d7769a5c-4e12-41ff-bf4d-9edf0ff53d53}*SharedItemsImports = 4
 		DebugAPI\DebugAPI.projitems*{dffc070a-5a6a-481d-9d72-3c6fbdd45673}*SharedItemsImports = 13
 		ShipController\ShipController.projitems*{e60516a7-650c-42d0-bd52-cf7982204cbe}*SharedItemsImports = 13
