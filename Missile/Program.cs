@@ -212,14 +212,14 @@ namespace IngameScript
                 }
                 else
                 {
-                    if (g == 0)
+                    roots = SolveQuartic();
+                    /*if (g == 0)
                     {
-                        roots = SolveQuartic();
                     } else
                     {
                         roots = new double[1];
                         roots[0] = BisectionMethod(0, 30, 0.01); 
-                    }
+                    }*/
                 }
 
                 float t = -1;
@@ -238,7 +238,8 @@ namespace IngameScript
                 }
 
                 //Echo("5");
-                return pos + t * vel + (t / 2) * accel + (t / 6) * jerk;
+                //return pos + t * vel + (t / 2) * accel + (t / 6) * jerk;
+                return pos + t * vel + (t / 2) * accel;
             }
         }
 
@@ -512,15 +513,19 @@ namespace IngameScript
                 //Get enemy info from radar
                 MyDetectedEntityInfo enemy = radar.GetTargetedEntity();
 
-                ImmutableArray<Vector3D> data = (ImmutableArray<Vector3D>)listener.AcceptMessage().Data;
+                if (listener.HasPendingMessage)
+                {
+                    ImmutableArray<Vector3D> data = (ImmutableArray<Vector3D>)listener.AcceptMessage().Data;
 
-                targetPos = Vector3DExtensions.ConvertToLocalPosition(data[0], rc);
-                targetVel = Vector3DExtensions.ConvertToLocalDirection(data[1], rc);
-                targetAccel = Vector3DExtensions.ConvertToLocalDirection(data[2], rc);
-                targetJerk = Vector3DExtensions.ConvertToLocalDirection(data[3], rc);
+                    targetPos = Vector3DExtensions.ConvertToLocalPosition(data[0], rc);
+                    targetVel = Vector3DExtensions.ConvertToLocalDirection(data[1], rc);
+                    targetAccel = Vector3DExtensions.ConvertToLocalDirection(data[2], rc);
+                    targetJerk = Vector3DExtensions.ConvertToLocalDirection(data[3], rc);
+
+                }
 
                 //Going to change this:
-                if (listener.HasPendingMessage && enemy.Position == Vector3D.Zero)
+                /*if (listener.HasPendingMessage && enemy.Position == Vector3D.Zero)
                 {
                     targetVel2 = targetVel1;
                     
@@ -528,15 +533,15 @@ namespace IngameScript
 
                 if (enemy.Position != Vector3D.Zero && (enemy.TimeStamp - targetVel1.Item1) > 100)
                 {
-                    /*targetVel2 = targetVel1;
+                    *//*targetVel2 = targetVel1;
                     targetVel1 = new MyTuple<double, Vector3D>(enemy.TimeStamp, enemy.Velocity);
 
                     targetPos = Vector3DExtensions.ConvertToLocalPosition(enemy.Position, rc);
                     targetVel = Vector3DExtensions.ConvertToLocalDirection(enemy.Velocity, rc);
                     targetAccel = Vector3DExtensions.ConvertToLocalDirection((targetVel1.Item2 - targetVel2.Item2) / ((double)(targetVel1.Item1 - targetVel2.Item1) / 1000), rc);
 
-                    if (interceptPoint == null) interceptPoint = Vector3D.Zero;*/
-                }
+                    if (interceptPoint == null) interceptPoint = Vector3D.Zero;*//*
+                }*/
 
                 //Polynomial.SetVariables(targetPos, targetVel, targetAccel, 100);
                 Polynomial.SetVariables(targetPos, targetVel, targetAccel, targetJerk, 100);

@@ -97,13 +97,14 @@ namespace IngameScript
         public static void Display()
         {
             //Loop through dictionary, display all messages
-            foreach (KeyValuePair<int, List<string>> message in debugMessages)
+            for (int i = 0; i < debugMessages.Count; i++)
             {
+                KeyValuePair<int, List<string>> message = debugMessages.ElementAt(i);
                 string output = "";
 
-                foreach (string item in message.Value)
+                for (int j = 0; j < message.Value.Count; j++)
                 {
-                    output += item + "\n";
+                    output += message.Value[i] + "\n";
                 }
 
                 textPanels[message.Key].WriteText(output);
@@ -123,35 +124,37 @@ namespace IngameScript
         List<string> tags = new List<string>() { "all" };
         bool anonCasts = true;
         Dictionary<long, List<Vector3D>> addresses = new Dictionary<long, List<Vector3D>>();
-        Queue<MyTuple<string, string, object[]>> PacketBacklog = new Queue<MyTuple<string, string, object[]>>();
-        
+        long packetBacklogId;
+        Dictionary<long, MyTuple<string, string, object[]>> packetBacklog = new Dictionary<long, MyTuple<string, string, object[]>>();
+
         string gridType;
 
         //Debug vars
 
 
+        //For anon casts
         void SetAntennas(bool status)
         {
-            foreach (IMyRadioAntenna ant in antennas)
+            for (int i = 0; i < antennas.Count; i++)
             {
-                ant.EnableBroadcasting = status;
+                antennas[i].EnableBroadcasting = status;
             }
             Debug.AddLog(0, $"Setting antennas: {status}");
         }
 
+        //Send message either direct or with broadcast
         IEnumerator<int> SendMessage(string destination, string purpose, object[] content, bool anon)
         {
             Echo($"1 {Me.CubeGrid.EntityId} {destination} {purpose}");
             //Generate Packet
             ImmutableArray<string> packet = ImmutableArray.Create(new string[] { Me.CubeGrid.EntityId.ToString(), destination, purpose, Network.ObjectToString(content) });
-            //new ImmutableArray<string>() { Me.CubeGrid.EntityId.ToString(), destination, purpose, Network.ObjectToString(content)};
             long address;
 
             Echo("2");
             if (long.TryParse(destination, out address))
             {
                 Echo("3");
-                //Check if endpoint is reachable using laser ants
+                //Check if endpoint is reachable, use unicast
                 if (IGC.IsEndpointReachable(address))
                 {
                     Echo("4");
@@ -160,6 +163,7 @@ namespace IngameScript
                 } else 
                 {
                     Echo("5");
+                    //Turn on antennas, wait 1 tick
                     SetAntennas(true);
                     yield return 0;
 
@@ -173,8 +177,10 @@ namespace IngameScript
                     } else
                     {
                         Echo("7");
-                        //Queue packet if address is not reachable
-                        PacketBacklog.Enqueue(new MyTuple<string, string, object[]>(destination, purpose, content));
+                        IGC.SendBroadcastMessage(address.ToString(), packet);
+                        
+                        //Not sure how to go about this...
+                        packetBacklog.Add(packetBacklogId, new MyTuple<string, string, object[]>(destination, purpose, content));
                         Debug.AddLog(0, $"Destination unreachable: {destination}, {purpose}, {content}");
                     }
 
@@ -183,7 +189,7 @@ namespace IngameScript
             {
                 Echo("8");
                 SetAntennas(true);
-                yield return 1;
+                yield return 0;
 
                 IGC.SendBroadcastMessage(destination, packet);
                 Debug.AddLog(0, $"Broadcasting packet: {destination}, {purpose}");
@@ -226,31 +232,37 @@ namespace IngameScript
                         addresses.Add(source, content.Cast<Vector3D>().ToList());
                         long temp;
 
+                        //Send info to grid that is requesting
                         if (!long.TryParse(destination, out temp))
                         {
                             EstCon(source.ToString());
                         }
                     }
                     break;
+
+                default:
+                    Debug.AddLog(1, $"ERROR: Invalid purpose - {purpose}");
+                    break;
             }
         }
 
         void Init()
         {
+            //Get all blocks
             GridTerminalSystem.GetBlocksOfType<IMyLaserAntenna>(laserAnts);
             GridTerminalSystem.GetBlocksOfType<IMyRadioAntenna>(antennas);
             GridTerminalSystem.GetBlocksOfType<IMyTextPanel>(Debug.textPanels);
 
             remoteControl = GridTerminalSystem.GetBlockWithName("rc") as IMyRemoteControl;
 
+            packetBacklogId = 0;
             //Tags:
-            tags.Add(Me.CubeGrid.EntityId.ToString() + "r");
+            tags.Add(Me.CubeGrid.EntityId.ToString());
         }
 
         //!Initialise some variables here
         public Program()
         {
-            //Runtime.UpdateFrequency = UpdateFrequency.Update100;
             TaskScheduler.EstablishTaskScheduler(Runtime, Echo, true);
             TaskScheduler.SpawnCoroutine(new Func<IEnumerator<int>>(IEnumMain));
         }
@@ -274,14 +286,13 @@ namespace IngameScript
             List<IMyBroadcastListener> broadcastListeners = new List<IMyBroadcastListener>();
             IMyUnicastListener unicastListener = IGC.UnicastListener;
 
-            foreach (string tag in tags)
+            for (int i = 0; i < tags.Count; i++)
             {
-                broadcastListeners.Add(IGC.RegisterBroadcastListener(tag));
+                broadcastListeners.Add(IGC.RegisterBroadcastListener(tags[i]));
             }
 
             //Intervals
             TimeInterval EstConInterval = new TimeInterval();
-
 
             while (true)
             {
@@ -299,8 +310,9 @@ namespace IngameScript
                 yield return 0;
 
                 //Loop through broadcast listeners
-                foreach (IMyBroadcastListener broadcastListener in broadcastListeners)
+                for (int i = 0; i < broadcastListeners.Count; i++)
                 {
+                    IMyBroadcastListener broadcastListener = broadcastListeners[i];
                     //If there's a message, convert to string array and run ReceiveMessage
                     if (broadcastListener.HasPendingMessage)
                     {                        
