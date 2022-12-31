@@ -120,6 +120,7 @@ namespace IngameScript
         
         IMyRemoteControl remoteControl;
 
+
         //Networking vars
         List<string> tags = new List<string>() { "all" };
         bool anonCasts = true;
@@ -128,7 +129,6 @@ namespace IngameScript
         Dictionary<long, MyTuple<string, string, object[]>> packetBacklog = new Dictionary<long, MyTuple<string, string, object[]>>();
 
         string gridType;
-
         //Debug vars
 
 
