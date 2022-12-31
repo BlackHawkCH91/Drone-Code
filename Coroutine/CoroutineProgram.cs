@@ -222,7 +222,8 @@ namespace IngameScript
             #region Fields
             private static string lastArgument = "";
 
-            private static IMyGridProgramRuntimeInfo Runtime;
+            private static IMyGridProgramRuntimeInfo runtime;
+            private static int instructionCount;
             private static MovingAverage averageRuntime = new MovingAverage(120);
             private static Action<string> echo;
             private static bool echoStatus = false;
@@ -242,6 +243,7 @@ namespace IngameScript
             public static double AverageRunTime { get { return averageRuntime.GetAverageValue();} }
 
             public static Action<string> Echo { get { return echo; } }
+            public static IMyGridProgramRuntimeInfo Runtime { get { return runtime; } }
             #endregion
 
             #region Methods
@@ -249,14 +251,14 @@ namespace IngameScript
             #region Public
             public static void EstablishTaskScheduler(IMyGridProgramRuntimeInfo GridRuntime, Action<string> Echo, bool EchoStatus)
             {
-                Runtime = GridRuntime;
+                runtime = GridRuntime;
                 echo = Echo;
                 echoStatus = EchoStatus;
             }
 
             public static void EstablishTaskScheduler(IMyGridProgramRuntimeInfo GridRuntime, Action<string> GridEcho)
             {
-                Runtime = GridRuntime;
+                runtime = GridRuntime;
                 echo = GridEcho;
                 echoStatus = false;
             }
@@ -294,23 +296,19 @@ namespace IngameScript
                 // Update average timestep
                 averageRuntime.AddValue(Runtime.LastRunTimeMs); // Add last runtime in ms
 
-#if !NO_LOGS
                 // Log status
                 if (echoStatus)
                 {
                     Echo(
                         "Num Coroutines: " + coroutines.Count() + "\n" +
                         "Max Instruction Count: " + Runtime.MaxInstructionCount.ToString() + "\n" +
-                        "Current Instruction Count: " + Runtime.CurrentInstructionCount.ToString() + "\n" +
+                        "Current Instruction Count: " + instructionCount.ToString() + "\n" +
                         "Max Call Chain Depth: " + Runtime.MaxCallChainDepth.ToString() + "\n" +
-                        "Current Call Chain Depth: " + Runtime.CurrentCallChainDepth.ToString() + "\n" +
                         "Last Run Time ms: " + Runtime.LastRunTimeMs.ToString() + "\n" +
                         "Average Runtime ms: " + AverageRunTime.RoundToDp(3) + "\n" +
                         "Time Since Last Run ms: " + Runtime.TimeSinceLastRun.TotalMilliseconds.ToString()
                         );
                 }
-
-#endif
 
                 // Coroutine will trigger when user presses run or when it triggers itself
                 if (updateSource == UpdateType.Once || updateSource == UpdateType.Terminal)
@@ -327,6 +325,9 @@ namespace IngameScript
                         coroutine.Step();
                     }
                 }
+
+                // Update instruction count after all coroutines run
+                instructionCount = Runtime.CurrentInstructionCount;
             }
 
             /// <summary>
