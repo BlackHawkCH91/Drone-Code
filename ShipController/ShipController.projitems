@@ -9,6 +9,8 @@
     <Import_RootNamespace>ShipController</Import_RootNamespace>
   </PropertyGroup>
   <ItemGroup>
+    <Compile Include="$(MSBuildThisFileDirectory)IControlledGyro.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)IControlledThrust.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)ShipController.cs" />
   </ItemGroup>
 </Project>

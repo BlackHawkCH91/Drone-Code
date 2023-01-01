@@ -77,7 +77,14 @@ namespace IngameScript
         // -- GENERAL USE METHODS --
         public static Vector3D UnitVector(this Vector3D vector)
         {
-            return vector / vector.Length();
+            if (vector.LengthSquared() != 0)
+            {
+                return vector / vector.Length();
+            }
+            else
+            {
+                return Vector3D.Zero;
+            }
         }
 
         public static Vector3D ProjectOnPlane(this Vector3D vector, Vector3D normal)
@@ -148,7 +155,14 @@ namespace IngameScript
         // -- GENERAL USE METHODS --
         public static Vector3 UnitVector(this Vector3 vector)
         {
-            return vector / vector.Length();
+            if(vector.LengthSquared() != 0)
+            {
+                return vector / vector.Length();
+            }
+            else
+            {
+                return Vector3.Zero;
+            }
         }
 
         public static Vector3 ProjectOnPlane(this Vector3 vector, Vector3 normal)

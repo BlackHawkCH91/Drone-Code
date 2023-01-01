@@ -35,11 +35,12 @@ namespace IngameScript
             }
 
             private IMyShipController controller;
+            private MatrixD controllerOrientation;
             private Dictionary<Base6Directions.Direction, List<IMyThrust>> thrusters = new Dictionary<Base6Directions.Direction, List<IMyThrust>>();
             private Dictionary<Matrix, List<IMyGyro>> gyros;
             private Vector3 desiredVelocity;
             private MatrixD desiredOrientation;
-            private const float speedCoefficient = 0.0001f;
+            private const float significantDistanceThreshold = .1f;
 
             public Vector3 DesiredVelocity {
                 get { return desiredVelocity; }
@@ -54,6 +55,9 @@ namespace IngameScript
             public ShipController(IMyShipController controller, List<IMyThrust> thrusters, List<IMyGyro> gyros)
             {
                 this.controller = controller;
+                Matrix temp;
+                controller.Orientation.GetMatrix(out temp);
+                this.controllerOrientation = temp;
 
                 this.gyros = new Dictionary<Matrix, List<IMyGyro>>();
                 foreach (IMyGyro gyro in gyros)
@@ -84,12 +88,6 @@ namespace IngameScript
 
                 // Start controlling
                 TaskScheduler.SpawnCoroutine(new Func<IEnumerator<int>>(StepMovements));
-            }
-
-            private float GetGyroSpeedPercentage(float val)
-            {
-                //return (float)(Math.Sign(val) * Math.Pow(Math.Abs(val), speedCoefficient));
-                return (float)(Math.Sign(val) * -Math.Pow(speedCoefficient, Math.Abs(val)) + Math.Sign(val));
             }
 
             public IEnumerator<int> StepMovements()
@@ -139,67 +137,54 @@ namespace IngameScript
                     #endregion
 
                     #region Update gyros
-                    Matrix temp;
-                    controller.Orientation.GetMatrix(out temp);
-                    MatrixD controllerOrientation = temp;
                     MatrixD shipOrientation = controller.WorldMatrix.GetOrientation();
 
                     float pitch = -(float)shipOrientation.Backward.Dot(desiredOrientation.Up.ProjectOnPlane(shipOrientation.Right).UnitVector());
-                    if(shipOrientation.Backward.Dot(desiredOrientation.Backward.ProjectOnPlane(shipOrientation.Right).UnitVector()) < 0)
-                    {
-                        int sign = Math.Sign(pitch);
-                        if(sign == 0)
-                        {
-                            pitch = 1;
-                        }
-                        else
-                        {
-                            pitch = sign;
-                        }
-                    }
-
                     float yaw = -(float)shipOrientation.Right.Dot(desiredOrientation.Backward.ProjectOnPlane(shipOrientation.Up).UnitVector());
-                    if (shipOrientation.Backward.Dot(desiredOrientation.Backward.ProjectOnPlane(shipOrientation.Right).UnitVector()) < 0)
-                    {
-                        int sign = Math.Sign(yaw);
-                        if (sign == 0)
-                        {
-                            yaw = 1;
-                        }
-                        else
-                        {
-                            yaw = sign;
-                        }
-                    }
-
                     float roll = -(float)shipOrientation.Up.Dot(desiredOrientation.Right.ProjectOnPlane(shipOrientation.Backward).UnitVector());
-                    if (shipOrientation.Backward.Dot(desiredOrientation.Backward.ProjectOnPlane(shipOrientation.Right).UnitVector()) < 0)
-                    {
-                        int sign = Math.Sign(roll);
-                        if (roll == 0)
-                        {
-                            roll = 1;
-                        }
-                        else
-                        {
-                            roll = sign;
-                        }
-                    }
-
                     Vector3 rotVector = new Vector3(pitch, yaw, roll);
+
+                    // Check if there are any insignificant rotations and if so, remove them
+                    float max = Math.Abs(rotVector.AbsMax());
+                    if (Math.Abs(rotVector.X) < max * significantDistanceThreshold)
+                    {
+                        rotVector.X = 0;
+                    }
+                    if (Math.Abs(rotVector.Y) < max * significantDistanceThreshold)
+                    {
+                        rotVector.Y = 0;
+                    }
+                    if (Math.Abs(rotVector.Z) < max * significantDistanceThreshold)
+                    {
+                        rotVector.Z = 0;
+                    }
 
                     TaskScheduler.Echo("RotVector");
                     TaskScheduler.Echo(rotVector.RoundToDp(2).ToString() + "\n");
+                    
+                    double vectorDistance = shipOrientation.Backward.Dot(desiredOrientation.Backward);
+                    if(Math.Abs(vectorDistance) > 1)
+                    {
+                        vectorDistance = Math.Sign(vectorDistance);
+                    }
 
-                    Vector3 rotDirection = rotVector;//.UnitVector();
+                    // If facing the wrong half of the sphere then rotate at full speed
+                    float rotDistance = (float)(Math.Acos(vectorDistance) / Math.PI);
+                    if(rotDistance > 0.5)
+                    {
+                        rotVector = rotVector.UnitVector();
+                    }
 
-                    Vector3 rotSpeed = new Vector3(GetGyroSpeedPercentage(rotDirection.X), GetGyroSpeedPercentage(rotDirection.Y), GetGyroSpeedPercentage(rotDirection.Z)); // * 3 for full gyro speed
+                    Vector3 rotSpeed = rotVector * 3; // * 3 for full gyro speed
 
                     TaskScheduler.Echo("RotSpeed");
                     TaskScheduler.Echo(rotSpeed.RoundToDp(2).ToString() + "\n");
 
+                    TaskScheduler.Echo("AngularVelocity");
+                    TaskScheduler.Echo(controller.GetShipVelocities().AngularVelocity.ConvertToLocalDirection(controller).RoundToDp(2).ToString() + "\n");
+
                     // Apply gyro overrides
-                    for(int keyPairIndex = 0; keyPairIndex < gyros.Count(); keyPairIndex++)
+                    for (int keyPairIndex = 0; keyPairIndex < gyros.Count(); keyPairIndex++)
                     {
                         KeyValuePair<Matrix, List<IMyGyro>> keyValuePair = gyros.ElementAt(keyPairIndex);
                         Matrix gyroOrientation = keyValuePair.Key;
