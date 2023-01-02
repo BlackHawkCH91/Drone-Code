@@ -36,11 +36,12 @@ namespace IngameScript
             // Establish controller
             ShipController shipController = new ShipController(GetMainRemoteControl(), thrusters, gyros)
             {
-                DesiredOrientation = new MatrixD()
+                DesiredWorldMatrix = new MatrixD()
                 {
                     Forward = new Vector3D(1, 0, 0),
                     Right = new Vector3D(0, 0, 1),
-                    Up = new Vector3D(0, 1, 0)
+                    Up = new Vector3D(0, 1, 0),
+                    Translation = Vector3D.Zero
                 }
                 //MatrixD.CreateLookAt(new Vector3D(0, 0, 0), new Vector3D(1, 0, 0), new Vector3D(0, 1, 0))
             };

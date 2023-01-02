@@ -72,5 +72,32 @@ namespace IngameScript
                 Right = matrix.Right.ConvertToWorldDirection(WorldMatrix)
             };
         }
+
+        public static double RotationMagnitude(this MatrixD matrix)
+        {
+            return Math.PI - Math.Acos((1 - (matrix.M11 + matrix.M22 + matrix.M33)) / 2);
+        }
+
+        /// <summary>
+        /// Returns the axis that this matrix rotates around
+        /// If there is no rotation, a zero vector is returned
+        /// </summary>
+        /// <param name="matrix"></param>
+        /// <returns></returns>
+        public static Vector3D RotationAxis(this MatrixD matrix)
+        {
+            Vector3D axis = Vector3D.Zero;
+            double angle = matrix.RotationMagnitude();
+            double angleFactor = 2 * Math.Sin(angle);
+
+            if (angleFactor != 0)
+            {
+                axis.X = (matrix.M32 - matrix.M23) / angleFactor;
+                axis.Y = (matrix.M13 - matrix.M31) / angleFactor;
+                axis.Z = (matrix.M21 - matrix.M12) / angleFactor;
+            }
+
+            return axis;
+        }
     }
 }

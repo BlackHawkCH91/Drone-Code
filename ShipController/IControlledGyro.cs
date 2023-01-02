@@ -36,6 +36,14 @@ namespace IngameScript
             /// Override in pitch, yaw, roll format in grid space
             /// </summary>
             Vector3 GridOverride { get; set; }
+            /// <summary>
+            /// Override in pitch, yaw, roll format in gyro space
+            /// </summary>
+            Vector3 OverridePercentage { get; set; }
+            /// <summary>
+            /// Override in pitch, yaw, roll format in grid space
+            /// </summary>
+            Vector3 GridOverridePercentage { get; set; }
 
             /// <summary>
             /// The force the gyro will apply under the given circumstances
@@ -46,8 +54,10 @@ namespace IngameScript
             Vector3 GetForceValue(Vector3 angularVelocity, Vector3 desiredAngularVelocity);
         }
 
-        const float LARGE_GYRO_FORCE = 3.36E+07f;
-        const float SMALL_GYRO_FORCE = 448000f;
+        const float LARGE_GYRO_FORCE = 3.36E+07f / 1000;
+        const float SMALL_GYRO_FORCE = 448000f / 1000;
+        const float LARGE_GYRO_MAX_RPM = 3;
+        const float SMALL_GYRO_MAX_RPM = 6;
 
         public class ControlledGyro : IControlledGyro
         {
@@ -56,6 +66,7 @@ namespace IngameScript
             private readonly IMyShipController controller;
             private readonly Matrix gridOrientationMap;
             private readonly float maxForce;
+            private readonly float maxRPM;
             #endregion
 
             #region properties
@@ -71,6 +82,26 @@ namespace IngameScript
             {
                 get { return Override.ConvertToWorldDirection(gridOrientationMap); }
                 set { Override = value.ConvertToLocalDirection(gridOrientationMap); }
+            }
+            public Vector3 OverridePercentage
+            {
+                get { return Override * maxRPM; }
+                set
+                {
+                    value.ClampComponents(-1, 1);
+                    value *= maxRPM;
+                    gyro.Pitch = value.X; gyro.Yaw = value.Y; gyro.Roll = value.Z;
+                }
+            }
+            public Vector3 GridOverridePercentage
+            {
+                get { return Override.ConvertToWorldDirection(gridOrientationMap) * maxRPM; }
+                set
+                {
+                    value.ClampComponents(-1, 1);
+                    value *= maxRPM;
+                    Override = value.ConvertToLocalDirection(gridOrientationMap);
+                }
             }
             #endregion
 
@@ -91,10 +122,12 @@ namespace IngameScript
                 {
                     case MyCubeSize.Small:
                         maxForce = SMALL_GYRO_FORCE;
+                        maxRPM = SMALL_GYRO_MAX_RPM;
                         break;
 
                     case MyCubeSize.Large:
                         maxForce = LARGE_GYRO_FORCE;
+                        maxRPM = LARGE_GYRO_MAX_RPM;
                         break;
                 }
             }

@@ -96,6 +96,35 @@ namespace IngameScript
         {
             return new Vector3D(vector.X.RoundToDp(dp), vector.Y.RoundToDp(dp), vector.Z.RoundToDp(dp));
         }
+
+        public static Vector3D Sign(this Vector3D vector)
+        {
+            return new Vector3D(Math.Sign(vector.X), Math.Sign(vector.Y), Math.Sign(vector.Z));
+        }
+
+        public static Vector3D Pow(this Vector3D vector, int power)
+        {
+            Vector3D powVct = vector;
+            for(int i = 0; i < power; i++)
+            {
+                powVct *= vector;
+            }
+            return powVct;
+        }
+
+        public static Vector3D ComponentAbs(this Vector3D vector)
+        {
+            return vector * vector.Sign();
+        }
+
+        public static Vector3D ClampComponents(this Vector3D vector, double min, double max)
+        {
+            return new Vector3D(
+                MathHelper.Clamp(vector.X, min, max),
+                MathHelper.Clamp(vector.Y, min, max),
+                MathHelper.Clamp(vector.Z, min, max)
+                );
+        }
     }
     public static class Vector3Extensions
     {
@@ -175,5 +204,33 @@ namespace IngameScript
             return new Vector3(vector.X.RoundToDp(dp), vector.Y.RoundToDp(dp), vector.Z.RoundToDp(dp));
         }
 
+        public static Vector3 Sign(this Vector3 vector)
+        {
+            return new Vector3(Math.Sign(vector.X), Math.Sign(vector.Y), Math.Sign(vector.Z));
+        }
+
+        public static Vector3 Pow(this Vector3 vector, int power)
+        {
+            Vector3 powVct = vector;
+            for (int i = 0; i < power; i++)
+            {
+                powVct *= vector;
+            }
+            return powVct;
+        }
+
+        public static Vector3 ComponentAbs(this Vector3 vector)
+        {
+            return vector * vector.Sign();
+        }
+
+        public static Vector3 ClampComponents(this Vector3 vector, double min, double max)
+        {
+            return new Vector3(
+                MathHelper.Clamp(vector.X, min, max),
+                MathHelper.Clamp(vector.Y, min, max),
+                MathHelper.Clamp(vector.Z, min, max)
+                );
+        }
     }
 }
