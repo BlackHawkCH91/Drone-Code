@@ -19,11 +19,11 @@ using VRage.Game.ModAPI.Ingame.Utilities;
 using VRage.Game.ObjectBuilders.Definitions;
 using VRageMath;
 
-namespace ShipController
+namespace IngameScript
 {
     partial class Program
     {
-        interface IControlledGyro
+        public interface IControlledGyro
         {
             IMyGyro Gyro { get; }
             IMyShipController Controller { get; }

@@ -27,6 +27,52 @@ namespace IngameScript
         /// </summary>
         public class ShipController
         {
+            #region fields
+            private IMyShipController shipController;
+            private GyroController gyroController;
+            private ThrustController thrustController;
+            private MatrixD desiredWorldMatrix;
+            #endregion
+
+            #region properties
+            public MatrixD DesiredWorldMatrix
+            {
+                get { return desiredWorldMatrix; }
+                set 
+                { 
+                    desiredWorldMatrix = value;
+                    gyroController.DesiredOrientation = value.GetOrientation();
+                    thrustController.DesiredPosition = value.Translation;
+                }
+            }
+            #endregion
+
+            #region constructors
+            public ShipController(IMyShipController controller, List<IMyThrust> thrusters, List<IMyGyro> gyros)
+            {
+                this.shipController = controller;
+                this.gyroController = new GyroController(controller, gyros);
+                this.thrustController = new ThrustController(controller, thrusters);
+
+                TaskScheduler.SpawnCoroutine(new Func<IEnumerator<int>>(Update));
+            }
+            #endregion
+
+            #region methods
+            public IEnumerator<int> Update()
+            {
+                while (true)
+                {
+                    gyroController.Update();
+                    thrustController.Update();
+                    yield return 0;
+                }
+            }
+            #endregion
+
+
+            #region OLD
+            /*
             private enum RotationAxis
             {
                 Yaw,
@@ -90,6 +136,7 @@ namespace IngameScript
                 TaskScheduler.SpawnCoroutine(new Func<IEnumerator<int>>(StepMovements));
             }
 
+            
             public IEnumerator<int> StepMovements()
             {
                 while (true)
@@ -208,7 +255,8 @@ namespace IngameScript
                     yield return 0;
                 }
             }
-
+            */
+            #endregion
         }
     }
 }

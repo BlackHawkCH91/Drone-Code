@@ -48,5 +48,15 @@ namespace IngameScript
             }
             return new Vector3D(yaw, pitch, roll);  // Z is yaw, X is pitch, Y is roll
         }
+
+        public static Vector3D Axis(this QuaternionD quaternion)
+        {
+            return new Vector3D(quaternion.X, quaternion.Y, quaternion.Z);
+        }
+
+        public static double Angle(this QuaternionD quaternion)
+        {
+            return quaternion.W;
+        }
     }
 }
